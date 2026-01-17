@@ -9,7 +9,7 @@ import { Image } from './component/image.js';
 import { Size, Gravity } from './core/constants.js';
 import { Window } from "./core/constants.js";
 
-export class SEngine {
+export class Leaf {
     constructor() {
         this.root = null;
         this.bgColor = 0xFFFFFFFF;
@@ -32,5 +32,5 @@ export class SEngine {
     }
 }
 
-export const engine = new SEngine();
+export const leaf = new Leaf();
 export { Element, Column, Row, Container, RelativeLayout, Text, Image, Size, Gravity, Window };

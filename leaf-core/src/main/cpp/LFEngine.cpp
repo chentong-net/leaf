@@ -197,7 +197,7 @@ void leaf_init(AssetLoaderFunc loader) {
 
     // Initialize NanoVG (init with render thread)
     g_engine->vg = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
-    LF_LOGI("SEngine Core Initialized");
+    LF_LOGI("Leaf Core Initialized");
 
     if (nvgCreateFont(g_engine->vg, "sans", "/system/fonts/Roboto-Regular.ttf") == -1) {
         // If failed
@@ -276,8 +276,7 @@ void leaf_render() {
         float h = get_prop(cmd, "h", 0.0f);
         uint32_t color_val = get_prop<uint32_t>(cmd, "color", 0xFFFFFFFFU);
         NVGcolor color = to_nvg_color(color_val);
-        LF_LOGI("Color Val: %u, R: %d, G: %d, B: %d", color_val, (color_val >> 16) & 0xFF,
-                (color_val >> 8) & 0xFF, color_val & 0xFF);
+        // LF_LOGI("Color Val: %u, R: %d, G: %d, B: %d", color_val, (color_val >> 16) & 0xFF, (color_val >> 8) & 0xFF, color_val & 0xFF);
 
         switch (cmd.type) {
             case CMD_RECT:

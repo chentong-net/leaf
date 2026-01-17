@@ -15,7 +15,7 @@ void leaf_eval_js(const char* code);
 // 实现具体的读取逻辑
 std::string read_asset_js(AAssetManager* mgr, const char* path) {
     std::string p = path;
-    __android_log_print(ANDROID_LOG_INFO, "SEngine", "%s", path);
+    __android_log_print(ANDROID_LOG_INFO, "Leaf", "%s", path);
     if (p.find("./") == 0) p = p.substr(2); // 处理 JS 相对路径
 
     AAsset* asset = AAssetManager_open(mgr, p.c_str(), AASSET_MODE_BUFFER);

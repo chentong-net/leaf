@@ -1,8 +1,8 @@
 import {
-    engine,
+    leaf,
     Column, Row, Text, Container, Image,
     Size, Gravity, Window
-} from './js/sengine.js';
+} from './js/leaf.js';
 
 function onAppStart(width, height, density) {
     Window.WIDTH = width;
@@ -88,4 +88,4 @@ function StatItem(value, label) {
     });
 }
 
-engine.run(profilePage);
+leaf.run(profilePage);
