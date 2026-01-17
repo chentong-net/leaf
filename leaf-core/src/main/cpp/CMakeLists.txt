@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 
-project("sengine-core")
+project("leaf-core")
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
@@ -36,7 +36,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${QUICKJS_DIR}/dtoa.c
 
         ${NANOVG_DIR}/nanovg.c
-        sengine.cpp
+        LFEngine.cpp
         engine_jni.cpp
 )
 

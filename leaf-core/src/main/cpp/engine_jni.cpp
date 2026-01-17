@@ -2,7 +2,7 @@
 #include <android/asset_manager_jni.h>
 #include <string>
 #include <android/log.h>
-#include "sengine_def.h"
+#include "LFDef.h"
 
 // 声明 sengine.cpp 中的外部函数
 extern "C" {
@@ -29,7 +29,7 @@ std::string read_asset_js(AAssetManager* mgr, const char* path) {
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_net_chentong_sengine_core_SEngineRenderer_nativeOnSurfaceCreated(JNIEnv* env, jobject thiz, jobject asset_mgr) {
+Java_net_chentong_leaf_core_LeafRenderer_nativeOnSurfaceCreated(JNIEnv* env, jobject thiz, jobject asset_mgr) {
     // 初始化完成后立即执行一次 JS 脚本
     AAssetManager* mgr = AAssetManager_fromJava(env, asset_mgr);
     auto asset_loader = [mgr](const char* path) -> std::string {
@@ -43,11 +43,11 @@ Java_net_chentong_sengine_core_SEngineRenderer_nativeOnSurfaceCreated(JNIEnv* en
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_net_chentong_sengine_core_SEngineRenderer_nativeOnSurfaceChanged(JNIEnv* env, jobject thiz, jint w, jint h, jfloat d) {
+Java_net_chentong_leaf_core_LeafRenderer_nativeOnSurfaceChanged(JNIEnv* env, jobject thiz, jint w, jint h, jfloat d) {
     sengine_update_size(w, h, d);
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_net_chentong_sengine_core_SEngineRenderer_nativeOnDrawFrame(JNIEnv* env, jobject thiz) {
+Java_net_chentong_leaf_core_LeafRenderer_nativeOnDrawFrame(JNIEnv* env, jobject thiz) {
     sengine_render();
 }

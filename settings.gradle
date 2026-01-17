@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SEngine"
+rootProject.name = "leaf"
 include ':app'
-include ':sengine-core'
+include ':leaf-core'

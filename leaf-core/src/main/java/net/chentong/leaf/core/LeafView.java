@@ -1,17 +1,17 @@
-package net.chentong.sengine.core;
+package net.chentong.leaf.core;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 
-public class SEngineView extends GLSurfaceView {
+public class LeafView extends GLSurfaceView {
 
-    public SEngineView(Context context) {
+    public LeafView(Context context) {
         super(context);
         init(context);
     }
 
-    public SEngineView(Context context, AttributeSet attrs) {
+    public LeafView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init(context);
     }
@@ -21,7 +21,7 @@ public class SEngineView extends GLSurfaceView {
         setEGLContextClientVersion(3);
 
         // 设置渲染器
-        setRenderer(new SEngineRenderer(context.getAssets()));
+        setRenderer(new LeafRenderer(context.getAssets()));
 
         // 设置渲染模式：CONTINUOUSLY 表示持续刷新（类似游戏/Flutter）
         setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);

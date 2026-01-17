@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'net.chentong.sengine.core'
+    namespace 'net.chentong.leaf.core'
     compileSdk 34
     ndkVersion "28.1.13356709"
 

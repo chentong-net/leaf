@@ -1,4 +1,4 @@
-package net.chentong.sengine.core;
+package net.chentong.leaf.core;
 
 import android.content.res.AssetManager;
 import android.content.res.Resources;
@@ -6,18 +6,18 @@ import android.opengl.GLSurfaceView;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-public class SEngineRenderer implements GLSurfaceView.Renderer {
+public class LeafRenderer implements GLSurfaceView.Renderer {
 
     private AssetManager assetManager;
 
-    public SEngineRenderer(AssetManager assetManager) {
+    public LeafRenderer(AssetManager assetManager) {
         this.assetManager = assetManager;
     }
 
     // --- Native 方法声明 ---
     // 加载编译好的 libsengine-core.so
     static {
-        System.loadLibrary("sengine-core");
+        System.loadLibrary("leaf-core");
     }
 
     // 对应 engine_jni.cpp 中的 extern "C" 函数

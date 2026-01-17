@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'net.chentong.sengine.demo'
+    namespace 'net.chentong.leaf.demo'
     compileSdk 34
 
     defaultConfig {
-        applicationId "net.chentong.sengine.demo"
+        applicationId "net.chentong.leaf.demo"
         minSdk 29
         targetSdk 34
         versionCode 1
@@ -32,7 +32,7 @@ dependencies {
 
     implementation libs.activity
     implementation libs.constraintlayout
-    implementation project(":sengine-core")
+    implementation project(':leaf-core')
     implementation libs.appcompat
     implementation libs.material
 }
