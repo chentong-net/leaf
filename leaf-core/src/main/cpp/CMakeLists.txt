@@ -9,11 +9,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps)
 set(QUICKJS_DIR ${DEPS_DIR}/quickjs)
 set(NANOVG_DIR ${DEPS_DIR}/nanovg/src)
+set(YOGA_DIR ${DEPS_DIR}/yoga)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${QUICKJS_DIR}
         ${NANOVG_DIR}
+        ${YOGA_DIR}
 )
 
 # 编译QuickJS
@@ -36,6 +38,16 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${QUICKJS_DIR}/dtoa.c
 
         ${NANOVG_DIR}/nanovg.c
+
+        ${YOGA_DIR}/YGConfig.h
+        ${YOGA_DIR}/YGEnums.h
+        ${YOGA_DIR}/YGMacros.h
+        ${YOGA_DIR}/YGNode.h
+        ${YOGA_DIR}/YGNodeLayout.h
+        ${YOGA_DIR}/YGNodeStyle.h
+        ${YOGA_DIR}/YGPixelGrid.h
+        ${YOGA_DIR}/YGValue.h
+
         LFEngine.cpp
         engine_jni.cpp
 )
