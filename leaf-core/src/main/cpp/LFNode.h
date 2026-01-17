@@ -31,9 +31,6 @@ private:
 
     float m_borderWidth = 0.0f;
     uint32_t m_borderColor = 0x00000000;
-
-    // 内部辅助：颜色转换逻辑
-    static NVGcolor colorToNVG(uint32_t argb);
 };
 
 #endif // LEAF_LFNODE_H

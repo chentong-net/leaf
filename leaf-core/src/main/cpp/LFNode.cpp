@@ -3,16 +3,6 @@
 //
 
 #include "LFNode.h"
-#include <cmath>
-
-// 将 ARGB (0xAARRGGBB) 转换为 NanoVG 的 RGBA 结构
-NVGcolor LFNode::colorToNVG(uint32_t argb) {
-    unsigned char a = (argb >> 24) & 0xFF;
-    unsigned char r = (argb >> 16) & 0xFF;
-    unsigned char g = (argb >> 8) & 0xFF;
-    unsigned char b = argb & 0xFF;
-    return nvgRGBA(r, g, b, a);
-}
 
 void LFNode::setBackgroundColor(uint32_t color) {
     if (m_backgroundColor == color) return;

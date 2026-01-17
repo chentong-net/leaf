@@ -6,9 +6,6 @@
 #define LEAF_LFRENDERNODE_H
 
 #include "LFDef.h"
-#include <vector>
-#include <memory>
-#include <string>
 
 class LFRenderNode : public std::enable_shared_from_this<LFRenderNode> {
 public:
@@ -60,6 +57,8 @@ public:
 protected:
     // 子类必须实现的绘制逻辑
     virtual void onDraw(NVGcontext* vg) = 0;
+
+    static NVGcolor colorToNVG(uint32_t argb);
 
     bool m_masksToBounds = false;
 

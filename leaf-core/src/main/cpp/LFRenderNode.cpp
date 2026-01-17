@@ -129,3 +129,11 @@ void LFRenderNode::render(NVGcontext* vg) {
     // 5. 状态出栈
     nvgRestore(vg);
 }
+
+NVGcolor LFRenderNode::colorToNVG(uint32_t argb) {
+    unsigned char a = (argb >> 24) & 0xFF;
+    unsigned char r = (argb >> 16) & 0xFF;
+    unsigned char g = (argb >> 8) & 0xFF;
+    unsigned char b = argb & 0xFF;
+    return nvgRGBA(r, g, b, a);
+}
