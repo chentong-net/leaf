@@ -2,11 +2,11 @@
 #include <android/asset_manager_jni.h>
 #include <string>
 #include <android/log.h>
-#include "LFDef.h"
+#include <functional>
 
 // 声明 LFEngine.cpp 中的外部函数
 extern "C" {
-void leaf_init(AssetLoaderFunc loader);
+void leaf_init(std::function<std::string(const char* path)> loader);
 void leaf_update_size(int w, int h, float d);
 void leaf_render();
 void leaf_eval_js(const char* code);
