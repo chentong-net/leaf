@@ -13,10 +13,10 @@ extern "C" {
 // 内部日志宏，根据平台自动切换输出方式
 #ifdef __ANDROID__
 #include <android/log.h>
-#define SE_LOGI(...) __android_log_print(ANDROID_LOG_INFO, "SEngine", __VA_ARGS__)
+#define LF_LOGI(...) __android_log_print(ANDROID_LOG_INFO, "Leaf", __VA_ARGS__)
 #else
 #include <cstdio>
-#define SE_LOGI(...) printf("[SEngine]: " __VA_ARGS__); printf("\n")
+#define LF_LOGI(...) printf("[Leaf]: " __VA_ARGS__); printf("\n")
 #endif
 
 using PropValue = std::variant<float, uint32_t, std::string, double>;

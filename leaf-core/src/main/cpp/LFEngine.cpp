@@ -9,7 +9,7 @@ static JSValue js_print(JSContext *ctx, JSValueConst this_val, int argc, JSValue
     for (int i = 0; i < argc; i++) {
         const char *str = JS_ToCString(ctx, argv[i]);
         if (str) {
-            SE_LOGI("JS_LOG: %s", str);
+            LF_LOGI("JS_LOG: %s", str);
             JS_FreeCString(ctx, str);
         }
     }
@@ -197,7 +197,7 @@ void sengine_init(AssetLoaderFunc loader) {
 
     // Initialize NanoVG (init with render thread)
     g_engine->vg = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
-    SE_LOGI("SEngine Core Initialized");
+    LF_LOGI("SEngine Core Initialized");
 
     if (nvgCreateFont(g_engine->vg, "sans", "/system/fonts/Roboto-Regular.ttf") == -1) {
         // If failed
@@ -221,7 +221,7 @@ void sengine_update_size(int w, int h, float d) {
             if (JS_IsException(ret)) {
                 JSValue exp = JS_GetException(g_engine->ctx);
                 const char *msg = JS_ToCString(g_engine->ctx, exp);
-                SE_LOGI("JS_ERR: %s", msg);
+                LF_LOGI("JS_ERR: %s", msg);
                 JS_FreeCString(g_engine->ctx, msg);
                 JS_FreeValue(g_engine->ctx, exp);
             }
@@ -239,7 +239,7 @@ void sengine_eval_js(const char *code) {
     if (JS_IsException(val)) {
         JSValue exception = JS_GetException(g_engine->ctx);
         const char *msg = JS_ToCString(g_engine->ctx, exception);
-        SE_LOGI("JS_ERR: %s", msg);
+        LF_LOGI("JS_ERR: %s", msg);
         JS_FreeCString(g_engine->ctx, msg);
         JS_FreeValue(g_engine->ctx, exception);
     }
@@ -256,7 +256,7 @@ void sengine_render() {
         if (JS_IsException(ret)) {
             JSValue exp = JS_GetException(g_engine->ctx);
             const char *msg = JS_ToCString(g_engine->ctx, exp);
-            SE_LOGI("JS_ERR: %s", msg);
+            LF_LOGI("JS_ERR: %s", msg);
             JS_FreeCString(g_engine->ctx, msg);
             JS_FreeValue(g_engine->ctx, exp);
         }
@@ -276,7 +276,7 @@ void sengine_render() {
         float h = get_prop(cmd, "h", 0.0f);
         uint32_t color_val = get_prop<uint32_t>(cmd, "color", 0xFFFFFFFFU);
         NVGcolor color = to_nvg_color(color_val);
-        SE_LOGI("Color Val: %u, R: %d, G: %d, B: %d", color_val, (color_val >> 16) & 0xFF,
+        LF_LOGI("Color Val: %u, R: %d, G: %d, B: %d", color_val, (color_val >> 16) & 0xFF,
                 (color_val >> 8) & 0xFF, color_val & 0xFF);
 
         switch (cmd.type) {
