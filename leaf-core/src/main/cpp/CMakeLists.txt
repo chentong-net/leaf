@@ -39,17 +39,26 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 
         ${NANOVG_DIR}/nanovg.c
 
-        ${YOGA_DIR}/YGConfig.h
-        ${YOGA_DIR}/YGEnums.h
-        ${YOGA_DIR}/YGMacros.h
-        ${YOGA_DIR}/YGNode.h
-        ${YOGA_DIR}/YGNodeLayout.h
-        ${YOGA_DIR}/YGNodeStyle.h
-        ${YOGA_DIR}/YGPixelGrid.h
-        ${YOGA_DIR}/YGValue.h
+        ${YOGA_DIR}/Yoga.cpp
+        ${YOGA_DIR}/YGConfig.cpp
+        ${YOGA_DIR}/YGEnums.cpp
+        ${YOGA_DIR}/YGNode.cpp
+        ${YOGA_DIR}/YGLayout.cpp
+        ${YOGA_DIR}/YGStyle.cpp
+        ${YOGA_DIR}/YGValue.cpp
+        ${YOGA_DIR}/log.cpp
+        ${YOGA_DIR}/Utils.cpp
+        ${YOGA_DIR}/YGNodePrint.cpp
+        ${YOGA_DIR}/event/event.cpp
 
-        LFEngine.cpp
         engine_jni.cpp
+        LFRenderNode.cpp
+        LFEngine.cpp
+        LFFlex.cpp
+        LFLinear.cpp
+        LFImage.cpp
+        LFNode.cpp
+        LFText.cpp
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE

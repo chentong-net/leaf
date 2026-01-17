@@ -28,16 +28,16 @@
 #endif
 
 #ifdef _WINDLL
-#define YG_EXPORT __declspec(dllexport)
-#elif !defined(_MSC_VER)
-#define YG_EXPORT __attribute__((visibility("default")))
+#define WIN_EXPORT __declspec(dllexport)
 #else
-#define YG_EXPORT
+#define WIN_EXPORT
 #endif
 
-#ifdef __OBJC__
-#if __has_include(<Foundation/Foundation.h>)
-#import <Foundation/Foundation.h>
+#ifndef YOGA_EXPORT
+#ifdef _MSC_VER
+#define YOGA_EXPORT
+#else
+#define YOGA_EXPORT __attribute__((visibility("default")))
 #endif
 #endif
 
@@ -55,21 +55,21 @@
 #ifdef __cplusplus
 #define YG_DEFINE_ENUM_FLAG_OPERATORS(name)                       \
   extern "C++" {                                                  \
-  constexpr name operator~(name a) {                              \
+  constexpr inline name operator~(name a) {                       \
     return static_cast<name>(                                     \
         ~static_cast<std::underlying_type<name>::type>(a));       \
   }                                                               \
-  constexpr name operator|(name a, name b) {                      \
+  constexpr inline name operator|(name a, name b) {               \
     return static_cast<name>(                                     \
         static_cast<std::underlying_type<name>::type>(a) |        \
         static_cast<std::underlying_type<name>::type>(b));        \
   }                                                               \
-  constexpr name operator&(name a, name b) {                      \
+  constexpr inline name operator&(name a, name b) {               \
     return static_cast<name>(                                     \
         static_cast<std::underlying_type<name>::type>(a) &        \
         static_cast<std::underlying_type<name>::type>(b));        \
   }                                                               \
-  constexpr name operator^(name a, name b) {                      \
+  constexpr inline name operator^(name a, name b) {               \
     return static_cast<name>(                                     \
         static_cast<std::underlying_type<name>::type>(a) ^        \
         static_cast<std::underlying_type<name>::type>(b));        \
@@ -94,6 +94,45 @@
 #define YG_DEFINE_ENUM_FLAG_OPERATORS(name)
 #endif
 
+#ifdef __cplusplus
+namespace facebook {
+namespace yoga {
+namespace enums {
+
+template <typename T>
+constexpr int count(); // can't use `= delete` due to a defect in clang < 3.9
+
+namespace detail {
+template <int... xs>
+constexpr int n() {
+  return sizeof...(xs);
+}
+} // namespace detail
+
+} // namespace enums
+} // namespace yoga
+} // namespace facebook
+#endif
+
 #define YG_ENUM_DECL(NAME, ...)                               \
   typedef YG_ENUM_BEGIN(NAME){__VA_ARGS__} YG_ENUM_END(NAME); \
-  YG_EXPORT const char* NAME##ToString(NAME);
+  WIN_EXPORT const char* NAME##ToString(NAME);
+
+#ifdef __cplusplus
+#define YG_ENUM_SEQ_DECL(NAME, ...)  \
+  YG_ENUM_DECL(NAME, __VA_ARGS__)    \
+  YG_EXTERN_C_END                    \
+  namespace facebook {               \
+  namespace yoga {                   \
+  namespace enums {                  \
+  template <>                        \
+  constexpr int count<NAME>() {      \
+    return detail::n<__VA_ARGS__>(); \
+  }                                  \
+  }                                  \
+  }                                  \
+  }                                  \
+  YG_EXTERN_C_BEGIN
+#else
+#define YG_ENUM_SEQ_DECL YG_ENUM_DECL
+#endif

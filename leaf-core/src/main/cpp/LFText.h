@@ -38,7 +38,7 @@ protected:
 
 private:
     // Yoga 测量回调函数
-    static YGSize measure(YGNodeConstRef node, float width, YGMeasureMode widthMode,
+    static YGSize measure(YGNodeRef node, float width, YGMeasureMode widthMode,
                           float height, YGMeasureMode heightMode);
 
     // 成员变量

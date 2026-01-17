@@ -52,10 +52,10 @@ void LFText::setFontFamily(const std::string &family) {
  * 当父容器是 Flex 或有固定宽度时，Yoga 会传入 width。
  * 我们需要告诉 Yoga 这段文字在有限宽度下折行后的高度。
  */
-YGSize LFText::measure(YGNodeConstRef node, float width, YGMeasureMode widthMode,
+YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
                        float height, YGMeasureMode heightMode) {
 
-    LFText *textNode = static_cast<LFText *>(YGNodeGetContext(node));
+    LFText *textNode = static_cast<LFText*>(::YGNodeGetContext(node));
     NVGcontext *vg = s_measureContext;
 
     // 如果没有测量上下文或文字为空，返回 0
