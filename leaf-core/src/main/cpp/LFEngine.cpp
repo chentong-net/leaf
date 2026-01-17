@@ -170,7 +170,7 @@ int get_or_create_image(NVGcontext *vg, const char *path) {
 // 暴露给JNI的接口
 extern "C" {
 
-void sengine_init(AssetLoaderFunc loader) {
+void leaf_init(AssetLoaderFunc loader) {
     if (g_engine) return;
     g_engine = new EngineContext();
     g_engine->asset_loader = loader;
@@ -205,7 +205,7 @@ void sengine_init(AssetLoaderFunc loader) {
     }
 }
 
-void sengine_update_size(int w, int h, float d) {
+void leaf_update_size(int w, int h, float d) {
     if (g_engine) {
         g_engine->width = w;
         g_engine->height = h;
@@ -232,7 +232,7 @@ void sengine_update_size(int w, int h, float d) {
     }
 }
 
-void sengine_eval_js(const char *code) {
+void leaf_eval_js(const char *code) {
     if (!g_engine || !code) return;
     // 执行main.js
     JSValue val = JS_Eval(g_engine->ctx, code, strlen(code), "main.js", JS_EVAL_TYPE_MODULE);
@@ -246,7 +246,7 @@ void sengine_eval_js(const char *code) {
     JS_FreeValue(g_engine->ctx, val);
 }
 
-void sengine_render() {
+void leaf_render() {
     if (!g_engine || !g_engine->vg) return;
 
     // Frame Callback
