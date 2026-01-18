@@ -11,6 +11,7 @@ LFEngine& LFEngine::getInstance() {
 
 void LFEngine::init(NVGcontext* vg) {
     m_vg = vg;
+    LFText::setMeasureContext(m_vg);
     // 这里可以做一些 NanoVG 的全局配置，如加载默认字体等
     // nvgCreateFont(vg, "sans", "assets/Roboto-Regular.ttf");
 }
