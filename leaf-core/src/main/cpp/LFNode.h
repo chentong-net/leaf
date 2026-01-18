@@ -46,11 +46,18 @@ public:
     // 布局属性
     void setWidth(float width);
     void setHeight(float height);
+    void setWidthPercent(float percent);
+    void setHeightPercent(float percent);
     void setMinWidth(float minWidth);
     void setMaxWidth(float maxWidth);
     void setMinHeight(float minHeight);
     void setMaxHeight(float maxHeight);
     void setAspectRatio(float aspectRatio);
+
+    void matchParentWidth();
+    void matchParentHeight();
+    void wrapContentWidth();
+    void wrapContentHeight();
 
     // Flexbox 核心
     void setFlexDirection(YGFlexDirection direction);

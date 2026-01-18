@@ -90,11 +90,38 @@ void LFNode::setHeight(float height) {
         SET_YOGA_VAL(YGNodeStyleSetHeight, height)
     }
 }
+void LFNode::setWidthPercent(float percent) {
+    YGNodeStyleSetWidthPercent(m_ygNode, percent);
+    markDirty();
+}
+
+void LFNode::setHeightPercent(float percent) {
+    YGNodeStyleSetHeightPercent(m_ygNode, percent);
+    markDirty();
+}
 void LFNode::setMinWidth(float minWidth) { SET_YOGA_VAL(YGNodeStyleSetMinWidth, minWidth); }
 void LFNode::setMaxWidth(float maxWidth) { SET_YOGA_VAL(YGNodeStyleSetMaxWidth, maxWidth); }
 void LFNode::setMinHeight(float minHeight) { SET_YOGA_VAL(YGNodeStyleSetMinHeight, minHeight); }
 void LFNode::setMaxHeight(float maxHeight) { SET_YOGA_VAL(YGNodeStyleSetMaxHeight, maxHeight); }
 void LFNode::setAspectRatio(float aspectRatio) { SET_YOGA_VAL(YGNodeStyleSetAspectRatio, aspectRatio); }
+
+void LFNode::matchParentWidth() {
+    setWidthPercent(100.0f);
+}
+
+void LFNode::matchParentHeight() {
+    setHeightPercent(100.0f);
+}
+
+void LFNode::wrapContentWidth() {
+    YGNodeStyleSetWidthAuto(m_ygNode);
+    markDirty();
+}
+
+void LFNode::wrapContentHeight() {
+    YGNodeStyleSetHeightAuto(m_ygNode);
+    markDirty();
+}
 
 void LFNode::setFlexDirection(YGFlexDirection direction) { SET_YOGA_VAL(YGNodeStyleSetFlexDirection, direction); }
 void LFNode::setJustifyContent(YGJustify justify) { SET_YOGA_VAL(YGNodeStyleSetJustifyContent, justify); }
