@@ -35,9 +35,7 @@ public:
     LFNode();
     virtual ~LFNode();
 
-    // ==========================================
-    // 1. 树形结构管理 (Hierarchy)
-    // ==========================================
+    // 树操作
     void addChild(const Ptr& child);
     void insertChild(const Ptr& child, uint32_t index);
     void removeChild(const Ptr& child);
@@ -45,10 +43,7 @@ public:
     const std::vector<Ptr>& getChildren() const { return m_children; }
     LFNode* getParent() const { return m_parent; }
 
-    // ==========================================
-    // 2. 布局属性 (Layout - Yoga Proxy)
-    // ==========================================
-    // 尺寸与约束
+    // 布局属性
     void setWidth(float width);
     void setHeight(float height);
     void setMinWidth(float minWidth);
@@ -68,38 +63,30 @@ public:
     void setFlexShrink(float shrink);
     void setFlexBasis(float basis);
 
-    // 间距
     void setPadding(YGEdge edge, float padding);
     void setMargin(YGEdge edge, float margin);
-    void setBorderWidth(YGEdge edge, float width); // 布局层面的边框占位
 
     // 定位
     void setPositionType(YGPositionType type);
     void setPosition(YGEdge edge, float value);
 
-    // 显示控制
-    void setDisplay(YGDisplay display); // Flex 或 None (隐藏且不占位)
+    // 显示/隐藏
+    void setDisplay(YGDisplay display);
+    void setDirection(YGDirection direction);
 
-    // 方向
-    void setDirection(YGDirection direction); // LTR 或 RTL
-
-    // ==========================================
-    // 3. 视觉样式属性 (Style & Visual)
-    // ==========================================
-    // 基础
+    // 样式属性
     void setBackgroundColor(uint32_t color);
-    void setOpacity(float opacity); // 0.0 ~ 1.0
-    void setVisible(bool visible);  // true: 显示, false: 隐藏但占位 (visibility: hidden)
+    void setOpacity(float opacity);
+    void setVisible(bool visible);
 
-    // 边框与圆角
-    void setBorderColor(uint32_t color);
-    void setBorderRadius(float radius); // 统一圆角
-    // void setBorderRadius(int corner, float radius); // 可扩展：单独设置四个角
+    // 边框
+    void setBorder(float width, uint32_t color);
+    void setBorderRadius(float radius);
 
-    // 阴影 (Box Shadow)
+    // 阴影
     void setShadow(float offsetX, float offsetY, float blur, float spread, uint32_t color);
 
-    // 变换 (Transform)
+    // 变换
     void setScale(float x, float y);
     void setRotate(float angle); // 角度
     void setTranslate(float x, float y);
@@ -107,27 +94,18 @@ public:
     // 裁剪
     void setMasksToBounds(bool masks); // overflow: hidden
 
-    // ==========================================
-    // 4. 引擎管线 (Pipeline)
-    // ==========================================
-    // 标记需要重排或重绘
-    void markDirty();
+    // 核心管线
+    void markDirty(); // 脏标记
+    void calculateLayout(float ownerWidth, float ownerHeight); // 布局
+    void render(NVGcontext* vg); // 渲染
 
-    // 布局计算入口 (通常只由 Root 调用)
-    void calculateLayout(float ownerWidth, float ownerHeight);
-
-    // 渲染入口 (模板方法)
-    void render(NVGcontext* vg);
-
-    // 供高级子类使用 (如 Text 需要测量)
+    // 供子类使用
     YGNodeRef getYGNode() const { return m_ygNode; }
 
 protected:
-    // 子类扩展点：绘制具体内容 (Text, Image)
+    // 子类实现具体内容绘制
     // 内容绘制在背景之上，子视图之下
     virtual void onDrawContent(NVGcontext* vg) {}
-    // 用于 YGNodeSetMeasureFunc 回调
-    virtual YGSize measure(YGNodeRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode) { return {0, 0}; }
 
     // 获取布局结果
     float getLayoutX() const { return YGNodeLayoutGetLeft(m_ygNode); }
@@ -148,13 +126,14 @@ private:
     std::vector<Ptr> m_children;
     bool m_isDirty = true;
 
-    // Style Data
+    // 样式数据
     uint32_t m_backgroundColor = 0x00000000;
-    uint32_t m_borderColor = 0x00000000;
-    float m_borderRadius = 0.0f;
     float m_opacity = 1.0f;
     bool m_visible = true;
     bool m_masksToBounds = false;
+    float m_borderWidth = 0.0f;
+    uint32_t m_borderColor = 0x00000000;
+    float m_borderRadius = 0.0f;
 
     LFShadow m_shadow;
     LFTransform m_transform;

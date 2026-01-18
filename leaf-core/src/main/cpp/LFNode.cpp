@@ -3,7 +3,6 @@
 //
 
 #include "LFNode.h"
-#include <algorithm>
 
 // 简化 setter 编写，只有值变了才 markDirty
 #define SET_STYLE_VAL(prop, value) \
@@ -86,6 +85,7 @@ void LFNode::setWidth(float width) {
 void LFNode::setHeight(float height) {
     if (height < 0) {
         YGNodeStyleSetHeightAuto(m_ygNode);
+        markDirty();
     } else {
         SET_YOGA_VAL(YGNodeStyleSetHeight, height)
     }
@@ -108,7 +108,6 @@ void LFNode::setFlexBasis(float basis) { SET_YOGA_VAL(YGNodeStyleSetFlexBasis, b
 
 void LFNode::setPadding(YGEdge edge, float padding) { SET_YOGA_VAL(YGNodeStyleSetPadding, edge, padding); }
 void LFNode::setMargin(YGEdge edge, float margin) { SET_YOGA_VAL(YGNodeStyleSetMargin, edge, margin); }
-void LFNode::setBorderWidth(YGEdge edge, float width) { SET_YOGA_VAL(YGNodeStyleSetBorder, edge, width); }
 
 void LFNode::setPositionType(YGPositionType type) { SET_YOGA_VAL(YGNodeStyleSetPositionType, type); }
 void LFNode::setPosition(YGEdge edge, float value) { SET_YOGA_VAL(YGNodeStyleSetPosition, edge, value); }
@@ -121,9 +120,21 @@ void LFNode::setDirection(YGDirection direction) { SET_YOGA_VAL(YGNodeStyleSetDi
 void LFNode::setBackgroundColor(uint32_t color) { SET_STYLE_VAL(m_backgroundColor, color); }
 void LFNode::setOpacity(float opacity) { SET_STYLE_VAL(m_opacity, std::clamp(opacity, 0.0f, 1.0f)); }
 void LFNode::setVisible(bool visible) { SET_STYLE_VAL(m_visible, visible); }
-void LFNode::setBorderColor(uint32_t color) { SET_STYLE_VAL(m_borderColor, color); }
 void LFNode::setBorderRadius(float radius) { SET_STYLE_VAL(m_borderRadius, radius); }
 void LFNode::setMasksToBounds(bool masks) { SET_STYLE_VAL(m_masksToBounds, masks); }
+
+void LFNode::setBorder(float width, uint32_t color) {
+    if (m_borderWidth == width && m_borderColor == color) return;
+
+    m_borderWidth = std::max(0.0f, width);
+    m_borderColor = color;
+
+    // 同步告诉 Yoga 边框宽度
+    // 这样 Yoga 在计算 content box 时会自动扣除边框厚度，符合标准盒模型
+    YGNodeStyleSetBorder(m_ygNode, YGEdgeAll, m_borderWidth);
+
+    markDirty();
+}
 
 void LFNode::setShadow(float offsetX, float offsetY, float blur, float spread, uint32_t color) {
     if (m_shadow.offsetX == offsetX && m_shadow.offsetY == offsetY &&
@@ -163,7 +174,7 @@ void LFNode::markDirty() {
 }
 
 void LFNode::calculateLayout(float ownerWidth, float ownerHeight) {
-    // 根节点触发计算
+    // 布局
     // 注意：每次 update 都会调用，Yoga 内部有缓存机制优化
     YGNodeCalculateLayout(m_ygNode, ownerWidth, ownerHeight, YGDirectionLTR);
     m_isDirty = false;
@@ -283,26 +294,24 @@ void LFNode::drawBackground(NVGcontext* vg, float w, float h) {
 }
 
 void LFNode::drawBorder(NVGcontext* vg, float w, float h) {
-    // Yoga 的 Border 属性只是占位，视觉绘制需要在这里单独处理
-    // 我们可以简单读取 Layout 里的 border 宽度，或者使用自定义的样式属性
-    float borderW = YGNodeStyleGetBorder(m_ygNode, YGEdgeAll);
-    if(std::isnan(borderW) || borderW <= 0) {
-        // 如果没有单独设置，尝试读取 fallback
-        // 这里为了演示简单，假设我们用了一个 m_borderWidth 成员变量
-        // 实际可以将 Yoga Border 和视觉 Border 分离或统一
-        // 暂时使用 style proxy 里的逻辑
-    }
+    // 统一边框绘制
+    // 只有当设置了边框宽且颜色不透明时才绘制
+    if (m_borderWidth > 0.0f && ((m_borderColor >> 24) & 0xFF)) {
+        // NanoVG 的 Stroke 是居中的。为了让边框完全在节点内(Border-Box模型)，
+        // 我们需要向内缩半个边框宽度。
+        float half = m_borderWidth * 0.5f;
 
-    // 如果你在头文件里定义了 setBorderWidth, 最好将其存下来用于绘制
-    // 下面假设使用样式属性 m_borderColor 和 Yoga 布局属性
-    float yogaBorder = YGNodeLayoutGetBorder(m_ygNode, YGEdgeLeft); // 获取计算后的边框宽
-
-    if (yogaBorder > 0 && ((m_borderColor >> 24) & 0xFF)) {
-        float half = yogaBorder * 0.5f;
         nvgBeginPath(vg);
-        nvgRoundedRect(vg, half, half, w - yogaBorder, h - yogaBorder, std::max(0.0f, m_borderRadius - half));
+        if (m_borderRadius > 0) {
+            // 圆角也要相应收缩，防止内部圆角异常
+            float innerRadius = std::max(0.0f, m_borderRadius - half);
+            nvgRoundedRect(vg, half, half, w - m_borderWidth, h - m_borderWidth, innerRadius);
+        } else {
+            nvgRect(vg, half, half, w - m_borderWidth, h - m_borderWidth);
+        }
+
         nvgStrokeColor(vg, colorToNVG(m_borderColor));
-        nvgStrokeWidth(vg, yogaBorder);
+        nvgStrokeWidth(vg, m_borderWidth);
         nvgStroke(vg);
     }
 }
