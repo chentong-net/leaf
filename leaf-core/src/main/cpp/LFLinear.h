@@ -5,41 +5,39 @@
 #ifndef LEAF_LFLINEAR_H
 #define LEAF_LFLINEAR_H
 
-#include "LFRenderNode.h"
+#include "LFNode.h"
 
-// 布局方向：水平或垂直
-enum class LFLinearDirection { Horizontal, Vertical };
+enum class LFOrientation { Vertical, Horizontal };
+enum class LFAlignment { Start, Center, End, Stretch, Baseline };
+enum class LFDistribution { Pack, SpaceBetween, SpaceAround, SpaceEvenly };
 
-// 对齐方式：主轴 (Justify) 和 交叉轴 (Align)
-enum class LFJustify { Start, Center, End, SpaceBetween, SpaceAround };
-enum class LFAlign { Auto, Start, Center, End, Stretch };
-
-class LFLinear : public LFRenderNode {
+/**
+ * 线性布局
+ */
+class LFLinear : public LFNode {
 public:
     LFLinear();
     virtual ~LFLinear() = default;
 
-    // 核心属性设置
-    void setDirection(LFLinearDirection dir);
-    void setJustifyContent(LFJustify justify);
-    void setAlignItems(LFAlign align);
+    void setOrientation(LFOrientation orientation);
+    void setGravity(LFAlignment main, LFAlignment cross);
+    void setDistribution(LFDistribution distribution);
+    void setSpacing(float spacing);
+    void setReverse(bool reverse); // 反转布局
 
-    void setGap(float gap);
-
-    void setBackgroundColor(uint32_t color);
-    void setBorderRadius(float radius);
-
-    // 快捷静态工厂
-    static std::shared_ptr<LFLinear> createHorizontal();
+    // 工厂方法
     static std::shared_ptr<LFLinear> createVertical();
-
-protected:
-    void onDraw(NVGcontext* vg) override;
+    static std::shared_ptr<LFLinear> createHorizontal();
 
 private:
-    LFLinearDirection m_direction = LFLinearDirection::Vertical;
-    uint32_t m_backgroundColor = 0x00000000; // 默认透明
-    float m_borderRadius = 0.0f;
+    // 核心逻辑：根据语义状态更新 Yoga 属性
+    void updateYogaLayout();
+
+    LFOrientation m_orientation = LFOrientation::Vertical;
+    LFAlignment m_mainAlign = LFAlignment::Start;
+    LFAlignment m_crossAlign = LFAlignment::Stretch;
+    LFDistribution m_distribution = LFDistribution::Pack;
+    bool m_isReverse = false;
 };
 
-#endif
+#endif // LEAF_LFLINEAR_H

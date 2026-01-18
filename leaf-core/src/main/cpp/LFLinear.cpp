@@ -1,84 +1,98 @@
-//
-// Created by Chen Tong on 2026/1/18.
-//
-
 #include "LFLinear.h"
 
 LFLinear::LFLinear() {
-    // 默认设置为垂直布局
-    YGNodeStyleSetFlexDirection(m_ygNode, YGFlexDirectionColumn);
+    // 初始化默认状态：垂直、起点对齐、拉伸
+    setOrientation(LFOrientation::Vertical);
+    updateYogaLayout();
 }
 
-void LFLinear::setDirection(LFLinearDirection dir) {
-    m_direction = dir;
-    YGNodeStyleSetFlexDirection(m_ygNode,
-                                dir == LFLinearDirection::Horizontal ? YGFlexDirectionRow : YGFlexDirectionColumn);
+void LFLinear::setOrientation(LFOrientation orientation) {
+    if (m_orientation == orientation) return;
+    m_orientation = orientation;
+    updateYogaLayout();
+}
+
+void LFLinear::setGravity(LFAlignment main, LFAlignment cross) {
+    if (m_mainAlign == main && m_crossAlign == cross) return;
+    m_mainAlign = main;
+    m_crossAlign = cross;
+    updateYogaLayout();
+}
+
+void LFLinear::setDistribution(LFDistribution distribution) {
+    if (m_distribution == distribution) return;
+    m_distribution = distribution;
+    updateYogaLayout();
+}
+
+void LFLinear::setSpacing(float spacing) {
+    // 语义化的间距设置，直接映射到 Yoga Gap
+    YGNodeStyleSetGap(getYGNode(), YGGutterAll, spacing);
     markDirty();
 }
 
-void LFLinear::setJustifyContent(LFJustify justify) {
-    switch (justify) {
-        case LFJustify::Start:        YGNodeStyleSetJustifyContent(m_ygNode, YGJustifyFlexStart); break;
-        case LFJustify::Center:       YGNodeStyleSetJustifyContent(m_ygNode, YGJustifyCenter); break;
-        case LFJustify::End:          YGNodeStyleSetJustifyContent(m_ygNode, YGJustifyFlexEnd); break;
-        case LFJustify::SpaceBetween: YGNodeStyleSetJustifyContent(m_ygNode, YGJustifySpaceBetween); break;
-        case LFJustify::SpaceAround:  YGNodeStyleSetJustifyContent(m_ygNode, YGJustifySpaceAround); break;
+void LFLinear::setReverse(bool reverse) {
+    if (m_isReverse == reverse) return;
+    m_isReverse = reverse;
+    updateYogaLayout();
+}
+
+void LFLinear::updateYogaLayout() {
+    // 1. 翻译 FlexDirection (考虑 Orientation 和 Reverse)
+    if (m_orientation == LFOrientation::Vertical) {
+        setFlexDirection(m_isReverse ? YGFlexDirectionColumnReverse : YGFlexDirectionColumn);
+    } else {
+        setFlexDirection(m_isReverse ? YGFlexDirectionRowReverse : YGFlexDirectionRow);
     }
-    markDirty();
-}
 
-void LFLinear::setAlignItems(LFAlign align) {
-    switch (align) {
-        case LFAlign::Start:   YGNodeStyleSetAlignItems(m_ygNode, YGAlignFlexStart); break;
-        case LFAlign::Center:  YGNodeStyleSetAlignItems(m_ygNode, YGAlignCenter); break;
-        case LFAlign::End:     YGNodeStyleSetAlignItems(m_ygNode, YGAlignFlexEnd); break;
-        case LFAlign::Stretch: YGNodeStyleSetAlignItems(m_ygNode, YGAlignStretch); break;
-        default:               YGNodeStyleSetAlignItems(m_ygNode, YGAlignAuto); break;
+    // 2. 翻译 Main Axis Alignment (JustifyContent)
+    YGJustify justify = YGJustifyFlexStart;
+
+    // 优先级：Distribution (分布) > Gravity (重力/对齐)
+    if (m_distribution != LFDistribution::Pack) {
+        switch (m_distribution) {
+            case LFDistribution::SpaceBetween: justify = YGJustifySpaceBetween; break;
+            case LFDistribution::SpaceAround:  justify = YGJustifySpaceAround; break;
+            case LFDistribution::SpaceEvenly:  justify = YGJustifySpaceEvenly; break;
+            default: break;
+        }
+    } else {
+        // 紧凑模式下，根据 MainGravity 决定
+        // 注意：Reverse 模式下，Start/End 的视觉方向需要反转语义，以符合人类直觉
+        switch (m_mainAlign) {
+            case LFAlignment::Start:
+                justify = m_isReverse ? YGJustifyFlexEnd : YGJustifyFlexStart;
+                break;
+            case LFAlignment::Center:
+                justify = YGJustifyCenter;
+                break;
+            case LFAlignment::End:
+                justify = m_isReverse ? YGJustifyFlexStart : YGJustifyFlexEnd;
+                break;
+            default: justify = YGJustifyFlexStart; break;
+        }
     }
-    markDirty();
+    setJustifyContent(justify);
+
+    // 3. 翻译 Cross Axis Alignment (AlignItems)
+    YGAlign align = YGAlignStretch;
+    switch (m_crossAlign) {
+        case LFAlignment::Start:    align = YGAlignFlexStart; break;
+        case LFAlignment::Center:   align = YGAlignCenter; break;
+        case LFAlignment::End:      align = YGAlignFlexEnd; break;
+        case LFAlignment::Stretch:  align = YGAlignStretch; break;
+        case LFAlignment::Baseline: align = YGAlignBaseline; break;
+    }
+    setAlignItems(align);
 }
 
-void LFLinear::setGap(float gap) {
-    // 同时设置行间距和列间距，确保在 Row 或 Column 下都生效
-    YGNodeStyleSetGap(m_ygNode, YGGutterAll, gap);
-    markDirty();
-}
-
-void LFLinear::setBackgroundColor(uint32_t color) {
-    m_backgroundColor = color;
-    markDirty(); // 背景色改变仅需重绘
-}
-
-void LFLinear::setBorderRadius(float radius) {
-    m_borderRadius = radius;
-    markDirty();
-}
-
-std::shared_ptr<LFLinear> LFLinear::createHorizontal() {
-    auto node = std::make_shared<LFLinear>();
-    node->setDirection(LFLinearDirection::Horizontal);
-    return node;
-}
-
+// 工厂方法
 std::shared_ptr<LFLinear> LFLinear::createVertical() {
     return std::make_shared<LFLinear>();
 }
 
-void LFLinear::onDraw(NVGcontext* vg) {
-    float w = getLayoutWidth();  // 获取 Yoga 计算出的宽度
-    float h = getLayoutHeight(); // 获取 Yoga 计算出的高度
-
-    if (w <= 0 || h <= 0) return;
-
-    // 1. 绘制背景色与圆角
-    if ((m_backgroundColor >> 24) & 0xFF) { // 如果 Alpha 不为 0
-        nvgBeginPath(vg);
-        if (m_borderRadius > 0) {
-            nvgRoundedRect(vg, 0, 0, w, h, m_borderRadius);
-        } else {
-            nvgRect(vg, 0, 0, w, h);
-        }
-        nvgFillColor(vg, colorToNVG(m_backgroundColor));
-        nvgFill(vg);
-    }
+std::shared_ptr<LFLinear> LFLinear::createHorizontal() {
+    auto node = std::make_shared<LFLinear>();
+    node->setOrientation(LFOrientation::Horizontal);
+    return node;
 }
