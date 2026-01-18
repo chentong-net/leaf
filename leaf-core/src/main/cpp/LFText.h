@@ -7,7 +7,8 @@
 
 #include "LFNode.h"
 
-enum class LFTextAlign { Left, Center, Right };
+enum class LFTextHAlign { Left, Center, Right };
+enum class LFTextVAlign { Top, Center, Bottom };
 
 /**
  * 文本组件
@@ -23,7 +24,8 @@ public:
     void setTextColor(uint32_t color);
     void setLineHeight(float lineHeight);
     void setFontFamily(const std::string& family);
-    void setTextAlign(LFTextAlign align);
+    void setTextHAlign(LFTextHAlign align);
+    void setTextVAlign(LFTextVAlign align);
 
     /**
      * 设置全局测量上下文
@@ -50,7 +52,8 @@ private:
     uint32_t m_textColor = 0xFF000000;
     float m_lineHeight = 1.2f;
     std::string m_fontFamily = "sans";
-    LFTextAlign m_textAlign = LFTextAlign::Left;
+    LFTextHAlign m_textHAlign = LFTextHAlign::Left;
+    LFTextVAlign m_textVAlign = LFTextVAlign::Top;
 
     // 静态测量上下文
     static NVGcontext* s_measureContext;

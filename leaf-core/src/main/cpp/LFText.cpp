@@ -51,9 +51,15 @@ void LFText::setFontFamily(const std::string &family) {
     markDirty();
 }
 
-void LFText::setTextAlign(LFTextAlign align) {
-    if (m_textAlign == align) return;
-    m_textAlign = align;
+void LFText::setTextHAlign(LFTextHAlign align) {
+    if (m_textHAlign == align) return;
+    m_textHAlign = align;
+    markDirty();
+}
+
+void LFText::setTextVAlign(LFTextVAlign align) {
+    if (m_textVAlign == align) return;
+    m_textVAlign = align;
     markDirty();
 }
 
@@ -74,12 +80,50 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
         return {0, 0};
     }
 
+    // 计算 Padding 和 Border
+    float pl = YGNodeLayoutGetPadding(node, YGEdgeLeft);
+    float pr = YGNodeLayoutGetPadding(node, YGEdgeRight);
+    float pt = YGNodeLayoutGetPadding(node, YGEdgeTop);
+    float pb = YGNodeLayoutGetPadding(node, YGEdgeBottom);
+
+    float bl = YGNodeLayoutGetBorder(node, YGEdgeLeft);
+    float br = YGNodeLayoutGetBorder(node, YGEdgeRight);
+    float bt = YGNodeLayoutGetBorder(node, YGEdgeTop);
+    float bb = YGNodeLayoutGetBorder(node, YGEdgeBottom);
+
+    float extraW = pl + pr + bl + br;
+    float extraH = pt + pb + bt + bb;
+
     // 2. 准备测量环境
     nvgSave(vg);
     nvgFontSize(vg, textNode->m_fontSize);
     nvgFontFace(vg, textNode->m_fontFamily.c_str());
     nvgTextLineHeight(vg, textNode->m_lineHeight);
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+    int alignFlag;
+    switch (textNode->m_textHAlign) {
+        case LFTextHAlign::Left:
+            alignFlag = NVG_ALIGN_LEFT;
+            break;
+        case LFTextHAlign::Center:
+            alignFlag = NVG_ALIGN_CENTER;
+            break;
+        case LFTextHAlign::Right:
+            alignFlag = NVG_ALIGN_RIGHT;
+            break;
+    }
+
+    switch (textNode->m_textVAlign) {
+        case LFTextVAlign::Top:
+            alignFlag |= NVG_ALIGN_TOP;
+            break;
+        case LFTextVAlign::Center:
+            alignFlag |= NVG_ALIGN_MIDDLE;
+            break;
+        case LFTextVAlign::Bottom:
+            alignFlag |= NVG_ALIGN_BOTTOM;
+            break;
+    }
+    nvgTextAlign(vg, alignFlag);
 
     float bounds[4];
     YGSize result = {0, 0};
@@ -106,6 +150,9 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
     }
 
     nvgRestore(vg);
+
+    result.width += extraW;
+    result.height += extraH;
     return result;
 }
 
@@ -129,37 +176,54 @@ void LFText::onDrawContent(NVGcontext *vg) {
 
     // 内容区域的可用宽度
     float layoutW = getLayoutWidth();
+    float layoutH = getLayoutHeight();
     float contentW = layoutW - contentX - YGNodeLayoutGetPadding(getYGNode(), YGEdgeRight) -
                      YGNodeLayoutGetBorder(getYGNode(), YGEdgeRight);
+    float contentH = layoutH - contentY - YGNodeLayoutGetPadding(getYGNode(), YGEdgeBottom) - YGNodeLayoutGetBorder(getYGNode(), YGEdgeBottom);
 
     if (contentW <= 0) return;
 
     // 3. 根据对齐方式计算绘制锚点
-    int alignFlag = NVG_ALIGN_TOP; // 垂直总是 Top
-    float drawX = 0;
-
-    switch (m_textAlign) {
-        case LFTextAlign::Left:
-            alignFlag |= NVG_ALIGN_LEFT;
-            drawX = contentX; // 从左边界开始
+    int alignFlag;
+    switch (m_textHAlign) {
+        case LFTextHAlign::Left:
+            alignFlag = NVG_ALIGN_LEFT;
             break;
-
-        case LFTextAlign::Center:
-            alignFlag |= NVG_ALIGN_CENTER;
-            drawX = contentX + (contentW * 0.5f); // 从中心点开始
+        case LFTextHAlign::Center:
+            alignFlag = NVG_ALIGN_CENTER;
             break;
+        case LFTextHAlign::Right:
+            alignFlag = NVG_ALIGN_RIGHT;
+            break;
+    }
 
-        case LFTextAlign::Right:
-            alignFlag |= NVG_ALIGN_RIGHT;
-            drawX = contentX + contentW; // 从右边界开始
+    // TODO: 发现 NanoVG 有 Bug，竖直方向 textAlign 设置会出问题，故这里做补充逻辑
+    float bounds[4];
+    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP); // 测量时总是用 Top
+    nvgTextBoxBounds(vg, 0, 0, contentW, m_text.c_str(), nullptr, bounds);
+    float textHeight = bounds[3] - bounds[1];
+    // 根据对齐方式计算 Y 轴偏移量
+    float drawY = contentY;
+    switch (m_textVAlign) {
+        case LFTextVAlign::Top:
+            drawY = contentY;
+            break;
+        case LFTextVAlign::Center:
+            // 居中公式：起始点 + (容器高 - 内容高)/2
+            drawY = contentY + (contentH - textHeight) * 0.5f;
+            break;
+        case LFTextVAlign::Bottom:
+            // 底部公式：起始点 + (容器高 - 内容高)
+            drawY = contentY + (contentH - textHeight);
             break;
     }
 
     // 4. 应用对齐并绘制
-    nvgTextAlign(vg, alignFlag);
+    // 均以 Top 为基准
+    nvgTextAlign(vg, alignFlag | NVG_ALIGN_TOP);
 
     // 3. 绘制文本
     // 使用 nvgTextBox 可以保证文字在 layoutW 范围内自动换行
     // 坐标 (0,0) 即可，因为 LFNode::render 已经帮我们 translate 到了正确位置
-    nvgTextBox(vg, drawX, contentY, contentW, m_text.c_str(), nullptr);
+    nvgTextBox(vg, contentX, drawY, contentW, m_text.c_str(), nullptr);
 }
