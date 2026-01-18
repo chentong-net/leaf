@@ -5,36 +5,39 @@
 #ifndef LEAF_LFTEXT_H
 #define LEAF_LFTEXT_H
 
-#include "LFRenderNode.h"
+#include "LFNode.h"
+
+enum class LFTextAlign { Left, Center, Right };
 
 /**
- * LFText 是 Leaf 引擎的生产级文本组件。
- * 它直接继承自 LFRenderNode 以保证最轻量级的内存足迹。
+ * 文本组件
  */
-class LFText : public LFRenderNode {
+class LFText : public LFNode {
 public:
     LFText();
     virtual ~LFText() = default;
 
-    // --- 生产级属性设置 ---
+    // 文本属性设置
     void setText(const std::string& text);
     void setFontSize(float size);
     void setTextColor(uint32_t color);
     void setLineHeight(float lineHeight);
     void setFontFamily(const std::string& family);
+    void setTextAlign(LFTextAlign align);
 
     /**
      * 设置全局测量上下文
-     * 生产环境必备：确保 Yoga 在计算布局时能准确测量文字边界
+     * 用于在 Yoga 布局阶段（此时可能还没有 render 发生）获取 NanoVG 上下文进行测量
      */
     static void setMeasureContext(NVGcontext* vg) { s_measureContext = vg; }
 
 protected:
     /**
-     * 落地具体的文本绘制
-     * 采用 nvgTextBox 以支持自动换行
+     * 重写内容绘制
+     * 这里不需要 nvgTranslate，也不需要画背景，基类都做好了。
+     * 我们只需要在 (0,0) 处开始画字即可。
      */
-    void onDraw(NVGcontext* vg) override;
+    void onDrawContent(NVGcontext* vg) override;
 
 private:
     // Yoga 测量回调函数
@@ -46,7 +49,8 @@ private:
     float m_fontSize = 16.0f;
     uint32_t m_textColor = 0xFF000000;
     float m_lineHeight = 1.2f;
-    std::string m_fontFamily = "sans"; // 默认对应加载的字体名
+    std::string m_fontFamily = "sans";
+    LFTextAlign m_textAlign = LFTextAlign::Left;
 
     // 静态测量上下文
     static NVGcontext* s_measureContext;

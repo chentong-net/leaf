@@ -108,24 +108,24 @@ public:
 
     // 供子类使用
     YGNodeRef getYGNode() const { return m_ygNode; }
-
-protected:
-    // 子类实现具体内容绘制
-    // 内容绘制在背景之上，子视图之下
-    virtual void onDrawContent(NVGcontext* vg) {}
-
     // 获取布局结果
     float getLayoutX() const { return YGNodeLayoutGetLeft(m_ygNode); }
     float getLayoutY() const { return YGNodeLayoutGetTop(m_ygNode); }
     float getLayoutWidth() const { return YGNodeLayoutGetWidth(m_ygNode); }
     float getLayoutHeight() const { return YGNodeLayoutGetHeight(m_ygNode); }
 
+    static NVGcolor colorToNVG(uint32_t argb);
+
+protected:
+    // 子类实现具体内容绘制
+    // 内容绘制在背景之上，子视图之下
+    virtual void onDrawContent(NVGcontext* vg) {}
+
 private:
     // 内部绘制实现
     void drawShadow(NVGcontext* vg, float w, float h);
     void drawBackground(NVGcontext* vg, float w, float h);
     void drawBorder(NVGcontext* vg, float w, float h);
-    static NVGcolor colorToNVG(uint32_t argb);
 
     // Core Data
     YGNodeRef m_ygNode;
