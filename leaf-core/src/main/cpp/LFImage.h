@@ -5,52 +5,47 @@
 #ifndef LEAF_LFIMAGE_H
 #define LEAF_LFIMAGE_H
 
-#include "LFRenderNode.h"
+#include "LFNode.h"
 #include "LFResourceProvider.h"
 
-/**
- * 填充模式
- */
-enum class LFImageFit {
-    Fill,       // 拉伸填充，不保持比例
-    Contain,    // 保持比例，缩放到容器内完全显示
-    Cover       // 保持比例，缩放并裁剪以填充容器
-};
+enum class LFImageFit { Fill, Contain, Cover };
 
-class LFImage : public LFRenderNode {
+/**
+ * 图片组件
+ */
+class LFImage : public LFNode {
 public:
     LFImage();
     virtual ~LFImage();
 
-    // 设置源
-    void setSrc(const std::string& src);
-
-    // 设置填充模式
-    void setFit(LFImageFit fit);
+    void setSrc(const std::string& src); // 设置图片源
+    void setFit(LFImageFit fit); // 设置填充模式
 
 protected:
-    void onDraw(NVGcontext* vg) override;
+    void onDrawContent(NVGcontext* vg) override;
 
 private:
     /**
      * 内部加载逻辑
      */
     void startLoading();
+    static YGSize measure(YGNodeRef node, float width, YGMeasureMode widthMode,
+                          float height, YGMeasureMode heightMode);
 
     std::string m_src;
     LFImageFit m_fit = LFImageFit::Contain;
 
-    // 渲染相关
-    int m_imageHandle = 0;       // NanoVG 纹理句柄
-    std::string m_loadedSrc;     // 当前已加载完成的资源标识
-
-    // 图片原始尺寸 (加载后获取)
+    // 渲染状态
+    int m_imageHandle = 0;
     int m_imgWidth = 0;
     int m_imgHeight = 0;
 
-    // 状态标记
-    bool m_isPending = false;
+    // 异步加载状态
     std::shared_ptr<LFImageData> m_pendingData = nullptr;
+    bool m_needUpload = false;
+
+    // 加载请求 ID，解决异步竞态问题
+    int m_loadRequestId = 0;
 };
 
-#endif
+#endif // LEAF_LFIMAGE_H
