@@ -138,6 +138,10 @@ void LFNode::setMargin(YGEdge edge, float margin) { SET_YOGA_VAL(YGNodeStyleSetM
 
 void LFNode::setPositionType(YGPositionType type) { SET_YOGA_VAL(YGNodeStyleSetPositionType, type); }
 void LFNode::setPosition(YGEdge edge, float value) { SET_YOGA_VAL(YGNodeStyleSetPosition, edge, value); }
+void LFNode::setPositionPercent(YGEdge edge, float percent) {
+    YGNodeStyleSetPositionPercent(m_ygNode, edge, percent);
+    markDirty();
+}
 void LFNode::setDisplay(YGDisplay display) { SET_YOGA_VAL(YGNodeStyleSetDisplay, display); }
 void LFNode::setDirection(YGDirection direction) { SET_YOGA_VAL(YGNodeStyleSetDirection, direction); }
 
@@ -190,6 +194,15 @@ void LFNode::setTranslate(float x, float y) {
     markDirty();
 }
 
+void LFNode::setTranslatePercent(float xPercent, float yPercent) {
+    if (m_transform.translatePercentX == xPercent &&
+        m_transform.translatePercentY == yPercent) return;
+
+    m_transform.translatePercentX = xPercent;
+    m_transform.translatePercentY = yPercent;
+    markDirty();
+}
+
 // ==========================================
 // 引擎管线核心
 // ==========================================
@@ -229,8 +242,11 @@ void LFNode::render(NVGcontext* vg) {
 
     // 3. 应用视觉变换 (Transform: Translate -> Rotate -> Scale)
     // 变换原点默认中心
-    if (m_transform.translateX != 0 || m_transform.translateY != 0)
-        nvgTranslate(vg, m_transform.translateX, m_transform.translateY);
+    float tx = m_transform.translateX;
+    float ty = m_transform.translateY;
+    tx += w * (m_transform.translatePercentX / 100.0f);
+    ty += h * (m_transform.translatePercentY / 100.0f);
+    if (tx != 0 || ty != 0) nvgTranslate(vg, tx, ty);
 
     if (m_transform.rotate != 0 || m_transform.scaleX != 1.0f || m_transform.scaleY != 1.0f) {
         float cx = w * 0.5f;
@@ -252,14 +268,14 @@ void LFNode::render(NVGcontext* vg) {
     // 6. 绘制背景
     drawBackground(vg, w, h);
 
-    // 7. 绘制内容 (子类如 Text/Image)
-    onDrawContent(vg);
-
     // 8. 裁剪 (Overflow: Hidden)
     if (m_masksToBounds) {
         // IntersectScissor 是基于当前 Transform 的
         nvgIntersectScissor(vg, 0, 0, w, h);
     }
+
+    // 7. 绘制内容 (子类如 Text/Image)
+    onDrawContent(vg);
 
     // 9. 递归绘制子节点
     for (auto& child : m_children) {

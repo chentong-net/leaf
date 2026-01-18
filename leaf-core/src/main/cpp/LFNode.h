@@ -17,6 +17,8 @@ struct LFTransform {
     float rotate = 0.0f; // 角度制
     float translateX = 0.0f;
     float translateY = 0.0f;
+    float translatePercentX = 0.0f;
+    float translatePercentY = 0.0f;
 };
 
 // 阴影属性结构体
@@ -76,6 +78,7 @@ public:
     // 定位
     void setPositionType(YGPositionType type);
     void setPosition(YGEdge edge, float value);
+    void setPositionPercent(YGEdge edge, float percent);
 
     // 显示/隐藏
     void setDisplay(YGDisplay display);
@@ -97,6 +100,7 @@ public:
     void setScale(float x, float y);
     void setRotate(float angle); // 角度
     void setTranslate(float x, float y);
+    void setTranslatePercent(float xPercent, float yPercent);
 
     // 裁剪
     void setMasksToBounds(bool masks); // overflow: hidden
