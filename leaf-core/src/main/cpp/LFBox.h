@@ -9,6 +9,10 @@
 
 // 对齐方式
 enum class LFBoxAlign {
+    TopCenter,
+    CenterLeft,
+    CenterRight,
+    BottomCenter,
     TopLeft,
     TopRight,
     BottomLeft,

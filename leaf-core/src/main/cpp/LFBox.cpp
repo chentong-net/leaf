@@ -66,6 +66,47 @@ void LFBox::addChild(const LFNode::Ptr& child, LFBoxAlign align, float offsetX, 
                 child->setTranslate(offsetX, offsetY);
             }
             break;
+        case LFBoxAlign::TopCenter:
+            child->setPositionPercent(YGEdgeLeft, 50.0f);
+            child->setPosition(YGEdgeTop, 0.0f);
+
+            child->setTranslatePercent(-50.0f, 0.0f);
+
+            // 应用额外的偏移
+            if (offsetX != 0 || offsetY != 0) {
+                child->setTranslate(offsetX, offsetY);
+            }
+            break;
+        case LFBoxAlign::BottomCenter:
+            child->setPositionPercent(YGEdgeLeft, 50.0f);
+            child->setPosition(YGEdgeBottom, 0.0f);
+
+            child->setTranslatePercent(-50.0f, 0.0f);
+
+            if (offsetX != 0 || offsetY != 0) {
+                child->setTranslate(offsetX, offsetY);
+            }
+            break;
+        case LFBoxAlign::CenterLeft:
+            child->setPosition(YGEdgeLeft, 0.0f);
+            child->setPositionPercent(YGEdgeTop, 0.0f);
+
+            child->setTranslatePercent(0.0f, -50.0f);
+
+            if (offsetX != 0 || offsetY != 0) {
+                child->setTranslate(offsetX, offsetY);
+            }
+            break;
+        case LFBoxAlign::CenterRight:
+            child->setPosition(YGEdgeRight, 0.0f);
+            child->setPositionPercent(YGEdgeTop, 0.0f);
+
+            child->setTranslatePercent(0.0f, -50.0f);
+
+            if (offsetX != 0 || offsetY != 0) {
+                child->setTranslate(offsetX, offsetY);
+            }
+            break;
     }
 }
 
