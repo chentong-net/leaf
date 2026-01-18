@@ -95,6 +95,7 @@ public:
 
     // 阴影
     void setShadow(float offsetX, float offsetY, float blur, float spread, uint32_t color);
+    void setRadius(float radius);
 
     // 变换
     void setScale(float x, float y);
@@ -117,6 +118,7 @@ public:
     float getLayoutY() const { return YGNodeLayoutGetTop(m_ygNode); }
     float getLayoutWidth() const { return YGNodeLayoutGetWidth(m_ygNode); }
     float getLayoutHeight() const { return YGNodeLayoutGetHeight(m_ygNode); }
+    float getRadius();
 
     static NVGcolor colorToNVG(uint32_t argb);
 

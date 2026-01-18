@@ -152,6 +152,12 @@ void LFNode::setBackgroundColor(uint32_t color) { SET_STYLE_VAL(m_backgroundColo
 void LFNode::setOpacity(float opacity) { SET_STYLE_VAL(m_opacity, std::clamp(opacity, 0.0f, 1.0f)); }
 void LFNode::setVisible(bool visible) { SET_STYLE_VAL(m_visible, visible); }
 void LFNode::setBorderRadius(float radius) { SET_STYLE_VAL(m_borderRadius, radius); }
+void LFNode::setRadius(float radius) {
+    setBorderRadius(radius);
+}
+float LFNode::getRadius() {
+    return m_borderRadius;
+}
 void LFNode::setMasksToBounds(bool masks) { SET_STYLE_VAL(m_masksToBounds, masks); }
 
 void LFNode::setBorder(float width, uint32_t color) {
