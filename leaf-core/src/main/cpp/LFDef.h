@@ -13,6 +13,8 @@ extern "C" {
 #include <algorithm>
 #include <memory>
 #include <cmath>
+#include <mutex>
+#include <cstdio>
 
 #ifdef __ANDROID__
 #include <android/log.h>
