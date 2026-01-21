@@ -102,6 +102,7 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
 
     float bounds[4];
     YGSize result = {0, 0};
+    const float WRAP_BUFFER = 1.0f; // 安全像素，避免计算得到浮点数后导致精度丢失，导致错误换行
 
     // 3. 根据 Yoga 的约束模式进行测量
     // nvgTextBoxBounds 用于多行文本测量 (支持自动换行)
@@ -114,13 +115,13 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
     } else if (widthMode == YGMeasureModeAtMost) {
         // 宽度受限 (最大不能超过 width)：尝试在该宽度下测量
         nvgTextBoxBounds(vg, 0, 0, width, textNode->m_text.c_str(), nullptr, bounds);
-        result.width = (float) ceil(bounds[2] - bounds[0]);
+        result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
         result.height = (float) ceil(bounds[3] - bounds[1]);
     } else {
         // 宽度无限 (undefined)：通常用单行测量，或者给予一个极大值
         // 这里使用 nvgTextBounds 测量单行自然宽度
         nvgTextBounds(vg, 0, 0, textNode->m_text.c_str(), nullptr, bounds);
-        result.width = (float) ceil(bounds[2] - bounds[0]);
+        result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
         result.height = (float) ceil(bounds[3] - bounds[1]);
     }
 
