@@ -7,9 +7,11 @@
 #define LEAF_LFGESTURERECOGNIZER_H
 
 #include "../event/LFEvent.h"
+#include "../event/LFGestureArena.h"
 #include <functional>
 #include <memory>
 #include <set>
+#include <map>
 
 // Gesture recognizer state
 enum class LFGestureState {
@@ -23,7 +25,8 @@ enum class LFGestureState {
 };
 
 // Base class for all gesture recognizers (abstract)
-class LFGestureRecognizer : public std::enable_shared_from_this<LFGestureRecognizer> {
+class LFGestureRecognizer : public std::enable_shared_from_this<LFGestureRecognizer>,
+                            public LFGestureArenaMember {
 public:
     using Ptr = std::shared_ptr<LFGestureRecognizer>;
     virtual ~LFGestureRecognizer() = default;
@@ -39,11 +42,16 @@ public:
     virtual void reset() {
         m_state = LFGestureState::Possible;
         m_trackingPointers.clear();
+        m_arenaEntries.clear();
     }
 
     // State access
     LFGestureState getState() const { return m_state; }
     bool isTracking() const { return !m_trackingPointers.empty(); }
+
+    // Arena interface (from LFGestureArenaMember)
+    void acceptGesture(int pointer) override;
+    void rejectGesture(int pointer) override;
 
 protected:
     // State update (called by subclasses)
@@ -56,8 +64,13 @@ protected:
         return m_trackingPointers.find(id) != m_trackingPointers.end();
     }
 
+    // Arena management
+    void addToArena(int pointer);
+    void resolve(int pointer, LFGestureDisposition disposition);
+
     LFGestureState m_state = LFGestureState::Possible;
     std::set<LFTouchID> m_trackingPointers;
+    std::map<int, std::shared_ptr<LFGestureArenaEntry>> m_arenaEntries;
 };
 
 // ==========================================

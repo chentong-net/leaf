@@ -4,8 +4,46 @@
 //
 
 #include "LFGestureRecognizer.h"
+#include "../event/LFGestureArena.h"
 #include <cmath>
 #include <algorithm>
+
+// ==========================================
+// Base Gesture Recognizer Implementation
+// ==========================================
+
+void LFGestureRecognizer::acceptGesture(int pointer) {
+    // Called when this recognizer wins the arena
+    // Subclasses can override to handle acceptance
+}
+
+void LFGestureRecognizer::rejectGesture(int pointer) {
+    // Called when this recognizer loses the arena
+    // Reset state
+    setState(LFGestureState::Failed);
+    stopTrackingPointer(pointer);
+}
+
+void LFGestureRecognizer::addToArena(int pointer) {
+    // Add this recognizer to the arena for the given pointer
+    auto& manager = LFGestureArenaManager::getInstance();
+    auto entry = manager.add(pointer, shared_from_this());
+    if (entry) {
+        m_arenaEntries[pointer] = entry;
+    }
+}
+
+void LFGestureRecognizer::resolve(int pointer, LFGestureDisposition disposition) {
+    // Resolve this recognizer's participation in the arena
+    auto it = m_arenaEntries.find(pointer);
+    if (it != m_arenaEntries.end()) {
+        it->second->resolve(disposition);
+    }
+
+    // Trigger arena sweep
+    auto& manager = LFGestureArenaManager::getInstance();
+    manager.sweep(pointer);
+}
 
 // ==========================================
 // Tap Gesture Recognizer Implementation
@@ -22,6 +60,7 @@ void LFTapGestureRecognizer::handleEvent(const LFTouchEvent& event) {
             if (isTracking()) {
                 // Already tracking another touch, fail
                 setState(LFGestureState::Failed);
+                resolve(touch->id, LFGestureDisposition::Rejected);
                 return;
             }
 
@@ -29,6 +68,9 @@ void LFTapGestureRecognizer::handleEvent(const LFTouchEvent& event) {
             m_startPosition = LFPoint(touch->x, touch->y);
             m_downTime = event.timestamp;
             setState(LFGestureState::Possible);
+
+            // Add to arena
+            addToArena(touch->id);
             break;
         }
 
@@ -40,6 +82,7 @@ void LFTapGestureRecognizer::handleEvent(const LFTouchEvent& event) {
             if (distance > m_maxTapDistance) {
                 // Moved too far, recognition failed
                 setState(LFGestureState::Failed);
+                resolve(touch->id, LFGestureDisposition::Rejected);
                 stopTrackingPointer(touch->id);
             }
             break;
@@ -54,6 +97,7 @@ void LFTapGestureRecognizer::handleEvent(const LFTouchEvent& event) {
             if (duration <= m_maxTapDuration && distance <= m_maxTapDistance) {
                 // Recognition successful
                 setState(LFGestureState::Recognized);
+                resolve(touch->id, LFGestureDisposition::Accepted);
 
                 // Check double tap
                 if (m_doubleTapEnabled) {
@@ -90,6 +134,7 @@ void LFTapGestureRecognizer::handleEvent(const LFTouchEvent& event) {
             } else {
                 // Recognition failed
                 setState(LFGestureState::Failed);
+                resolve(touch->id, LFGestureDisposition::Rejected);
             }
 
             stopTrackingPointer(touch->id);
@@ -99,6 +144,7 @@ void LFTapGestureRecognizer::handleEvent(const LFTouchEvent& event) {
         case LFTouchEventType::Cancel: {
             if (isTrackingPointer(touch->id)) {
                 setState(LFGestureState::Cancelled);
+                resolve(touch->id, LFGestureDisposition::Rejected);
                 stopTrackingPointer(touch->id);
             }
             break;
@@ -125,6 +171,7 @@ void LFLongPressGestureRecognizer::handleEvent(const LFTouchEvent& event) {
         case LFTouchEventType::Down: {
             if (isTracking()) {
                 setState(LFGestureState::Failed);
+                resolve(touch->id, LFGestureDisposition::Rejected);
                 return;
             }
 
@@ -133,6 +180,9 @@ void LFLongPressGestureRecognizer::handleEvent(const LFTouchEvent& event) {
             m_downTime = event.timestamp;
             m_triggered = false;
             setState(LFGestureState::Possible);
+
+            // Add to arena
+            addToArena(touch->id);
             break;
         }
 
@@ -144,6 +194,7 @@ void LFLongPressGestureRecognizer::handleEvent(const LFTouchEvent& event) {
             if (distance > m_maxMoveDistance) {
                 // Moved too far, fail
                 setState(LFGestureState::Failed);
+                resolve(touch->id, LFGestureDisposition::Rejected);
                 stopTrackingPointer(touch->id);
                 m_triggered = false;
             }
@@ -156,6 +207,7 @@ void LFLongPressGestureRecognizer::handleEvent(const LFTouchEvent& event) {
             if (!m_triggered) {
                 // Released before long press duration, fail
                 setState(LFGestureState::Failed);
+                resolve(touch->id, LFGestureDisposition::Rejected);
             } else {
                 setState(LFGestureState::Ended);
             }
@@ -168,6 +220,7 @@ void LFLongPressGestureRecognizer::handleEvent(const LFTouchEvent& event) {
         case LFTouchEventType::Cancel: {
             if (isTrackingPointer(touch->id)) {
                 setState(LFGestureState::Cancelled);
+                resolve(touch->id, LFGestureDisposition::Rejected);
                 stopTrackingPointer(touch->id);
                 m_triggered = false;
             }
@@ -183,6 +236,11 @@ void LFLongPressGestureRecognizer::update(double currentTime) {
     if (currentTime - m_downTime >= m_minPressDuration) {
         m_triggered = true;
         setState(LFGestureState::Recognized);
+
+        // Accept in arena (won over Tap)
+        for (auto id : m_trackingPointers) {
+            resolve(id, LFGestureDisposition::Accepted);
+        }
 
         // Trigger callback
         if (m_onLongPress) {
@@ -211,6 +269,7 @@ void LFPanGestureRecognizer::handleEvent(const LFTouchEvent& event) {
         case LFTouchEventType::Down: {
             if (isTracking()) {
                 setState(LFGestureState::Failed);
+                resolve(touch->id, LFGestureDisposition::Rejected);
                 return;
             }
 
@@ -221,6 +280,9 @@ void LFPanGestureRecognizer::handleEvent(const LFTouchEvent& event) {
             m_started = false;
             m_velocity = LFPoint(0, 0);
             setState(LFGestureState::Possible);
+
+            // Add to arena
+            addToArena(touch->id);
             break;
         }
 
@@ -239,6 +301,9 @@ void LFPanGestureRecognizer::handleEvent(const LFTouchEvent& event) {
                         m_started = true;
                         setState(LFGestureState::Began);
 
+                        // Accept in arena (won over Tap)
+                        resolve(touch->id, LFGestureDisposition::Accepted);
+
                         // Trigger start callback
                         if (m_onPanStart) {
                             LFPoint delta = currentPos - m_lastPosition;
@@ -247,6 +312,7 @@ void LFPanGestureRecognizer::handleEvent(const LFTouchEvent& event) {
                     } else {
                         // Direction mismatch, fail
                         setState(LFGestureState::Failed);
+                        resolve(touch->id, LFGestureDisposition::Rejected);
                         stopTrackingPointer(touch->id);
                         return;
                     }
@@ -285,6 +351,7 @@ void LFPanGestureRecognizer::handleEvent(const LFTouchEvent& event) {
                 }
             } else {
                 setState(LFGestureState::Failed);
+                resolve(touch->id, LFGestureDisposition::Rejected);
             }
 
             stopTrackingPointer(touch->id);
@@ -295,6 +362,7 @@ void LFPanGestureRecognizer::handleEvent(const LFTouchEvent& event) {
         case LFTouchEventType::Cancel: {
             if (isTrackingPointer(touch->id)) {
                 setState(LFGestureState::Cancelled);
+                resolve(touch->id, LFGestureDisposition::Rejected);
                 stopTrackingPointer(touch->id);
                 m_started = false;
             }

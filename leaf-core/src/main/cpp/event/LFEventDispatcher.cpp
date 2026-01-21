@@ -4,6 +4,7 @@
 //
 
 #include "LFEventDispatcher.h"
+#include "LFGestureArena.h"
 #include "../gesture/LFGestureRecognizer.h"
 #include <algorithm>
 
@@ -79,9 +80,12 @@ void LFEventDispatcher::dispatchTouchEvent(
         performDispatch(event, root);
     }
 
-    // 5. Cleanup (Up/Cancel events)
+    // 5. Close arena and cleanup (Up/Cancel events)
     if (type == LFTouchEventType::Up || type == LFTouchEventType::Cancel) {
+        auto& arenaManager = LFGestureArenaManager::getInstance();
         for (auto id : changedIDs) {
+            // Close arena for this pointer (no more members can join)
+            arenaManager.close(id);
             m_touchTargets.erase(id);
         }
     }
