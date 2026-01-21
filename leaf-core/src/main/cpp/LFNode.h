@@ -135,6 +135,8 @@ public:
     bool isVisible() const { return m_visible; }
     float getOpacity() const { return m_opacity; }
 
+    uint32_t getBackgroundColor() const { return m_backgroundColor; }
+
     // Touch/HitTest 控制（事件系统扩展）
     void setTouchEnabled(bool enabled) { m_touchEnabled = enabled; }
     bool isTouchEnabled() const { return m_touchEnabled; }
