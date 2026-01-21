@@ -392,3 +392,55 @@ void LFNode::setOnTouchCancel(TouchEventListener listener) {
 void LFNode::setOnInterceptTouchEvent(InterceptEventListener listener) {
     m_onInterceptTouchEvent = listener;
 }
+
+// ==========================================
+// Gesture Recognizers (Phase 2)
+// ==========================================
+
+#include "gesture/LFGestureRecognizer.h"
+
+void LFNode::addGestureRecognizer(std::shared_ptr<LFGestureRecognizer> recognizer) {
+    if (!recognizer) return;
+    m_gestureRecognizers.push_back(recognizer);
+}
+
+void LFNode::removeGestureRecognizer(std::shared_ptr<LFGestureRecognizer> recognizer) {
+    if (!recognizer) return;
+    auto it = std::find(m_gestureRecognizers.begin(), m_gestureRecognizers.end(), recognizer);
+    if (it != m_gestureRecognizers.end()) {
+        m_gestureRecognizers.erase(it);
+    }
+}
+
+void LFNode::clearGestureRecognizers() {
+    m_gestureRecognizers.clear();
+}
+
+void LFNode::setOnTap(TapCallback callback) {
+    auto recognizer = std::make_shared<LFTapGestureRecognizer>();
+    recognizer->setOnTap(callback);
+    addGestureRecognizer(recognizer);
+}
+
+void LFNode::setOnDoubleTap(TapCallback callback) {
+    auto recognizer = std::make_shared<LFTapGestureRecognizer>();
+    recognizer->setDoubleTapEnabled(true);
+    recognizer->setOnDoubleTap(callback);
+    addGestureRecognizer(recognizer);
+}
+
+void LFNode::setOnLongPress(LongPressCallback callback) {
+    auto recognizer = std::make_shared<LFLongPressGestureRecognizer>();
+    recognizer->setOnLongPress(callback);
+    addGestureRecognizer(recognizer);
+}
+
+void LFNode::setOnPan(PanUpdateCallback onUpdate,
+                      PanStartCallback onStart,
+                      PanEndCallback onEnd) {
+    auto recognizer = std::make_shared<LFPanGestureRecognizer>();
+    if (onUpdate) recognizer->setOnPanUpdate(onUpdate);
+    if (onStart) recognizer->setOnPanStart(onStart);
+    if (onEnd) recognizer->setOnPanEnd(onEnd);
+    addGestureRecognizer(recognizer);
+}

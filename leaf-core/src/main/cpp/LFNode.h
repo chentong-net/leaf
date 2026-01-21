@@ -11,6 +11,8 @@
 // Forward declarations
 class LFTouchEvent;
 class LFNode;
+class LFGestureRecognizer;
+struct LFPoint;
 
 // 变换属性结构体
 struct LFTransform {
@@ -153,6 +155,31 @@ public:
     TouchEventListener getOnTouchCancel() const { return m_onTouchCancel; }
     InterceptEventListener getOnInterceptTouchEvent() const { return m_onInterceptTouchEvent; }
 
+    // ==========================================
+    // Gesture Recognizers (阶段2：手势识别器)
+    // ==========================================
+
+    // Gesture callback types
+    using TapCallback = std::function<void(const LFPoint&)>;
+    using LongPressCallback = std::function<void(const LFPoint&)>;
+    using PanStartCallback = std::function<void(const LFPoint& delta, const LFPoint& velocity)>;
+    using PanUpdateCallback = std::function<void(const LFPoint& delta, const LFPoint& velocity)>;
+    using PanEndCallback = std::function<void(const LFPoint& delta, const LFPoint& velocity)>;
+
+    // Gesture recognizer management
+    void addGestureRecognizer(std::shared_ptr<LFGestureRecognizer> recognizer);
+    void removeGestureRecognizer(std::shared_ptr<LFGestureRecognizer> recognizer);
+    void clearGestureRecognizers();
+    const std::vector<std::shared_ptr<LFGestureRecognizer>>& getGestureRecognizers() const { return m_gestureRecognizers; }
+
+    // Convenience methods for common gestures
+    void setOnTap(TapCallback callback);
+    void setOnDoubleTap(TapCallback callback);
+    void setOnLongPress(LongPressCallback callback);
+    void setOnPan(PanUpdateCallback onUpdate,
+                  PanStartCallback onStart = nullptr,
+                  PanEndCallback onEnd = nullptr);
+
     static NVGcolor colorToNVG(uint32_t argb);
 
 protected:
@@ -194,6 +221,9 @@ private:
     TouchEventListener m_onTouchUp;
     TouchEventListener m_onTouchCancel;
     InterceptEventListener m_onInterceptTouchEvent;
+
+    // Gesture recognizers
+    std::vector<std::shared_ptr<LFGestureRecognizer>> m_gestureRecognizers;
 };
 
 #endif // LEAF_LFNODE_H

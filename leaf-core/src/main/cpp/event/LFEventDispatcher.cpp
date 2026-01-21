@@ -4,6 +4,7 @@
 //
 
 #include "LFEventDispatcher.h"
+#include "../gesture/LFGestureRecognizer.h"
 #include <algorithm>
 
 LFEventDispatcher& LFEventDispatcher::getInstance() {
@@ -174,7 +175,15 @@ void LFEventDispatcher::invokeListener(
 ) {
     if (!node) return;
 
-    // Call appropriate listener based on event type
+    // 1. Dispatch to gesture recognizers (Phase 2)
+    const auto& recognizers = node->getGestureRecognizers();
+    for (auto& recognizer : recognizers) {
+        if (recognizer) {
+            recognizer->handleEvent(event);
+        }
+    }
+
+    // 2. Call basic touch event listeners
     switch (event.type) {
         case LFTouchEventType::Down: {
             auto listener = node->getOnTouchDown();
@@ -199,6 +208,7 @@ void LFEventDispatcher::invokeListener(
     }
 }
 
+
 std::vector<std::shared_ptr<LFNode>> LFEventDispatcher::buildEventPath(
     std::shared_ptr<LFNode> root,
     std::shared_ptr<LFNode> target
@@ -213,4 +223,29 @@ std::vector<std::shared_ptr<LFNode>> LFEventDispatcher::buildEventPath(
     }
 
     return path;
+}
+
+void LFEventDispatcher::update(double currentTime, std::shared_ptr<LFNode> root) {
+    if (!root) return;
+
+    // Recursively update all gesture recognizers in the tree
+    updateNodeGestures(root, currentTime);
+}
+
+void LFEventDispatcher::updateNodeGestures(std::shared_ptr<LFNode> node, double currentTime) {
+    if (!node) return;
+
+    // Update gesture recognizers for this node
+    const auto& recognizers = node->getGestureRecognizers();
+    for (auto& recognizer : recognizers) {
+        if (recognizer) {
+            recognizer->update(currentTime);
+        }
+    }
+
+    // Recursively update children
+    const auto& children = node->getChildren();
+    for (const auto& child : children) {
+        updateNodeGestures(child, currentTime);
+    }
 }

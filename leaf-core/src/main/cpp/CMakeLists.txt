@@ -63,6 +63,9 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         # Event system (Phase 1: Basic touch events)
         event/LFHitTest.cpp
         event/LFEventDispatcher.cpp
+
+        # Gesture system (Phase 2: Gesture recognizers)
+        gesture/LFGestureRecognizer.cpp
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE

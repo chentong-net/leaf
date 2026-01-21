@@ -32,6 +32,9 @@ public:
         std::shared_ptr<LFNode> root
     );
 
+    // Update gesture recognizers (for LongPress timing)
+    void update(double currentTime, std::shared_ptr<LFNode> root);
+
 private:
     LFEventDispatcher() = default;
     ~LFEventDispatcher() = default;
@@ -55,6 +58,9 @@ private:
         std::shared_ptr<LFNode> root,
         std::shared_ptr<LFNode> target
     );
+
+    // Update gesture recognizers recursively
+    void updateNodeGestures(std::shared_ptr<LFNode> node, double currentTime);
 
     // Touch point state tracking
     std::map<LFTouchID, std::weak_ptr<LFNode>> m_touchTargets;  // Touch point → target node

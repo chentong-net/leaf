@@ -3,6 +3,8 @@
 //
 
 #include "LFEngine.h"
+#include "event/LFEventDispatcher.h"
+#include <chrono>
 
 LFEngine& LFEngine::getInstance() {
     static LFEngine instance;
@@ -35,10 +37,21 @@ void LFEngine::setRoot(LFNode::Ptr root) {
 }
 
 void LFEngine::update(float dt) {
-    // 1. 处理动画系统 (TODO: LFAnimator::update(dt))
-    // 2. 处理定时器 (TODO: LFTimer::update(dt))
-    // 3. 执行 JS 里的 requestAnimationFrame
+    // 1. Update gesture recognizers (for LongPress timing)
+    if (m_rootNode) {
+        auto currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+        ).count() / 1000.0;  // Convert to seconds
+
+        auto& dispatcher = LFEventDispatcher::getInstance();
+        dispatcher.update(currentTime, m_rootNode);
+    }
+
+    // 2. 处理动画系统 (TODO: LFAnimator::update(dt))
+    // 3. 处理定时器 (TODO: LFTimer::update(dt))
+    // 4. 执行 JS 里的 requestAnimationFrame
 }
+
 
 void LFEngine::render() {
     if (!m_vg || !m_rootNode) return;

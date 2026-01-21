@@ -51,8 +51,13 @@ void leaf_update_size(int w, int h, float d) {
 }
 
 void leaf_render() {
+    // Update logic (gesture timing, etc.)
+    LFEngine::getInstance().update(0.016f);  // Assume 60fps (~16ms)
+
+    // Render frame
     LFEngine::getInstance().render();
 }
+
 
 // 辅助函数：快速创建文本节点
 std::shared_ptr<LFText> createText(const std::string& content, float fontSize, uint32_t color, bool isBold = false) {
