@@ -30,13 +30,12 @@ std::string read_asset_js(AAssetManager* mgr, const char* path) {
 
 extern "C" JNIEXPORT void JNICALL
 Java_net_chentong_leaf_core_LeafRenderer_nativeOnSurfaceCreated(JNIEnv* env, jobject thiz, jobject asset_mgr) {
-    // 初始化完成后立即执行一次 JS 脚本
     AAssetManager* mgr = AAssetManager_fromJava(env, asset_mgr);
     auto asset_loader = [mgr](const char* path) -> std::string {
         return read_asset_js(mgr, path);
     };
     leaf_init(asset_loader);
-    std::string js_code = read_asset_js(mgr, "main.js");
+    std::string js_code = "";
     if (!js_code.empty()) {
         leaf_eval_js(js_code.c_str());
     }
