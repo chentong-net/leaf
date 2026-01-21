@@ -368,3 +368,27 @@ void LFNode::drawBorder(NVGcontext* vg, float w, float h) {
 NVGcolor LFNode::colorToNVG(uint32_t c) {
     return nvgRGBA((c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF, (c >> 24) & 0xFF);
 }
+
+// ==========================================
+// Event Listeners (Phase 1: Basic touch events)
+// ==========================================
+
+void LFNode::setOnTouchDown(TouchEventListener listener) {
+    m_onTouchDown = listener;
+}
+
+void LFNode::setOnTouchMove(TouchEventListener listener) {
+    m_onTouchMove = listener;
+}
+
+void LFNode::setOnTouchUp(TouchEventListener listener) {
+    m_onTouchUp = listener;
+}
+
+void LFNode::setOnTouchCancel(TouchEventListener listener) {
+    m_onTouchCancel = listener;
+}
+
+void LFNode::setOnInterceptTouchEvent(InterceptEventListener listener) {
+    m_onInterceptTouchEvent = listener;
+}

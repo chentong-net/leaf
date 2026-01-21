@@ -6,8 +6,10 @@
 #define LEAF_LFNODE_H
 
 #include "LFDef.h"
+#include <functional>
 
-// 预声明
+// Forward declarations
+class LFTouchEvent;
 class LFNode;
 
 // 变换属性结构体
@@ -33,6 +35,10 @@ struct LFShadow {
 class LFNode : public std::enable_shared_from_this<LFNode> {
 public:
     using Ptr = std::shared_ptr<LFNode>;
+
+    // Event listener types
+    using TouchEventListener = std::function<void(const LFTouchEvent&)>;
+    using InterceptEventListener = std::function<bool(const LFTouchEvent&)>;
 
     LFNode();
     virtual ~LFNode();
@@ -120,6 +126,33 @@ public:
     float getLayoutHeight() const { return YGNodeLayoutGetHeight(m_ygNode); }
     float getRadius();
 
+    // 获取变换（供 HitTest 使用）
+    const LFTransform& getTransform() const { return m_transform; }
+
+    // 可见性检查
+    bool isVisible() const { return m_visible; }
+    float getOpacity() const { return m_opacity; }
+
+    // Touch/HitTest 控制（事件系统扩展）
+    void setTouchEnabled(bool enabled) { m_touchEnabled = enabled; }
+    bool isTouchEnabled() const { return m_touchEnabled; }
+    void setHitTestEnabled(bool enabled) { m_hitTestEnabled = enabled; }
+    bool isHitTestEnabled() const { return m_hitTestEnabled; }
+
+    // Event listeners (阶段1：基础触摸事件)
+    void setOnTouchDown(TouchEventListener listener);
+    void setOnTouchMove(TouchEventListener listener);
+    void setOnTouchUp(TouchEventListener listener);
+    void setOnTouchCancel(TouchEventListener listener);
+    void setOnInterceptTouchEvent(InterceptEventListener listener);
+
+    // Internal: Get event listeners (used by EventDispatcher)
+    TouchEventListener getOnTouchDown() const { return m_onTouchDown; }
+    TouchEventListener getOnTouchMove() const { return m_onTouchMove; }
+    TouchEventListener getOnTouchUp() const { return m_onTouchUp; }
+    TouchEventListener getOnTouchCancel() const { return m_onTouchCancel; }
+    InterceptEventListener getOnInterceptTouchEvent() const { return m_onInterceptTouchEvent; }
+
     static NVGcolor colorToNVG(uint32_t argb);
 
 protected:
@@ -150,6 +183,17 @@ private:
 
     LFShadow m_shadow;
     LFTransform m_transform;
+
+    // Event system
+    bool m_touchEnabled = true;      // Can receive touch events
+    bool m_hitTestEnabled = true;    // Participate in HitTest
+
+    // Event listeners
+    TouchEventListener m_onTouchDown;
+    TouchEventListener m_onTouchMove;
+    TouchEventListener m_onTouchUp;
+    TouchEventListener m_onTouchCancel;
+    InterceptEventListener m_onInterceptTouchEvent;
 };
 
 #endif // LEAF_LFNODE_H

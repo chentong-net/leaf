@@ -59,6 +59,10 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         LFImage.cpp
         LFNode.cpp
         LFText.cpp
+
+        # Event system (Phase 1: Basic touch events)
+        event/LFHitTest.cpp
+        event/LFEventDispatcher.cpp
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
