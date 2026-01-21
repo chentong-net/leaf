@@ -36,6 +36,7 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
     // New: Touch event dispatch to native
     private native void nativeDispatchTouchEvent(
         int action,
+        int actionIndex,
         int pointerCount,
         int[] pointerIds,
         float[] x,
@@ -105,6 +106,7 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
      */
     private void dispatchTouchEventToNative(MotionEvent event) {
         int action = event.getActionMasked();
+        int actionIndex = event.getActionIndex();
         int pointerCount = event.getPointerCount();
 
         // Prepare data arrays
@@ -125,6 +127,7 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
         // Call JNI
         nativeDispatchTouchEvent(
             action,
+            actionIndex,
             pointerCount,
             pointerIds,
             x, y, pressure,
