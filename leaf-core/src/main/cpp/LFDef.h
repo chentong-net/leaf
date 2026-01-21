@@ -1,3 +1,6 @@
+#ifndef LEAF_LFDEF_H
+#define LEAF_LFDEF_H
+
 #include <GLES3/gl3.h>
 extern "C" {
 #include "quickjs.h"
@@ -23,3 +26,5 @@ extern "C" {
 #include <cstdio>
 #define LF_LOGI(...) printf("[Leaf]: " __VA_ARGS__); printf("\n")
 #endif
+
+#endif // LEAF_LFDEF_H
