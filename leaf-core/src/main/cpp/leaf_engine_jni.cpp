@@ -4,6 +4,7 @@
 #include <android/log.h>
 #include <functional>
 #include <vector>
+#include <chrono>
 #include "event/LFEvent.h"
 #include "event/LFEventDispatcher.h"
 #include "LFEngine.h"
@@ -39,7 +40,7 @@ Java_net_chentong_leaf_core_LeafRenderer_nativeOnSurfaceCreated(JNIEnv* env, job
         return read_asset_js(mgr, path);
     };
     leaf_init(asset_loader);
-    std::string js_code = "";
+    std::string js_code = "js_code";
     if (!js_code.empty()) {
         leaf_eval_js(js_code.c_str());
     }
@@ -59,6 +60,7 @@ extern "C" JNIEXPORT void JNICALL
 Java_net_chentong_leaf_core_LeafRenderer_nativeDispatchTouchEvent(
     JNIEnv* env, jobject thiz,
     jint action,
+    jint actionIndex,
     jint pointerCount,
     jintArray pointerIds,
     jfloatArray x,
@@ -76,30 +78,30 @@ Java_net_chentong_leaf_core_LeafRenderer_nativeDispatchTouchEvent(
     std::vector<LFTouchPoint> touches;
     std::vector<LFTouchID> changedIDs;
 
+    // Use engine's elapsed time for consistent time base
+    double timestampSeconds = LFEngine::getInstance().getElapsedTime();
+
     for (int i = 0; i < pointerCount; i++) {
         LFTouchPoint touch;
         touch.id = ids[i];
         touch.x = xArr[i];
         touch.y = yArr[i];
         touch.pressure = pressureArr[i];
-        touch.timestamp = eventTime / 1000.0;  // Convert to seconds
+        touch.timestamp = timestampSeconds;
         touches.push_back(touch);
     }
 
     // 3. Determine event type and changed touch points
     LFTouchEventType type;
-    int actionIndex = 0;
 
     switch (action & 0xFF) {  // ACTION_MASK
         case 0:  // MotionEvent.ACTION_DOWN
             type = LFTouchEventType::Down;
-            actionIndex = 0;
             changedIDs.push_back(ids[actionIndex]);
             break;
 
         case 5:  // MotionEvent.ACTION_POINTER_DOWN
             type = LFTouchEventType::Down;
-            actionIndex = (action & 0xFF00) >> 8;  // ACTION_POINTER_INDEX
             changedIDs.push_back(ids[actionIndex]);
             break;
 
@@ -119,7 +121,6 @@ Java_net_chentong_leaf_core_LeafRenderer_nativeDispatchTouchEvent(
 
         case 6:  // MotionEvent.ACTION_POINTER_UP
             type = LFTouchEventType::Up;
-            actionIndex = (action & 0xFF00) >> 8;
             changedIDs.push_back(ids[actionIndex]);
             break;
 
