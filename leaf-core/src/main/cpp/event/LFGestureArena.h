@@ -39,15 +39,17 @@ public:
     using Ptr = std::shared_ptr<LFGestureArenaEntry>;
 
     explicit LFGestureArenaEntry(std::weak_ptr<LFGestureArenaMember> member)
-        : m_member(member) {}
+        : m_member(member), m_disposition(LFGestureDisposition::Rejected) {}
 
     // Resolve this entry's disposition
     void resolve(LFGestureDisposition disposition);
 
     std::weak_ptr<LFGestureArenaMember> getMember() const { return m_member; }
+    LFGestureDisposition getDisposition() const { return m_disposition; }
 
 private:
     std::weak_ptr<LFGestureArenaMember> m_member;
+    LFGestureDisposition m_disposition;
 };
 
 // Gesture arena state
@@ -55,7 +57,6 @@ struct LFArenaState {
     std::vector<std::shared_ptr<LFGestureArenaEntry>> members;
     bool isOpen = true;         // Arena is open (can add new members)
     bool isHeld = false;        // Arena is held (delay sweep)
-    int eagerWinner = -1;       // Index of member that claimed early victory
 };
 
 // Gesture arena manager (singleton)

@@ -13,6 +13,8 @@
 void LFGestureArenaEntry::resolve(LFGestureDisposition disposition) {
     // Entry resolved, trigger sweep
     // The actual acceptance/rejection will be handled by arena manager
+    // Store the disposition for later use
+    m_disposition = disposition;
 }
 
 // ==========================================
@@ -120,26 +122,26 @@ void LFGestureArenaManager::tryToResolveArena(int pointer, LFArenaState& state) 
         return;
     }
 
-    // Multiple members remaining
-    // In a more complete implementation, we would:
-    // 1. Check which members have explicitly accepted/rejected
-    // 2. Apply priority rules
-    // 3. Choose a winner based on these factors
-    //
-    // For now, we implement a simple "first to accept wins" strategy
-    // This will be triggered when a gesture recognizer calls resolve(Accept)
+    // Multiple members: find if any have accepted
+    int acceptedIndex = -1;
+    for (size_t i = 0; i < aliveMembers.size(); i++) {
+        if (aliveMembers[i]->getDisposition() == LFGestureDisposition::Accepted) {
+            acceptedIndex = (int)i;
+            break;  // First to accept wins
+        }
+    }
 
-    // If there's an eager winner set (a member that called resolve(Accept))
-    if (state.eagerWinner >= 0 && state.eagerWinner < (int)aliveMembers.size()) {
-        auto winner = aliveMembers[state.eagerWinner]->getMember().lock();
+    // If someone accepted, they win
+    if (acceptedIndex >= 0) {
+        auto winner = aliveMembers[acceptedIndex]->getMember().lock();
 
         if (winner) {
             // Accept the winner
             winner->acceptGesture(pointer);
 
             // Reject all others
-            for (int i = 0; i < (int)aliveMembers.size(); i++) {
-                if (i != state.eagerWinner) {
+            for (size_t i = 0; i < aliveMembers.size(); i++) {
+                if ((int)i != acceptedIndex) {
                     auto loser = aliveMembers[i]->getMember().lock();
                     if (loser) {
                         loser->rejectGesture(pointer);
@@ -152,9 +154,7 @@ void LFGestureArenaManager::tryToResolveArena(int pointer, LFArenaState& state) 
         }
     }
 
-    // Note: In a production system, we might also implement:
-    // - Timeout-based resolution
-    // - Priority-based resolution (e.g., Tap has higher priority than Pan)
-    // - Direction-based resolution (e.g., Vertical Pan wins over Horizontal Pan)
+    // Note: If no one has accepted yet, keep arena alive
+    // This handles cases where gestures need more input to decide
 }
 
