@@ -51,7 +51,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${YOGA_DIR}/YGNodePrint.cpp
         ${YOGA_DIR}/event/event.cpp
 
-        jni.cpp
+        leaf_engine_jni.cpp
         engine_bridge.cpp
         LFEngine.cpp
         LFBox.cpp
