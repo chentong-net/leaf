@@ -13,6 +13,10 @@ LFEngine& LFEngine::getInstance() {
 
 void LFEngine::init(NVGcontext* vg) {
     m_vg = vg;
+
+    // Initialize time base for gesture timing synchronization
+    m_startTime = std::chrono::steady_clock::now();
+
     LFText::setMeasureContext(m_vg);
     // 这里可以做一些 NanoVG 的全局配置，如加载默认字体等
     // nvgCreateFont(vg, "sans", "assets/Roboto-Regular.ttf");
@@ -39,9 +43,7 @@ void LFEngine::setRoot(LFNode::Ptr root) {
 void LFEngine::update(float dt) {
     // 1. Update gesture recognizers (for LongPress timing)
     if (m_rootNode) {
-        auto currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()
-        ).count() / 1000.0;  // Convert to seconds
+        double currentTime = getElapsedTime();
 
         auto& dispatcher = LFEventDispatcher::getInstance();
         dispatcher.update(currentTime, m_rootNode);
@@ -91,8 +93,9 @@ void LFEngine::recycleTexture(int imageHandle) {
     m_garbageTextures.push_back(imageHandle);
 }
 
-void LFEngine::dispatchTouchEvent(LFTouchPhase phase, float x, float y) {
-    if (!m_rootNode) return;
-
-    // TODO: 实现 HitTest 算法
+double LFEngine::getElapsedTime() const {
+    auto now = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        now - m_startTime
+    ).count() / 1000.0;  // Convert to seconds
 }

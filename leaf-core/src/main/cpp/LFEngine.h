@@ -11,6 +11,7 @@
 #include "LFText.h"
 #include "LFImage.h"
 #include "LFResourceProvider.h"
+#include <chrono>
 
 // TODO: 预定义事件类型
 enum class LFTouchPhase { Began, Moved, Ended, Canceled };
@@ -77,9 +78,10 @@ public:
     void recycleTexture(int imageHandle);
 
     /**
-     * TODO: 分发触摸/鼠标事件
+     * Get elapsed time since engine initialization (in seconds)
+     * Used for gesture timing synchronization
      */
-    void dispatchTouchEvent(LFTouchPhase phase, float x, float y);
+    double getElapsedTime() const;
 
 private:
     LFEngine() = default;
@@ -96,6 +98,9 @@ private:
     // 资源回收队列
     std::vector<int> m_garbageTextures;
     std::mutex m_gcMutex; // 保护回收队列，防止多线程析构冲突
+
+    // Time base for gesture timing
+    std::chrono::steady_clock::time_point m_startTime;
 };
 
 #endif // LEAF_LFENGINE_H
