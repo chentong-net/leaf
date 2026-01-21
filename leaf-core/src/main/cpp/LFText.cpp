@@ -99,31 +99,6 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
     nvgFontSize(vg, textNode->m_fontSize);
     nvgFontFace(vg, textNode->m_fontFamily.c_str());
     nvgTextLineHeight(vg, textNode->m_lineHeight);
-    int alignFlag;
-    switch (textNode->m_textHAlign) {
-        case LFTextHAlign::Left:
-            alignFlag = NVG_ALIGN_LEFT;
-            break;
-        case LFTextHAlign::Center:
-            alignFlag = NVG_ALIGN_CENTER;
-            break;
-        case LFTextHAlign::Right:
-            alignFlag = NVG_ALIGN_RIGHT;
-            break;
-    }
-
-    switch (textNode->m_textVAlign) {
-        case LFTextVAlign::Top:
-            alignFlag |= NVG_ALIGN_TOP;
-            break;
-        case LFTextVAlign::Center:
-            alignFlag |= NVG_ALIGN_MIDDLE;
-            break;
-        case LFTextVAlign::Bottom:
-            alignFlag |= NVG_ALIGN_BOTTOM;
-            break;
-    }
-    nvgTextAlign(vg, alignFlag);
 
     float bounds[4];
     YGSize result = {0, 0};
