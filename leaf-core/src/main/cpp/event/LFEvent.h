@@ -85,6 +85,16 @@ public:
         return touches.empty() ? nullptr : &touches[0];
     }
 
+    // Get touch point by ID
+    const LFTouchPoint* getTouchById(LFTouchID id) const {
+        for (const auto& touch : touches) {
+            if (touch.id == id) {
+                return &touch;
+            }
+        }
+        return nullptr;
+    }
+
     // Get changed touch points
     std::vector<LFTouchPoint> getChangedTouchPoints() const {
         std::vector<LFTouchPoint> result;

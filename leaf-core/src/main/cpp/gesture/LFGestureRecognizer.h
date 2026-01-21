@@ -180,4 +180,102 @@ private:
     void updateVelocity(const LFPoint& delta, double dt);
 };
 
+// ==========================================
+// Pinch Gesture Recognizer (Two-finger scale)
+// ==========================================
+
+class LFPinchGestureRecognizer : public LFGestureRecognizer {
+public:
+    using PinchCallback = std::function<void(float scale, const LFPoint& focal)>;
+
+    void setOnPinchStart(PinchCallback callback) { m_onPinchStart = callback; }
+    void setOnPinchUpdate(PinchCallback callback) { m_onPinchUpdate = callback; }
+    void setOnPinchEnd(PinchCallback callback) { m_onPinchEnd = callback; }
+
+    void handleEvent(const LFTouchEvent& event) override;
+    void reset() override;
+
+private:
+    PinchCallback m_onPinchStart;
+    PinchCallback m_onPinchUpdate;
+    PinchCallback m_onPinchEnd;
+
+    float m_initialDistance = 0.0f;
+    float m_previousDistance = 0.0f;
+    LFPoint m_initialFocal;
+
+    bool m_started = false;
+
+    float calculateDistance(const LFPoint& p1, const LFPoint& p2);
+    LFPoint calculateFocal(const LFPoint& p1, const LFPoint& p2);
+};
+
+// ==========================================
+// Rotate Gesture Recognizer (Two-finger rotation)
+// ==========================================
+
+class LFRotateGestureRecognizer : public LFGestureRecognizer {
+public:
+    using RotateCallback = std::function<void(float angle, const LFPoint& focal)>;
+
+    void setOnRotateStart(RotateCallback callback) { m_onRotateStart = callback; }
+    void setOnRotateUpdate(RotateCallback callback) { m_onRotateUpdate = callback; }
+    void setOnRotateEnd(RotateCallback callback) { m_onRotateEnd = callback; }
+
+    void handleEvent(const LFTouchEvent& event) override;
+    void reset() override;
+
+private:
+    RotateCallback m_onRotateStart;
+    RotateCallback m_onRotateUpdate;
+    RotateCallback m_onRotateEnd;
+
+    float m_initialAngle = 0.0f;
+    float m_previousAngle = 0.0f;
+    LFPoint m_initialFocal;
+
+    bool m_started = false;
+
+    float calculateAngle(const LFPoint& p1, const LFPoint& p2);
+    LFPoint calculateFocal(const LFPoint& p1, const LFPoint& p2);
+};
+
+// ==========================================
+// Swipe Gesture Recognizer (Fast flick)
+// ==========================================
+
+class LFSwipeGestureRecognizer : public LFGestureRecognizer {
+public:
+    enum class SwipeDirection {
+        None = 0,
+        Left = 1,
+        Right = 2,
+        Up = 4,
+        Down = 8,
+        Any = Left | Right | Up | Down
+    };
+
+    using SwipeCallback = std::function<void(SwipeDirection direction, const LFPoint& velocity)>;
+
+    void setOnSwipe(SwipeCallback callback) { m_onSwipe = callback; }
+    void setMinVelocity(float pixelsPerSecond) { m_minVelocity = pixelsPerSecond; }
+    void setMaxDuration(float seconds) { m_maxDuration = seconds; }
+    void setAllowedDirections(int directions) { m_allowedDirections = directions; }
+
+    void handleEvent(const LFTouchEvent& event) override;
+    void reset() override;
+
+private:
+    SwipeCallback m_onSwipe;
+    float m_minVelocity = 300.0f;       // pixels/second
+    float m_maxDuration = 0.5f;         // Max swipe duration
+    int m_allowedDirections = (int)SwipeDirection::Any;
+
+    LFPoint m_startPosition;
+    double m_startTime = 0.0;
+    LFPoint m_velocity;
+
+    SwipeDirection detectDirection(const LFPoint& delta, const LFPoint& velocity);
+};
+
 #endif // LEAF_LFGESTURERECOGNIZER_H

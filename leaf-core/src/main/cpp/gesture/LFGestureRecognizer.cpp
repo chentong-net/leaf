@@ -406,3 +406,463 @@ void LFPanGestureRecognizer::reset() {
     m_started = false;
     m_velocity = LFPoint(0, 0);
 }
+
+// ==========================================
+// Pinch Gesture Recognizer Implementation
+// ==========================================
+
+void LFPinchGestureRecognizer::handleEvent(const LFTouchEvent& event) {
+    // Pinch requires exactly 2 touch points
+    switch (event.type) {
+        case LFTouchEventType::Down: {
+            // Track all touch points
+            for (auto id : event.changedTouches) {
+                startTrackingPointer(id);
+            }
+
+            // Check if we have exactly 2 pointers
+            if (m_trackingPointers.size() == 2) {
+                // Get two touch points
+                auto it = m_trackingPointers.begin();
+                LFTouchID id1 = *it++;
+                LFTouchID id2 = *it;
+
+                auto touch1 = event.getTouchById(id1);
+                auto touch2 = event.getTouchById(id2);
+
+                if (touch1 && touch2) {
+                    LFPoint p1(touch1->x, touch1->y);
+                    LFPoint p2(touch2->x, touch2->y);
+
+                    m_initialDistance = calculateDistance(p1, p2);
+                    m_previousDistance = m_initialDistance;
+                    m_initialFocal = calculateFocal(p1, p2);
+                    m_started = false;
+                    setState(LFGestureState::Possible);
+
+                    // Add to arena with first pointer ID
+                    addToArena(id1);
+                }
+            } else if (m_trackingPointers.size() > 2) {
+                // Too many pointers, fail
+                setState(LFGestureState::Failed);
+                for (auto id : m_trackingPointers) {
+                    resolve(id, LFGestureDisposition::Rejected);
+                }
+                reset();
+            }
+            break;
+        }
+
+        case LFTouchEventType::Move: {
+            if (m_trackingPointers.size() != 2) return;
+
+            // Get two touch points
+            auto it = m_trackingPointers.begin();
+            LFTouchID id1 = *it++;
+            LFTouchID id2 = *it;
+
+            auto touch1 = event.getTouchById(id1);
+            auto touch2 = event.getTouchById(id2);
+
+            if (!touch1 || !touch2) return;
+
+            LFPoint p1(touch1->x, touch1->y);
+            LFPoint p2(touch2->x, touch2->y);
+
+            float currentDistance = calculateDistance(p1, p2);
+            LFPoint focal = calculateFocal(p1, p2);
+
+            // Calculate scale (relative to previous frame)
+            float scale = currentDistance / m_previousDistance;
+
+            if (!m_started) {
+                // Start pinch if distance changed significantly
+                float totalScale = currentDistance / m_initialDistance;
+                if (std::abs(totalScale - 1.0f) > 0.05f) { // 5% threshold
+                    m_started = true;
+                    setState(LFGestureState::Began);
+
+                    // Accept in arena
+                    resolve(id1, LFGestureDisposition::Accepted);
+
+                    if (m_onPinchStart) {
+                        m_onPinchStart(scale, focal);
+                    }
+                }
+            }
+
+            if (m_started) {
+                setState(LFGestureState::Changed);
+
+                if (m_onPinchUpdate) {
+                    m_onPinchUpdate(scale, focal);
+                }
+            }
+
+            m_previousDistance = currentDistance;
+            break;
+        }
+
+        case LFTouchEventType::Up: {
+            // Remove released pointer
+            for (auto id : event.changedTouches) {
+                stopTrackingPointer(id);
+            }
+
+            // If we still have 2 pointers, continue
+            if (m_trackingPointers.size() == 2) {
+                // Re-initialize for remaining pointers
+                auto it = m_trackingPointers.begin();
+                LFTouchID id1 = *it++;
+                LFTouchID id2 = *it;
+
+                auto touch1 = event.getTouchById(id1);
+                auto touch2 = event.getTouchById(id2);
+
+                if (touch1 && touch2) {
+                    LFPoint p1(touch1->x, touch1->y);
+                    LFPoint p2(touch2->x, touch2->y);
+                    m_previousDistance = calculateDistance(p1, p2);
+                }
+            } else {
+                // Less than 2 pointers, gesture ended
+                if (m_started) {
+                    setState(LFGestureState::Ended);
+
+                    if (m_onPinchEnd) {
+                        m_onPinchEnd(1.0f, m_initialFocal);
+                    }
+                } else {
+                    setState(LFGestureState::Failed);
+                    for (auto id : m_trackingPointers) {
+                        resolve(id, LFGestureDisposition::Rejected);
+                    }
+                }
+                reset();
+            }
+            break;
+        }
+
+        case LFTouchEventType::Cancel: {
+            if (isTracking()) {
+                setState(LFGestureState::Cancelled);
+                for (auto id : m_trackingPointers) {
+                    resolve(id, LFGestureDisposition::Rejected);
+                }
+                reset();
+            }
+            break;
+        }
+    }
+}
+
+float LFPinchGestureRecognizer::calculateDistance(const LFPoint& p1, const LFPoint& p2) {
+    return p1.distance(p2);
+}
+
+LFPoint LFPinchGestureRecognizer::calculateFocal(const LFPoint& p1, const LFPoint& p2) {
+    return LFPoint((p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f);
+}
+
+void LFPinchGestureRecognizer::reset() {
+    LFGestureRecognizer::reset();
+    m_started = false;
+    m_initialDistance = 0.0f;
+    m_previousDistance = 0.0f;
+}
+
+// ==========================================
+// Rotate Gesture Recognizer Implementation
+// ==========================================
+
+void LFRotateGestureRecognizer::handleEvent(const LFTouchEvent& event) {
+    // Rotate requires exactly 2 touch points
+    switch (event.type) {
+        case LFTouchEventType::Down: {
+            // Track all touch points
+            for (auto id : event.changedTouches) {
+                startTrackingPointer(id);
+            }
+
+            // Check if we have exactly 2 pointers
+            if (m_trackingPointers.size() == 2) {
+                auto it = m_trackingPointers.begin();
+                LFTouchID id1 = *it++;
+                LFTouchID id2 = *it;
+
+                auto touch1 = event.getTouchById(id1);
+                auto touch2 = event.getTouchById(id2);
+
+                if (touch1 && touch2) {
+                    LFPoint p1(touch1->x, touch1->y);
+                    LFPoint p2(touch2->x, touch2->y);
+
+                    m_initialAngle = calculateAngle(p1, p2);
+                    m_previousAngle = m_initialAngle;
+                    m_initialFocal = calculateFocal(p1, p2);
+                    m_started = false;
+                    setState(LFGestureState::Possible);
+
+                    // Add to arena
+                    addToArena(id1);
+                }
+            } else if (m_trackingPointers.size() > 2) {
+                setState(LFGestureState::Failed);
+                for (auto id : m_trackingPointers) {
+                    resolve(id, LFGestureDisposition::Rejected);
+                }
+                reset();
+            }
+            break;
+        }
+
+        case LFTouchEventType::Move: {
+            if (m_trackingPointers.size() != 2) return;
+
+            auto it = m_trackingPointers.begin();
+            LFTouchID id1 = *it++;
+            LFTouchID id2 = *it;
+
+            auto touch1 = event.getTouchById(id1);
+            auto touch2 = event.getTouchById(id2);
+
+            if (!touch1 || !touch2) return;
+
+            LFPoint p1(touch1->x, touch1->y);
+            LFPoint p2(touch2->x, touch2->y);
+
+            float currentAngle = calculateAngle(p1, p2);
+            LFPoint focal = calculateFocal(p1, p2);
+
+            // Calculate rotation delta (in radians)
+            float angleDelta = currentAngle - m_previousAngle;
+
+            // Normalize to [-PI, PI]
+            while (angleDelta > M_PI) angleDelta -= 2 * M_PI;
+            while (angleDelta < -M_PI) angleDelta += 2 * M_PI;
+
+            if (!m_started) {
+                // Start rotation if angle changed significantly
+                float totalRotation = currentAngle - m_initialAngle;
+                while (totalRotation > M_PI) totalRotation -= 2 * M_PI;
+                while (totalRotation < -M_PI) totalRotation += 2 * M_PI;
+
+                if (std::abs(totalRotation) > 0.1f) { // ~5.7 degrees threshold
+                    m_started = true;
+                    setState(LFGestureState::Began);
+
+                    // Accept in arena
+                    resolve(id1, LFGestureDisposition::Accepted);
+
+                    if (m_onRotateStart) {
+                        m_onRotateStart(angleDelta, focal);
+                    }
+                }
+            }
+
+            if (m_started) {
+                setState(LFGestureState::Changed);
+
+                if (m_onRotateUpdate) {
+                    m_onRotateUpdate(angleDelta, focal);
+                }
+            }
+
+            m_previousAngle = currentAngle;
+            break;
+        }
+
+        case LFTouchEventType::Up: {
+            for (auto id : event.changedTouches) {
+                stopTrackingPointer(id);
+            }
+
+            if (m_trackingPointers.size() == 2) {
+                // Re-initialize
+                auto it = m_trackingPointers.begin();
+                LFTouchID id1 = *it++;
+                LFTouchID id2 = *it;
+
+                auto touch1 = event.getTouchById(id1);
+                auto touch2 = event.getTouchById(id2);
+
+                if (touch1 && touch2) {
+                    LFPoint p1(touch1->x, touch1->y);
+                    LFPoint p2(touch2->x, touch2->y);
+                    m_previousAngle = calculateAngle(p1, p2);
+                }
+            } else {
+                if (m_started) {
+                    setState(LFGestureState::Ended);
+
+                    if (m_onRotateEnd) {
+                        m_onRotateEnd(0.0f, m_initialFocal);
+                    }
+                } else {
+                    setState(LFGestureState::Failed);
+                    for (auto id : m_trackingPointers) {
+                        resolve(id, LFGestureDisposition::Rejected);
+                    }
+                }
+                reset();
+            }
+            break;
+        }
+
+        case LFTouchEventType::Cancel: {
+            if (isTracking()) {
+                setState(LFGestureState::Cancelled);
+                for (auto id : m_trackingPointers) {
+                    resolve(id, LFGestureDisposition::Rejected);
+                }
+                reset();
+            }
+            break;
+        }
+    }
+}
+
+float LFRotateGestureRecognizer::calculateAngle(const LFPoint& p1, const LFPoint& p2) {
+    // Calculate angle from p1 to p2 (in radians)
+    return std::atan2(p2.y - p1.y, p2.x - p1.x);
+}
+
+LFPoint LFRotateGestureRecognizer::calculateFocal(const LFPoint& p1, const LFPoint& p2) {
+    return LFPoint((p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f);
+}
+
+void LFRotateGestureRecognizer::reset() {
+    LFGestureRecognizer::reset();
+    m_started = false;
+    m_initialAngle = 0.0f;
+    m_previousAngle = 0.0f;
+}
+
+// ==========================================
+// Swipe Gesture Recognizer Implementation
+// ==========================================
+
+void LFSwipeGestureRecognizer::handleEvent(const LFTouchEvent& event) {
+    if (event.touches.empty()) return;
+
+    const LFTouchPoint* touch = event.getPrimaryTouch();
+    if (!touch) return;
+
+    switch (event.type) {
+        case LFTouchEventType::Down: {
+            if (isTracking()) {
+                setState(LFGestureState::Failed);
+                resolve(touch->id, LFGestureDisposition::Rejected);
+                return;
+            }
+
+            startTrackingPointer(touch->id);
+            m_startPosition = LFPoint(touch->x, touch->y);
+            m_startTime = event.timestamp;
+            m_velocity = LFPoint(0, 0);
+            setState(LFGestureState::Possible);
+
+            // Add to arena
+            addToArena(touch->id);
+            break;
+        }
+
+        case LFTouchEventType::Move: {
+            if (!isTrackingPointer(touch->id)) return;
+
+            // Calculate velocity
+            LFPoint currentPos(touch->x, touch->y);
+            LFPoint delta = currentPos - m_startPosition;
+            double dt = event.timestamp - m_startTime;
+
+            if (dt > 0) {
+                m_velocity.x = delta.x / dt;
+                m_velocity.y = delta.y / dt;
+            }
+            break;
+        }
+
+        case LFTouchEventType::Up: {
+            if (!isTrackingPointer(touch->id)) return;
+
+            LFPoint currentPos(touch->x, touch->y);
+            LFPoint delta = currentPos - m_startPosition;
+            double duration = event.timestamp - m_startTime;
+
+            // Check if swipe conditions met
+            float speed = std::sqrt(m_velocity.x * m_velocity.x + m_velocity.y * m_velocity.y);
+
+            if (speed >= m_minVelocity && duration <= m_maxDuration) {
+                // Detect direction
+                SwipeDirection direction = detectDirection(delta, m_velocity);
+
+                if (direction != SwipeDirection::None) {
+                    setState(LFGestureState::Recognized);
+                    resolve(touch->id, LFGestureDisposition::Accepted);
+
+                    if (m_onSwipe) {
+                        m_onSwipe(direction, m_velocity);
+                    }
+                } else {
+                    setState(LFGestureState::Failed);
+                    resolve(touch->id, LFGestureDisposition::Rejected);
+                }
+            } else {
+                setState(LFGestureState::Failed);
+                resolve(touch->id, LFGestureDisposition::Rejected);
+            }
+
+            stopTrackingPointer(touch->id);
+            break;
+        }
+
+        case LFTouchEventType::Cancel: {
+            if (isTrackingPointer(touch->id)) {
+                setState(LFGestureState::Cancelled);
+                resolve(touch->id, LFGestureDisposition::Rejected);
+                stopTrackingPointer(touch->id);
+            }
+            break;
+        }
+    }
+}
+
+LFSwipeGestureRecognizer::SwipeDirection LFSwipeGestureRecognizer::detectDirection(
+    const LFPoint& delta,
+    const LFPoint& velocity
+) {
+    // Determine primary direction based on velocity
+    float absVx = std::abs(velocity.x);
+    float absVy = std::abs(velocity.y);
+
+    SwipeDirection direction = SwipeDirection::None;
+
+    if (absVx > absVy) {
+        // Horizontal swipe
+        if (velocity.x > 0) {
+            direction = SwipeDirection::Right;
+        } else {
+            direction = SwipeDirection::Left;
+        }
+    } else {
+        // Vertical swipe
+        if (velocity.y > 0) {
+            direction = SwipeDirection::Down;
+        } else {
+            direction = SwipeDirection::Up;
+        }
+    }
+
+    // Check if direction is allowed
+    if ((int)direction & m_allowedDirections) {
+        return direction;
+    }
+
+    return SwipeDirection::None;
+}
+
+void LFSwipeGestureRecognizer::reset() {
+    LFGestureRecognizer::reset();
+    m_velocity = LFPoint(0, 0);
+}

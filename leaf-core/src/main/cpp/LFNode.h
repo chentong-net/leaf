@@ -165,6 +165,9 @@ public:
     using PanStartCallback = std::function<void(const LFPoint& delta, const LFPoint& velocity)>;
     using PanUpdateCallback = std::function<void(const LFPoint& delta, const LFPoint& velocity)>;
     using PanEndCallback = std::function<void(const LFPoint& delta, const LFPoint& velocity)>;
+    using PinchCallback = std::function<void(float scale, const LFPoint& focal)>;
+    using RotateCallback = std::function<void(float angle, const LFPoint& focal)>;
+    using SwipeCallback = std::function<void(int direction, const LFPoint& velocity)>;
 
     // Gesture recognizer management
     void addGestureRecognizer(std::shared_ptr<LFGestureRecognizer> recognizer);
@@ -179,6 +182,13 @@ public:
     void setOnPan(PanUpdateCallback onUpdate,
                   PanStartCallback onStart = nullptr,
                   PanEndCallback onEnd = nullptr);
+    void setOnPinch(PinchCallback onUpdate,
+                    PinchCallback onStart = nullptr,
+                    PinchCallback onEnd = nullptr);
+    void setOnRotate(RotateCallback onUpdate,
+                     RotateCallback onStart = nullptr,
+                     RotateCallback onEnd = nullptr);
+    void setOnSwipe(SwipeCallback callback, int allowedDirections = 15); // 15 = Any direction
 
     static NVGcolor colorToNVG(uint32_t argb);
 

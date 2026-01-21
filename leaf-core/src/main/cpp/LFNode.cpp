@@ -444,3 +444,32 @@ void LFNode::setOnPan(PanUpdateCallback onUpdate,
     if (onEnd) recognizer->setOnPanEnd(onEnd);
     addGestureRecognizer(recognizer);
 }
+
+void LFNode::setOnPinch(PinchCallback onUpdate,
+                        PinchCallback onStart,
+                        PinchCallback onEnd) {
+    auto recognizer = std::make_shared<LFPinchGestureRecognizer>();
+    if (onUpdate) recognizer->setOnPinchUpdate(onUpdate);
+    if (onStart) recognizer->setOnPinchStart(onStart);
+    if (onEnd) recognizer->setOnPinchEnd(onEnd);
+    addGestureRecognizer(recognizer);
+}
+
+void LFNode::setOnRotate(RotateCallback onUpdate,
+                         RotateCallback onStart,
+                         RotateCallback onEnd) {
+    auto recognizer = std::make_shared<LFRotateGestureRecognizer>();
+    if (onUpdate) recognizer->setOnRotateUpdate(onUpdate);
+    if (onStart) recognizer->setOnRotateStart(onStart);
+    if (onEnd) recognizer->setOnRotateEnd(onEnd);
+    addGestureRecognizer(recognizer);
+}
+
+void LFNode::setOnSwipe(SwipeCallback callback, int allowedDirections) {
+    auto recognizer = std::make_shared<LFSwipeGestureRecognizer>();
+    recognizer->setOnSwipe([callback](LFSwipeGestureRecognizer::SwipeDirection dir, const LFPoint& vel) {
+        callback((int)dir, vel);
+    });
+    recognizer->setAllowedDirections(allowedDirections);
+    addGestureRecognizer(recognizer);
+}
