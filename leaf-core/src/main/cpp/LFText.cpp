@@ -102,7 +102,8 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
 
     float bounds[4];
     YGSize result = {0, 0};
-    const float WRAP_BUFFER = std::max(4.0f, textNode->m_fontSize * 0.1f); // 安全像素，避免计算得到浮点数后导致精度丢失，导致错误换行
+    // TODO: 这里应该在后期一劳永逸的解决
+    const float WRAP_BUFFER = std::max(8.0f, textNode->m_fontSize * 0.1f); // 安全像素，避免计算得到浮点数后导致精度丢失，导致错误换行
 
     // 3. 根据 Yoga 的约束模式进行测量
     // nvgTextBoxBounds 用于多行文本测量 (支持自动换行)
