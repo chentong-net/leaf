@@ -40,7 +40,7 @@ public:
      * 设置渲染窗口大小
      * 当窗口 resize 时必须调用
      */
-    void setWindowSize(float width, float height);
+    void setWindowSize(float width, float height, float scale);
 
     /**
      * 设置 UI 树的根节点
@@ -94,6 +94,7 @@ private:
     // 视口尺寸
     float m_windowWidth = 0.0f;
     float m_windowHeight = 0.0f;
+    float m_pixelRatio = 1.0f;
 
     // 资源回收队列
     std::vector<int> m_garbageTextures;

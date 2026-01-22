@@ -57,8 +57,8 @@ void leaf_init(std::function<std::string(const char *path)> loader) {
     );
 }
 
-void leaf_update_size(int w, int h, float d) {
-    LFEngine::getInstance().setWindowSize((float)w, (float)h);
+void leaf_update_size(float w, float h, float d) {
+    LFEngine::getInstance().setWindowSize((float)w, (float)h, d);
 }
 
 void leaf_render() {
@@ -71,61 +71,67 @@ void leaf_render() {
 
 void leaf_eval_js(const char *code) {
     // ======================================
-    // 手势系统完整测试 Demo
+    // 手势系统完整测试 Demo (适配版)
     // ======================================
 
-    float fontSize = 42.0f;
-    float rectWidth = 320.0f;
-    float rectHeight = 160.0f;
+    // 定义移动端标准参数 (Logical Pixels)
+    float cardHeight = 100.0f;    // 这种高度更适合列表项
+    float cardRadius = 12.0f;     // 圆润但不过分
+    float stdPadding = 16.0f;     // 标准边距
+
     auto root = LFBox::create();
     root->matchParentWidth();
     root->matchParentHeight();
-    root->setBackgroundColor(0xFF1A1A1A);  // 深色背景
+    root->setBackgroundColor(0xFF121212);  // Material Design 深色背景
 
-    // 主内容区域 - 垂直滚动布局
+    // 主内容区域 - 垂直线性布局
     auto contentColumn = LFLinear::createVertical();
     contentColumn->matchParentWidth();
     contentColumn->wrapContentHeight();
-    contentColumn->setGravity(LFAlignment::Start, LFAlignment::Center);
-    contentColumn->setSpacing(40);
-    contentColumn->setPadding(YGEdgeAll, 40);
-    contentColumn->setMargin(YGEdgeTop, 40);
+    contentColumn->setGravity(LFAlignment::Center, LFAlignment::Start); // 水平居中，垂直从头开始
+    contentColumn->setSpacing(12.0f);   // 列表项间距
+    contentColumn->setPadding(YGEdgeAll, stdPadding);
+    // 留出顶部安全区域 (Status Bar)
+    contentColumn->setPadding(YGEdgeTop, 44.0f);
+    // 留出底部安全区域 (Home Indicator)
+    contentColumn->setPadding(YGEdgeBottom, 34.0f);
+
+    // 辅助函数：快速创建通用卡片样式
+    auto createCard = [&](uint32_t bgColor) {
+        auto box = LFBox::create();
+        box->setWidthPercent(94.0f); // 宽度占屏幕 94%，自动适配不同机型
+        box->setHeight(cardHeight);
+        box->setBackgroundColor(bgColor);
+        box->setBorderRadius(cardRadius);
+        // 细腻的阴影: y=4, blur=10
+        box->setShadow(0, 4, 10, 0, 0x40000000);
+        return box;
+    };
+
+    // 辅助函数：创建居中文本
+    auto createLabel = [&](const std::string& text, float size = 16) {
+        auto txt = createText(text, size, 0xFFFFFFFF, true); // 加粗
+        txt->setTextHAlign(LFTextHAlign::Center);
+        txt->setTextVAlign(LFTextVAlign::Center);
+        return txt;
+    };
 
     // ====================
     // 1. Tap 手势测试
     // ====================
-    auto tapBox = LFBox::create();
-    tapBox->setWidth(rectWidth);
-    tapBox->setHeight(rectHeight);
-    tapBox->setBackgroundColor(0xFF4CAF50);
-    tapBox->setBorderRadius(16.0f);
-    tapBox->setShadow(0, 8, 16, 0, 0x40000000);
+    auto tapBox = createCard(0xFF4CAF50); // Green
 
-    auto tapText = createText("Tap", fontSize, 0xFFFFFFFF);
-    tapText->setTextHAlign(LFTextHAlign::Center);
-    tapText->setTextVAlign(LFTextVAlign::Center);
-    tapText->setPadding(YGEdgeAll, 20);
+    auto tapText = createLabel("Tap / Double Tap");
     tapBox->addChild(tapText, LFBoxAlign::Center);
 
-    // Tap 手势
     tapBox->setOnTap([tapBox](const LFPoint& location) {
-        // 点击反馈: 改变颜色
-        uint32_t color = tapBox->getBackgroundColor();
-        if (color == 0xFF4CAF50) {
-            tapBox->setBackgroundColor(0xFFFF0000);
-        } else {
-            tapBox->setBackgroundColor(0xFF4CAF50);
-        }
+        // 反馈：变红
+        tapBox->setBackgroundColor(0xFFE53935);
+        // 延时还原颜色 (模拟点击态) - 实际项目中建议用动画系统
     });
 
-    // Double Tap 手势
     tapBox->setOnDoubleTap([tapBox](const LFPoint& location) {
-        uint32_t color = tapBox->getBackgroundColor();
-        if (color != 0xFF0000FF) {
-            tapBox->setBackgroundColor(0xFF0000FF);
-        } else {
-            tapBox->setBackgroundColor(0xFF4CAF50);
-        }
+        tapBox->setBackgroundColor(0xFF2196F3); // Blue
     });
 
     contentColumn->addChild(tapBox);
@@ -133,25 +139,14 @@ void leaf_eval_js(const char *code) {
     // ====================
     // 2. Long Press 手势测试
     // ====================
-    auto longPressBox = LFBox::create();
-    longPressBox->setWidth(rectWidth);
-    longPressBox->setHeight(rectHeight);
-    longPressBox->setBackgroundColor(0xFFFF9800);
-    longPressBox->setBorderRadius(16.0f);
-    longPressBox->setShadow(0, 8, 16, 0, 0x40000000);
+    auto longPressBox = createCard(0xFFFF9800); // Orange
 
-    auto longPressText = createText("Long Press", fontSize, 0xFFFFFFFF);
-    longPressText->setTextHAlign(LFTextHAlign::Center);
-    longPressText->setTextVAlign(LFTextVAlign::Center);
+    auto longPressText = createLabel("Long Press Me");
     longPressBox->addChild(longPressText, LFBoxAlign::Center);
 
     longPressBox->setOnLongPress([longPressBox](const LFPoint& location) {
-        uint32_t color = longPressBox->getBackgroundColor();
-        if (color == 0xFFFF9800) {
-            longPressBox->setBackgroundColor(0xFF0000FF);
-        } else {
-            longPressBox->setBackgroundColor(0xFFFF9800);
-        }
+        // 长按反馈：变深色
+        longPressBox->setBackgroundColor(0xFFE65100);
     });
 
     contentColumn->addChild(longPressBox);
@@ -159,200 +154,120 @@ void leaf_eval_js(const char *code) {
     // ====================
     // 3. Pan (拖拽) 手势测试
     // ====================
-    auto panBox = LFBox::create();
-    panBox->setWidth(200.0f);
-    panBox->setHeight(200.0f);
-    panBox->setBackgroundColor(0xFF2196F3);
-    panBox->setBorderRadius(100.0f);  // 圆形
-    panBox->setShadow(0, 12, 24, 0, 0x60000000);
+    // 拖拽区域不用 Card 样式，用一个专门的圆形，更有趣
+    auto panContainer = LFBox::create();
+    panContainer->setWidthPercent(100.0f);
+    panContainer->setHeight(150.0f); // 给一个较大的活动区域
+    // panContainer->setBackgroundColor(0xFF1E1E1E); // 可选：给个淡背景
 
-    auto panText = createText("Drag", fontSize, 0xFFFFFFFF);
-    panText->setTextHAlign(LFTextHAlign::Center);
-    panText->setTextVAlign(LFTextVAlign::Center);
-    panBox->addChild(panText, LFBoxAlign::Center);
+    auto panBall = LFBox::create();
+    panBall->setWidth(80.0f);
+    panBall->setHeight(80.0f);
+    panBall->setBackgroundColor(0xFF2196F3);
+    panBall->setBorderRadius(40.0f);
+    panBall->setShadow(0, 6, 12, 0, 0x50000000);
 
-    // Pan 拖拽手势
-    panBox->setOnPan(
-        // onUpdate: 实时更新位置
-        [panBox](const LFPoint& delta, const LFPoint& velocity) {
-            auto transform = panBox->getTransform();
-            panBox->setTranslate(
-                transform.translateX + delta.x,
-                transform.translateY + delta.y
-            );
-        },
-        // onStart
-        [](const LFPoint& delta, const LFPoint& velocity) {
-        },
-        // onEnd
-        [](const LFPoint& delta, const LFPoint& velocity) {
-        }
+    auto panText = createLabel("Drag", 14.0f);
+    panBall->addChild(panText, LFBoxAlign::Center);
+
+    // 居中放置
+    panContainer->addChild(panBall, LFBoxAlign::Center);
+
+    panBall->setOnPan(
+            [panBall](const LFPoint& delta, const LFPoint& velocity) {
+                auto t = panBall->getTransform();
+                panBall->setTranslate(t.translateX + delta.x, t.translateY + delta.y);
+            },
+            nullptr, nullptr // 忽略 start/end
     );
 
-    contentColumn->addChild(panBox);
+    contentColumn->addChild(panContainer);
 
     // ====================
-    // 4. Pinch (缩放) 手势测试
+    // 4. Pinch (缩放) & Rotate (旋转)
+    //    合并演示，更节省空间
     // ====================
-    auto pinchBox = LFBox::create();
-    pinchBox->setWidth(rectWidth);
-    pinchBox->setHeight(rectWidth);
-    pinchBox->setBackgroundColor(0xFFE91E63);
-    pinchBox->setBorderRadius(20.0f);
-    pinchBox->setShadow(0, 10, 20, 0, 0x50000000);
+    auto gestureBox = createCard(0xFF9C27B0); // Purple
+    gestureBox->setHeight(180.0f); // 稍微大一点方便操作
 
-    auto pinchText = createText("Pinch", fontSize, 0xFFFFFFFF);
-    pinchText->setTextHAlign(LFTextHAlign::Center);
-    pinchText->setTextVAlign(LFTextVAlign::Center);
-    pinchText->setLineHeight(1.5f);
-    pinchBox->addChild(pinchText, LFBoxAlign::Center);
+    auto gestureText = createLabel("Pinch & Rotate");
+    gestureBox->addChild(gestureText, LFBoxAlign::Center);
 
-    // Pinch 缩放手势
-    pinchBox->setOnPinch(
-        // onUpdate: 应用缩放
-        [pinchBox](float scale, const LFPoint& focal) {
-            auto transform = pinchBox->getTransform();
-            float newScaleX = transform.scaleX * scale;
-            float newScaleY = transform.scaleY * scale;
-
-            // 限制缩放范围 0.5x ~ 3.0x
-            newScaleX = std::max(0.5f, std::min(3.0f, newScaleX));
-            newScaleY = std::max(0.5f, std::min(3.0f, newScaleY));
-
-            pinchBox->setScale(newScaleX, newScaleY);
-        },
-        // onStart
-        [](float scale, const LFPoint& focal) {
-        },
-        // onEnd
-        [](float scale, const LFPoint& focal) {
-        }
+    gestureBox->setOnPinch(
+            [gestureBox](float scale, const LFPoint& focal) {
+                auto t = gestureBox->getTransform();
+                // 阻尼感：让缩放不那么剧烈
+                float s = t.scaleX * scale;
+                s = std::max(0.8f, std::min(1.5f, s)); // 限制范围
+                gestureBox->setScale(s, s);
+            }, nullptr, nullptr
     );
 
-    contentColumn->addChild(pinchBox);
-
-    // ====================
-    // 5. Rotate (旋转) 手势测试
-    // ====================
-    auto rotateBox = LFBox::create();
-    rotateBox->setWidth(rectWidth);
-    rotateBox->setHeight(rectWidth);
-    rotateBox->setBackgroundColor(0xFF9C27B0);
-    rotateBox->setBorderRadius(24.0f);
-    rotateBox->setShadow(0, 10, 20, 0, 0x50000000);
-
-    auto rotateText = createText("Rotate", fontSize, 0xFFFFFFFF);
-    rotateText->setTextHAlign(LFTextHAlign::Center);
-    rotateText->setTextVAlign(LFTextVAlign::Center);
-    rotateText->setLineHeight(1.5f);
-    rotateBox->addChild(rotateText, LFBoxAlign::Center);
-
-    // Rotate 旋转手势
-    rotateBox->setOnRotate(
-        // onUpdate: 应用旋转
-        [rotateBox](float angle, const LFPoint& focal) {
-            auto transform = rotateBox->getTransform();
-            float degrees = angle * 180.0f / M_PI;  // 弧度转角度
-            rotateBox->setRotate(transform.rotate + degrees);
-        },
-        // onStart
-        [](float angle, const LFPoint& focal) {
-        },
-        // onEnd
-        [](float angle, const LFPoint& focal) {
-        }
+    gestureBox->setOnRotate(
+            [gestureBox](float angle, const LFPoint& focal) {
+                auto t = gestureBox->getTransform();
+                float deg = angle * 180.0f / M_PI;
+                gestureBox->setRotate(t.rotate + deg);
+            }, nullptr, nullptr
     );
 
-    contentColumn->addChild(rotateBox);
+    contentColumn->addChild(gestureBox);
 
     // ====================
     // 6. Swipe (轻扫) 手势测试
     // ====================
-    auto swipeContainer = LFLinear::createHorizontal();
-    swipeContainer->setWidthPercent(90.0f);
-    swipeContainer->wrapContentHeight();
-    swipeContainer->setDistribution(LFDistribution::SpaceBetween);
+    auto swipeRow = LFLinear::createHorizontal();
+    swipeRow->setWidthPercent(94.0f);
+    swipeRow->setHeight(80.0f);
+    swipeRow->setDistribution(LFDistribution::SpaceBetween);
 
-    // 创建4个方向的swipe测试框
-    auto createSwipeBox = [](const std::string& label, int allowedDir, float fontSize, uint32_t color) {
+    auto createSwipeItem = [&](const std::string& txt, int dir, uint32_t color) {
         auto box = LFBox::create();
-        box->setWidth(320.0f);
-        box->setHeight(160.0f);
+        box->setWidthPercent(48.0f); // 两个并排，各占48%
+        box->matchParentHeight();
         box->setBackgroundColor(color);
-        box->setBorderRadius(12.0f);
-        box->setShadow(0, 6, 12, 0, 0x40000000);
+        box->setBorderRadius(cardRadius);
+        box->addChild(createLabel(txt, 14.0f), LFBoxAlign::Center);
 
-        auto text = createText(label, fontSize, 0xFFFFFFFF);
-        text->setTextHAlign(LFTextHAlign::Center);
-        text->setTextVAlign(LFTextVAlign::Center);
-        text->setPadding(YGEdgeAll, 20);  // Add padding to text node itself
-        box->addChild(text, LFBoxAlign::Center);
-
-        // Swipe 手势 (只允许特定方向)
-        box->setOnSwipe(
-            [box, label](int direction, const LFPoint& velocity) {
-                const char* dirName = "";
-                if (direction == 1) dirName = "LEFT";
-                else if (direction == 2) dirName = "RIGHT";
-                else if (direction == 4) dirName = "UP";
-                else if (direction == 8) dirName = "DOWN";
-
-                // 视觉反馈
-                box->setOpacity(0.6f);
-            },
-            allowedDir  // 方向过滤
-        );
-
+        box->setOnSwipe([box](int d, const LFPoint& v){
+            box->setOpacity(0.5f); // 视觉反馈
+            // TODO: 最好有个 Timer 恢复透明度
+        }, dir);
         return box;
     };
 
-    // 左右滑动测试
-    auto swipeHorizontal = createSwipeBox("Swipe ←→", 1 | 2, fontSize, 0xFF00BCD4);  // Left | Right
-    contentColumn->addChild(swipeHorizontal);
+    swipeRow->addChild(createSwipeItem("Swipe H", 1|2, 0xFF00BCD4));
+    swipeRow->addChild(createSwipeItem("Swipe V", 4|8, 0xFF009688));
 
-    // 上下滑动测试
-    auto swipeVertical = createSwipeBox("Swipe ↑↓", 4 | 8, fontSize, 0xFF009688);    // Up | Down
-    contentColumn->addChild(swipeVertical);
+    contentColumn->addChild(swipeRow);
 
     // ====================
-    // 7. 手势竞争测试: Tap vs Pan
+    // 7. 竞技场 (Arena)
     // ====================
-    auto competitionBox = LFBox::create();
-    competitionBox->setWidthPercent(85.0f);
-    competitionBox->setHeight(rectHeight);
-    competitionBox->setBackgroundColor(0xFFFF5722);
-    competitionBox->setBorderRadius(16.0f);
-    competitionBox->setShadow(0, 8, 16, 0, 0x40000000);
-    competitionBox->setBorder(4.0f, 0xFFFFFFFF);
+    auto arenaBox = createCard(0xFFFF5722); // Deep Orange
+    arenaBox->setHeight(120.0f);
 
-    auto competitionText = createText("TAP or PAN\n(Arena Test)", fontSize, 0xFFFFFFFF);
-    competitionText->setTextHAlign(LFTextHAlign::Center);
-    competitionText->setTextVAlign(LFTextVAlign::Center);
-    competitionText->setLineHeight(1.4f);
-    competitionText->setPadding(YGEdgeAll, 20);  // Add padding to text node itself
-    competitionBox->addChild(competitionText, LFBoxAlign::Center);
+    auto arenaText = createLabel("Arena: Tap vs Pan\n(Try scrolling vs clicking)");
+    arenaText->setLineHeight(1.4f);
+    arenaBox->addChild(arenaText, LFBoxAlign::Center);
 
-    // 同时添加 Tap 和 Pan, 测试竞技场
-    competitionBox->setOnTap([](const LFPoint& location) {
+    arenaBox->setOnTap([](const LFPoint& p){
+        LF_LOGI("Arena: TAP won!");
     });
 
-    competitionBox->setOnPan(
-        [competitionBox](const LFPoint& delta, const LFPoint& velocity) {
-            auto transform = competitionBox->getTransform();
-            competitionBox->setTranslate(
-                transform.translateX + delta.x,
-                transform.translateY + delta.y
-            );
-        },
-        [](const LFPoint& delta, const LFPoint& velocity) {
-        }
+    arenaBox->setOnPan(
+            [arenaBox](const LFPoint& d, const LFPoint& v) {
+                auto t = arenaBox->getTransform();
+                arenaBox->setTranslate(t.translateX + d.x, t.translateY + d.y);
+            }, nullptr, nullptr
     );
 
-    contentColumn->addChild(competitionBox);
+    contentColumn->addChild(arenaBox);
 
+    // 最后添加到底部
     root->addChild(contentColumn, LFBoxAlign::TopLeft);
 
-    // 提交给引擎
+    // 提交
     LFEngine::getInstance().setRoot(root);
 }
 

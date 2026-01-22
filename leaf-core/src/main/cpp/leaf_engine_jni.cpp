@@ -9,10 +9,12 @@
 #include "event/LFEventDispatcher.h"
 #include "LFEngine.h"
 
+static float g_density = 1.0f;
+
 // 声明 LFEngine.cpp 中的外部函数
 extern "C" {
 void leaf_init(std::function<std::string(const char* path)> loader);
-void leaf_update_size(int w, int h, float d);
+void leaf_update_size(float w, float h, float d);
 void leaf_render();
 void leaf_eval_js(const char* code);
 }
@@ -48,7 +50,8 @@ Java_net_chentong_leaf_core_LeafRenderer_nativeOnSurfaceCreated(JNIEnv* env, job
 
 extern "C" JNIEXPORT void JNICALL
 Java_net_chentong_leaf_core_LeafRenderer_nativeOnSurfaceChanged(JNIEnv* env, jobject thiz, jint w, jint h, jfloat d) {
-    leaf_update_size(w, h, d);
+    g_density = d;
+    leaf_update_size(w / d, h / d, d);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -84,8 +87,8 @@ Java_net_chentong_leaf_core_LeafRenderer_nativeDispatchTouchEvent(
     for (int i = 0; i < pointerCount; i++) {
         LFTouchPoint touch;
         touch.id = ids[i];
-        touch.x = xArr[i];
-        touch.y = yArr[i];
+        touch.x = xArr[i] / g_density;
+        touch.y = yArr[i] / g_density;
         touch.pressure = pressureArr[i];
         touch.timestamp = timestampSeconds;
         touches.push_back(touch);

@@ -22,10 +22,11 @@ void LFEngine::init(NVGcontext* vg) {
     // nvgCreateFont(vg, "sans", "assets/Roboto-Regular.ttf");
 }
 
-void LFEngine::setWindowSize(float width, float height) {
-    if (m_windowWidth == width && m_windowHeight == height) return;
+void LFEngine::setWindowSize(float width, float height, float scale) {
+    if (m_windowWidth == width && m_windowHeight == height && m_pixelRatio == scale) return;
     m_windowWidth = width;
     m_windowHeight = height;
+    m_pixelRatio = scale;
 
     // 窗口变了，根节点必须重新布局
     if (m_rootNode) {
@@ -58,13 +59,17 @@ void LFEngine::update(float dt) {
 void LFEngine::render() {
     if (!m_vg || !m_rootNode) return;
 
+    int phyWidth = (int)(m_windowWidth * m_pixelRatio);
+    int phyHeight = (int)(m_windowHeight * m_pixelRatio);
+    glViewport(0, 0, phyWidth, phyHeight);
+
     // 布局
     // Yoga 内部有缓存机制，如果根节点没有 markDirty，calculateLayout 几乎无消耗
     // 所以每帧调用是安全的，确保布局始终正确
     m_rootNode->calculateLayout(m_windowWidth, m_windowHeight);
 
     // 绘制
-    nvgBeginFrame(m_vg, m_windowWidth, m_windowHeight, 1.0f); // devicePixelRatio 暂定 1.0
+    nvgBeginFrame(m_vg, m_windowWidth, m_windowHeight, m_pixelRatio);
 
     m_rootNode->render(m_vg);
 
