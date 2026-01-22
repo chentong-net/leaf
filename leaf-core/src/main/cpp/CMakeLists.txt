@@ -29,7 +29,7 @@ add_library(quickjs STATIC
 
 target_compile_definitions(quickjs PRIVATE _GNU_SOURCE CONFIG_VERSION="2025-09-13")
 
-add_library(${CMAKE_PROJECT_NAME} SHARED
+set(CORE_SOURCES
         # List C/C++ source files with relative paths to this CMakeLists.txt.
         ${QUICKJS_DIR}/quickjs.c
         ${QUICKJS_DIR}/libregexp.c
@@ -51,8 +51,6 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${YOGA_DIR}/YGNodePrint.cpp
         ${YOGA_DIR}/event/event.cpp
 
-        leaf_engine_jni.cpp
-        engine_bridge.cpp
         LFEngine.cpp
         LFBox.cpp
         LFLinear.cpp
@@ -69,17 +67,60 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         gesture/LFGestureRecognizer.cpp
 )
 
-target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-        _GNU_SOURCE
-        CONFIG_VERSION="2025-09-13"
-        __STDC_FORMAT_MACROS  # 关键：解决 PRId64 报错
-        CONFIG_BIGNUM
-)
+if(EMSCRIPTEN)
+    message(STATUS "Building for WebAssembly (Emscripten)")
 
-target_link_libraries(${CMAKE_PROJECT_NAME}
-        # List libraries link to the target library
-        GLESv3
-        android
-        log
-        m
-)
+    add_link_options(
+            -sUSE_WEBGL2=1
+            -sFULL_ES3=1
+            -sALLOW_MEMORY_GROWTH=1   # 允许内存动态增长
+            -sASSERTIONS=1            # 开启断言调试
+            -sFETCH=1
+            # -sASYNCIFY=1            # 如果后面需要处理复杂的 QuickJS 异步，可能需要开启
+    )
+
+    add_executable(leaf-web
+            ${CORE_SOURCES}
+            web_main.cpp
+    )
+
+    set_target_properties(leaf-web PROPERTIES SUFFIX ".html")
+
+    # 宏定义
+    target_compile_definitions(leaf-web PRIVATE
+            _GNU_SOURCE
+            CONFIG_VERSION="2025-09-13"
+            __STDC_FORMAT_MACROS # 关键：解决 PRId64 报错
+            CONFIG_BIGNUM
+            PLATFORM_WEB # 自定义宏，用于在代码中判断环境
+    )
+
+    target_link_options(leaf-web PRIVATE --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/fonts@/fonts)
+    target_link_options(leaf-web PRIVATE --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html)
+
+elseif(ANDROID)
+    message(STATUS "Building for Android")
+
+    add_library(${CMAKE_PROJECT_NAME} SHARED
+            ${CORE_SOURCES}
+            leaf_engine_jni.cpp
+            engine_bridge.cpp
+    )
+
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
+            _GNU_SOURCE
+            CONFIG_VERSION="2025-09-13"
+            __STDC_FORMAT_MACROS # 关键：解决 PRId64 报错
+            CONFIG_BIGNUM
+    )
+
+    target_link_libraries(${CMAKE_PROJECT_NAME}
+            GLESv3
+            android
+            log
+            m
+    )
+
+else()
+    message(WARNING "Building for generic platform (Desktop/Linux?)")
+endif()

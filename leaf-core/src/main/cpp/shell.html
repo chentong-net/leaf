@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <title>Leaf Engine Mobile Demo</title>
+    <style>
+        /* 1. 页面背景：深色，Flex 居中 */
+        body {
+            margin: 0;
+            background-color: #1e1e1e; /* 深灰背景，像展示台 */
+            display: flex;
+            justify-content: center; /* 水平居中 */
+            align-items: center;     /* 垂直居中 */
+            height: 100vh;           /* 占满视口高度 */
+            overflow: hidden;        /* 防止出现滚动条 */
+        }
+
+        /* 2. 模拟手机屏幕 */
+        canvas.emscripten {
+            display: block;
+
+            /* --- 核心：锁定 9:16 比例 --- */
+            aspect-ratio: 9 / 16;
+
+            /* --- 尺寸策略 --- */
+            /* 默认高度占屏幕 90%，宽度自动按比例计算 */
+            height: 90vh;
+
+            /* 但如果屏幕很窄（手机竖屏），宽度不能超过屏幕宽度的 95% */
+            /* CSS 会自动取两者的较小值，保证不溢出 */
+            max-width: 95vw;
+
+            /* --- 装饰效果 --- */
+            background-color: #000;  /* 还没渲染出来时显示黑色 */
+            border-radius: 24px;     /* 手机圆角 */
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5); /* 漂亮的投影 */
+            border: 8px solid #333;  /* 模拟手机边框 */
+
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+<canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+
+<script type='text/javascript'>
+    var Module = {
+      canvas: (function() { return document.getElementById('canvas'); })()
+    };
+</script>
+{{{ SCRIPT }}}
+</body>
+</html>
