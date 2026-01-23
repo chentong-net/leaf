@@ -100,6 +100,9 @@ std::shared_ptr<LFNode> build() {
     btn->setBorderRadius(6); // 小圆角
     btn->setGravity(LFAlignment::Center, LFAlignment::Center);
     btn->setShadow(0, 3, 6, 0, 0x40000000);
+    btn->setOnTap([btn](const LFPoint& location) {
+        LF_LOGI("tap");
+    });
 
     auto btnText = createText("Edit Profile", 12, 0xFFFFFFFF);
     btnText->setTextHAlign(LFTextHAlign::Center);
@@ -135,6 +138,110 @@ std::shared_ptr<LFNode> build() {
     return root;
 }
 
+
+// 获取当前时间戳
+double get_engine_time() {
+    return LFEngine::getInstance().getElapsedTime();
+}
+
+// 统一的事件分发入口
+void dispatch_to_engine(LFTouchEventType type, const std::vector<LFTouchPoint>& touches, const std::vector<LFTouchID>& changedIds) {
+    auto root = LFEngine::getInstance().getRoot();
+    if (root) {
+        LFEventDispatcher::getInstance().dispatchTouchEvent(type, touches, changedIds, root);
+    }
+}
+
+// ==========================================
+// 鼠标事件适配 (模拟单指触摸)
+// ==========================================
+EM_BOOL mouse_callback(int eventType, const EmscriptenMouseEvent *e, void *userData) {
+    // 只处理左键 (button 0)
+    if (e->button != 0) return EM_FALSE;
+
+    LFTouchEventType type;
+    if (eventType == EMSCRIPTEN_EVENT_MOUSEDOWN) type = LFTouchEventType::Down;
+    else if (eventType == EMSCRIPTEN_EVENT_MOUSEMOVE) {
+        // 只有按住左键移动时才算 Drag/Move
+        if (e->buttons & 1) type = LFTouchEventType::Move;
+        else return EM_FALSE; // 只是 hover，移动端引擎通常忽略
+    }
+    else if (eventType == EMSCRIPTEN_EVENT_MOUSEUP) type = LFTouchEventType::Up;
+    else return EM_FALSE;
+
+    // 构造 TouchPoint
+    LFTouchPoint p;
+    p.id = 0; // 鼠标固定 ID 为 0
+    p.x = e->targetX;
+    p.y = e->targetY;
+    p.pressure = 1.0f;
+    p.timestamp = get_engine_time();
+
+    std::vector<LFTouchPoint> touches = { p };
+    std::vector<LFTouchID> changed = { 0 };
+
+    dispatch_to_engine(type, touches, changed);
+
+    return EM_TRUE; // 消费事件
+}
+
+// ==========================================
+// 触摸事件适配 (原生多点触控)
+// ==========================================
+EM_BOOL touch_callback(int eventType, const EmscriptenTouchEvent *e, void *userData) {
+    LFTouchEventType type;
+    if (eventType == EMSCRIPTEN_EVENT_TOUCHSTART) type = LFTouchEventType::Down;
+    else if (eventType == EMSCRIPTEN_EVENT_TOUCHMOVE) type = LFTouchEventType::Move;
+    else if (eventType == EMSCRIPTEN_EVENT_TOUCHEND) type = LFTouchEventType::Up;
+    else if (eventType == EMSCRIPTEN_EVENT_TOUCHCANCEL) type = LFTouchEventType::Cancel;
+    else return EM_FALSE;
+
+    std::vector<LFTouchPoint> allTouches;
+    std::vector<LFTouchID> changedIds;
+
+    double now = get_engine_time();
+
+    // 1. 收集当前屏幕上所有的点 (Active Touches)
+    for (int i = 0; i < e->numTouches; ++i) {
+        if (!e->touches[i].isChanged) {
+            // 这是一个在屏幕上但状态没变的点，也需要传给引擎保持状态
+            LFTouchPoint p;
+            p.id = (int)e->touches[i].identifier;
+            p.x = e->touches[i].targetX;
+            p.y = e->touches[i].targetY;
+            p.pressure = 1.0f;
+            p.timestamp = now;
+            allTouches.push_back(p);
+        }
+    }
+
+    // 2. 收集发生变化的点 (Changed Touches)
+    // Emscripten 的结构略有不同，changedTouches 是单独的列表吗？
+    // 注意：Emscripten 这里的结构包含 touches (所有点) 和 changedTouches (变化点)
+    // 但 C API 中 `EmscriptenTouchEvent` 结构体直接给出了 `touches` 数组，
+    // 我们需要通过 `e->touches[i].isChanged` 标志来判断。
+
+    for (int i = 0; i < e->numTouches; ++i) {
+        if (e->touches[i].isChanged) {
+            LFTouchPoint p;
+            p.id = (int)e->touches[i].identifier;
+            p.x = e->touches[i].targetX;
+            p.y = e->touches[i].targetY;
+            p.pressure = 1.0f;
+            p.timestamp = now;
+
+            allTouches.push_back(p);
+            changedIds.push_back(p.id);
+        }
+    }
+
+    dispatch_to_engine(type, allTouches, changedIds);
+
+    // 返回 EM_TRUE 非常重要！这会调用 e.preventDefault()
+    // 防止浏览器处理滑动（比如页面滚动、下拉刷新等）
+    return EM_TRUE;
+}
+
 void update_canvas_size() {
     double cssW, cssH;
     // 1. 获取 HTML 元素目前的 CSS 显示尺寸 (比如 800x600)
@@ -147,7 +254,6 @@ void update_canvas_size() {
     // 必须取整，否则可能导致渲染裂缝
     int phyW = (int)std::ceil(cssW * dpr);
     int phyH = (int)std::ceil(cssH * dpr);
-    LF_LOGI("phyW=%d, phyH=%d, dpr=%f", phyW, phyH, dpr);
 
     // 4. 设置 Canvas 的“绘图缓冲区”尺寸
     // 这对应 HTML 标签的 <canvas width="..." height="...">
@@ -222,7 +328,6 @@ int main() {
                     img->width = 200;
                     img->height = 200;
 
-                    LF_LOGI("Image Callback, Size=%zu", img->size);
                     (*cb)(img); // 调用引擎的回调
 
                     delete cb; // 清理 callback wrapper
@@ -248,6 +353,16 @@ int main() {
 
     auto root = build();
     LFEngine::getInstance().setRoot(root);
+
+
+    emscripten_set_mousedown_callback(CANVAS_ID, nullptr, EM_TRUE, mouse_callback);
+    emscripten_set_mouseup_callback(CANVAS_ID, nullptr, EM_TRUE, mouse_callback);
+    emscripten_set_mousemove_callback(CANVAS_ID, nullptr, EM_TRUE, mouse_callback);
+
+    emscripten_set_touchstart_callback(CANVAS_ID, nullptr, EM_TRUE, touch_callback);
+    emscripten_set_touchend_callback(CANVAS_ID, nullptr, EM_TRUE, touch_callback);
+    emscripten_set_touchmove_callback(CANVAS_ID, nullptr, EM_TRUE, touch_callback);
+    emscripten_set_touchcancel_callback(CANVAS_ID, nullptr, EM_TRUE, touch_callback);
 
     update_canvas_size();
     emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, EM_FALSE, on_resize);
