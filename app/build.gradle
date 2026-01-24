@@ -31,8 +31,5 @@ android {
 dependencies {
 
     implementation libs.activity
-    implementation libs.constraintlayout
     implementation project(':leaf-core')
-    implementation libs.appcompat
-    implementation libs.material
 }
