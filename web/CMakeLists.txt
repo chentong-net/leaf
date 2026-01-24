@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CORE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../core)
-set(DEPS_DIR ${CORE_DIR}/deps)
+set(DEPS_DIR ${CORE_DIR}/../third_party)
 set(QUICKJS_DIR ${DEPS_DIR}/quickjs)
 set(NANOVG_DIR ${DEPS_DIR}/nanovg/src)
 set(YOGA_DIR ${DEPS_DIR}/yoga)

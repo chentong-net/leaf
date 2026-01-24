@@ -6,33 +6,19 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CORE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../core)
-set(DEPS_DIR ${CORE_DIR}/../third_party)
+set(DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 set(QUICKJS_DIR ${DEPS_DIR}/quickjs)
 set(NANOVG_DIR ${DEPS_DIR}/nanovg/src)
 set(YOGA_DIR ${DEPS_DIR}/yoga)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CORE_DIR}
         ${QUICKJS_DIR}
         ${NANOVG_DIR}
         ${YOGA_DIR}
 )
 
-# 编译QuickJS
-# 只编译最核心的文件，避免编译它的命令行工具
-add_library(quickjs STATIC
-        ${QUICKJS_DIR}/quickjs.c
-        ${QUICKJS_DIR}/libregexp.c
-        ${QUICKJS_DIR}/libunicode.c
-        ${QUICKJS_DIR}/cutils.c
-)
-
-target_compile_definitions(quickjs PRIVATE _GNU_SOURCE CONFIG_VERSION="2025-09-13")
-
 add_library(${CMAKE_PROJECT_NAME} SHARED
-        # List C/C++ source files with relative paths to this CMakeLists.txt.
         ${QUICKJS_DIR}/quickjs.c
         ${QUICKJS_DIR}/libregexp.c
         ${QUICKJS_DIR}/libunicode.c
@@ -53,19 +39,16 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${YOGA_DIR}/YGNodePrint.cpp
         ${YOGA_DIR}/event/event.cpp
 
-        ${CORE_DIR}/LFEngine.cpp
-        ${CORE_DIR}/LFBox.cpp
-        ${CORE_DIR}/LFLinear.cpp
-        ${CORE_DIR}/LFImage.cpp
-        ${CORE_DIR}/LFNode.cpp
-        ${CORE_DIR}/LFText.cpp
-        ${CORE_DIR}/event/LFHitTest.cpp
-        ${CORE_DIR}/event/LFEventDispatcher.cpp
-        ${CORE_DIR}/event/LFGestureArena.cpp
-        ${CORE_DIR}/gesture/LFGestureRecognizer.cpp
-
-        leaf_engine_jni.cpp
-        engine_bridge.cpp
+        LFEngine.cpp
+        LFBox.cpp
+        LFLinear.cpp
+        LFImage.cpp
+        LFNode.cpp
+        LFText.cpp
+        event/LFHitTest.cpp
+        event/LFEventDispatcher.cpp
+        event/LFGestureArena.cpp
+        gesture/LFGestureRecognizer.cpp
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
@@ -78,7 +61,6 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 target_link_libraries(${CMAKE_PROJECT_NAME}
         # List libraries link to the target library
         GLESv3
-        android
         log
         m
 )
