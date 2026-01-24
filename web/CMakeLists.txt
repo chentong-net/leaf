@@ -20,17 +20,6 @@ include_directories(
         ${YOGA_DIR}
 )
 
-# 编译QuickJS
-# 只编译最核心的文件，避免编译它的命令行工具
-add_library(quickjs STATIC
-        ${QUICKJS_DIR}/quickjs.c
-        ${QUICKJS_DIR}/libregexp.c
-        ${QUICKJS_DIR}/libunicode.c
-        ${QUICKJS_DIR}/cutils.c
-)
-
-target_compile_definitions(quickjs PRIVATE _GNU_SOURCE CONFIG_VERSION="2025-09-13")
-
 set(CORE_SOURCES
         ${QUICKJS_DIR}/quickjs.c
         ${QUICKJS_DIR}/libregexp.c
@@ -62,6 +51,13 @@ set(CORE_SOURCES
         ${CORE_DIR}/event/LFEventDispatcher.cpp
         ${CORE_DIR}/event/LFGestureArena.cpp
         ${CORE_DIR}/gesture/LFGestureRecognizer.cpp
+        ${CORE_DIR}/animation/LFEasing.cpp
+        ${CORE_DIR}/animation/LFEvaluator.cpp
+        ${CORE_DIR}/animation/LFSpring.cpp
+        ${CORE_DIR}/animation/LFAnimator.cpp
+        ${CORE_DIR}/animation/LFAnimationSet.cpp
+        ${CORE_DIR}/LFButton.cpp
+        ${CORE_DIR}/LFGlobalAnimationManager.cpp
 )
 
 message(STATUS "Building for WebAssembly")

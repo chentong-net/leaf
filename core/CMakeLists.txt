@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 
-project("leaf-android")
+project("leaf-core")
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
@@ -49,6 +49,13 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         event/LFEventDispatcher.cpp
         event/LFGestureArena.cpp
         gesture/LFGestureRecognizer.cpp
+        animation/LFEasing.cpp
+        animation/LFEvaluator.cpp
+        animation/LFSpring.cpp
+        animation/LFAnimator.cpp
+        animation/LFAnimationSet.cpp
+        LFButton.cpp
+        LFGlobalAnimationManager.cpp
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
