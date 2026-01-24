@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "leaf"
 include ':app'
-include ':leaf-core'
+include ':leaf-android'

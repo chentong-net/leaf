@@ -1,4 +1,4 @@
-package net.chentong.leaf.core;
+package net.chentong.leaf.android;
 
 import android.content.res.AssetManager;
 import android.content.res.Resources;
@@ -23,9 +23,9 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
     }
 
     // --- Native 方法声明 ---
-    // 加载编译好的 libsengine-core.so
+    // 加载编译好的 libleaf-android.so
     static {
-        System.loadLibrary("leaf-core");
+        System.loadLibrary("leaf-android");
     }
 
     // 对应 engine_jni.cpp 中的 extern "C" 函数

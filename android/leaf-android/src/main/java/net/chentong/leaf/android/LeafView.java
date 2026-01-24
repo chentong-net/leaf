@@ -1,4 +1,4 @@
-package net.chentong.leaf.core;
+package net.chentong.leaf.android;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView;

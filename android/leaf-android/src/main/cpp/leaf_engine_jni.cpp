@@ -36,7 +36,7 @@ std::string read_asset_js(AAssetManager* mgr, const char* path) {
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_net_chentong_leaf_core_LeafRenderer_nativeOnSurfaceCreated(JNIEnv* env, jobject thiz, jobject asset_mgr) {
+Java_net_chentong_leaf_android_LeafRenderer_nativeOnSurfaceCreated(JNIEnv* env, jobject thiz, jobject asset_mgr) {
     AAssetManager* mgr = AAssetManager_fromJava(env, asset_mgr);
     auto asset_loader = [mgr](const char* path) -> std::string {
         return read_asset_js(mgr, path);
@@ -49,18 +49,18 @@ Java_net_chentong_leaf_core_LeafRenderer_nativeOnSurfaceCreated(JNIEnv* env, job
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_net_chentong_leaf_core_LeafRenderer_nativeOnSurfaceChanged(JNIEnv* env, jobject thiz, jint w, jint h, jfloat d) {
+Java_net_chentong_leaf_android_LeafRenderer_nativeOnSurfaceChanged(JNIEnv* env, jobject thiz, jint w, jint h, jfloat d) {
     g_density = d;
     leaf_update_size(w / d, h / d, d);
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_net_chentong_leaf_core_LeafRenderer_nativeOnDrawFrame(JNIEnv* env, jobject thiz) {
+Java_net_chentong_leaf_android_LeafRenderer_nativeOnDrawFrame(JNIEnv* env, jobject thiz) {
     leaf_render();
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_net_chentong_leaf_core_LeafRenderer_nativeDispatchTouchEvent(
+Java_net_chentong_leaf_android_LeafRenderer_nativeDispatchTouchEvent(
     JNIEnv* env, jobject thiz,
     jint action,
     jint actionIndex,

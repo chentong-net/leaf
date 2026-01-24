@@ -2,7 +2,7 @@ package net.chentong.leaf.demo;
 
 import android.app.Activity;
 import android.os.Bundle;
-import net.chentong.leaf.core.LeafView;
+import net.chentong.leaf.android.LeafView;
 
 public class MainActivity extends Activity {
 

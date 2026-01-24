@@ -3,14 +3,13 @@ plugins {
 }
 
 android {
-    namespace 'net.chentong.leaf.core'
+    namespace 'net.chentong.leaf.android'
     compileSdk 34
     ndkVersion "28.1.13356709"
 
     defaultConfig {
         minSdk 29
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
         externalNativeBuild {
             cmake {
@@ -35,13 +34,4 @@ android {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
-}
-
-dependencies {
-
-    implementation libs.appcompat
-    implementation libs.material
-    testImplementation libs.junit
-    androidTestImplementation libs.ext.junit
-    androidTestImplementation libs.espresso.core
 }
