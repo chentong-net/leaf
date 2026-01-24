@@ -10,6 +10,7 @@
 #include <emscripten/fetch.h>
 #include "event/LFEvent.h"
 #include "event/LFEventDispatcher.h"
+#include "LFButton.h"
 
 static const char* CANVAS_ID = "#canvas";
 double dpr = 1.0f;
@@ -92,22 +93,21 @@ std::shared_ptr<LFNode> build() {
 
     contentColumn->addChild(statsRow);
 
-    auto btn = LFLinear::createVertical();
+    auto btn = LFButton::create();
     btn->setWidth(130); // 按钮宽度
     btn->setHeight(40); // 按钮高度
     btn->setMargin(YGEdgeTop, 30);
-    btn->setBackgroundColor(0xFF000000); // 纯黑背景
+    btn->setBackgroundColor(LFButtonState::Normal, 0xFF007AFF); // 纯黑背景
+    btn->setBackgroundColor(LFButtonState::Pressed, 0xFF0056B3);
+    btn->setBackgroundColor(LFButtonState::Disabled, 0xFFB0B0B5);
     btn->setBorderRadius(6); // 小圆角
-    btn->setGravity(LFAlignment::Center, LFAlignment::Center);
+    btn->setText("Edit Profile");
+    btn->setFontSize(12);
+    btn->setTextColor(0xFFFFFFFF);
     btn->setShadow(0, 3, 6, 0, 0x40000000);
     btn->setOnTap([btn](const LFPoint& location) {
         LF_LOGI("tap");
     });
-
-    auto btnText = createText("Edit Profile", 12, 0xFFFFFFFF);
-    btnText->setTextHAlign(LFTextHAlign::Center);
-    btnText->setTextVAlign(LFTextVAlign::Center);
-    btn->addChild(btnText);
 
     contentColumn->addChild(btn);
 
@@ -263,7 +263,7 @@ void update_canvas_size() {
     // 注意：如果是 HiDPI，你可能需要根据你的 LFEngine 逻辑决定是传 cssW 还是 phyW
     // 如果你希望 100px 在 Web 上等于 100 CSS 像素（推荐），就传 cssW
     // 并在 Render 时应用 nvgScale(vg, dpr, dpr)
-    // 这里为了简单，我们先传 CSS 尺寸，让 NanoVG 自动处理
+    // TODO: 这里为了简单，我们先传 CSS 尺寸，让 NanoVG 自动处理
     LFEngine::getInstance().setWindowSize((float)cssW, (float)cssH, (float)dpr);
 
     // 如果需要手动处理 DPR，可以在这里打印日志调试
@@ -276,6 +276,7 @@ EM_BOOL on_resize(int eventType, const EmscriptenUiEvent *uiEvent, void *userDat
 }
 
 void loop_callback() {
+    LFEngine::getInstance().update(0.016f);
     LFEngine::getInstance().render();
 }
 
