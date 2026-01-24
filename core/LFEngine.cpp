@@ -3,8 +3,6 @@
 //
 
 #include "LFEngine.h"
-#include "event/LFEventDispatcher.h"
-#include <chrono>
 
 LFEngine& LFEngine::getInstance() {
     static LFEngine instance;
@@ -18,8 +16,6 @@ void LFEngine::init(NVGcontext* vg) {
     m_startTime = std::chrono::steady_clock::now();
 
     LFText::setMeasureContext(m_vg);
-    // 这里可以做一些 NanoVG 的全局配置，如加载默认字体等
-    // nvgCreateFont(vg, "sans", "assets/Roboto-Regular.ttf");
 }
 
 void LFEngine::setWindowSize(float width, float height, float scale) {
@@ -51,6 +47,8 @@ void LFEngine::update(float dt) {
     }
 
     // 2. 处理动画系统 (TODO: LFAnimator::update(dt))
+    LFGlobalAnimationManager::getInstance().update(dt);
+
     // 3. 处理定时器 (TODO: LFTimer::update(dt))
     // 4. 执行 JS 里的 requestAnimationFrame
 }

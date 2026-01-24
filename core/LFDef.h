@@ -18,6 +18,11 @@ extern "C" {
 #include <cmath>
 #include <mutex>
 #include <cstdio>
+#include <chrono>
+#include <cstdint>
+#include <limits>
+#include <initializer_list>
+#include <map>
 
 #ifdef __ANDROID__
 #include <android/log.h>
