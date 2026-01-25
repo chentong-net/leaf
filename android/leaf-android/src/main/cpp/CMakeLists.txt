@@ -59,6 +59,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${CORE_DIR}/animation/LFAnimationSet.cpp
         ${CORE_DIR}/LFButton.cpp
         ${CORE_DIR}/LFGlobalAnimationManager.cpp
+        ${CORE_DIR}/LFScrollView.cpp
 
         leaf_engine_jni.cpp
         engine_bridge.cpp

@@ -58,6 +58,7 @@ set(CORE_SOURCES
         ${CORE_DIR}/animation/LFAnimationSet.cpp
         ${CORE_DIR}/LFButton.cpp
         ${CORE_DIR}/LFGlobalAnimationManager.cpp
+        ${CORE_DIR}/LFScrollView.cpp
 )
 
 message(STATUS "Building for WebAssembly")
