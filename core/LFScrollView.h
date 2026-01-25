@@ -41,6 +41,9 @@ public:
     void setScrollBarEnabled(bool enabled);
     bool isScrollBarEnabled() const { return m_scrollBarEnabled; }
 
+    void setBounces(bool bounces);
+    bool getBounces() const { return m_bounces; }
+
 protected:
     // 绘制滚动条
     void onDrawOverlay(NVGcontext* vg) override;
@@ -97,6 +100,8 @@ private:
     void hideScrollbar();
 
     bool m_scrollBarEnabled = true;
+
+    bool m_bounces = true;
 };
 
 #endif // LEAF_LFSCROLLVIEW_H

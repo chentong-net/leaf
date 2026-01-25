@@ -100,9 +100,22 @@ void LFScrollView::initGestures() {
             // 2. 计算位移
             float dy = delta.y;
 
+            if (!self->m_bounces) {
+                // 预测移动后的位置
+                float nextY = self->m_scrollY + dy;
+                // 计算合法边界 (0 或 minScroll)
+                float boundaryY = self->getBoundaryY(nextY);
+
+                // 如果预测位置越界了，就强行截断 dy
+                // 让它刚好停在边界上，哪怕手指还在继续往外拉
+                if (nextY != boundaryY) {
+                    dy = boundaryY - self->m_scrollY;
+                }
+            }
+
             // 3. 阻尼效果 (Resistance)
             // 模拟 iOS 的非线性阻尼
-            if (self->isOutOfBounds(self->m_scrollY)) {
+            else if (self->isOutOfBounds(self->m_scrollY)) {
                 // 1. 获取当前视口高度
                 float height = self->getLayoutHeight();
                 // 2. 计算越界距离的比例 (越界越远，ratio 越大)
@@ -201,14 +214,27 @@ void LFScrollView::updatePhysics(float dt) {
         float frictionFactor = std::pow(FRICTION, dt * 60.0f); // 60fps基准
         m_velocity *= frictionFactor;
 
-        // 位移更新: s = s + v * dt
-        m_scrollY += m_velocity * dt;
+        float nextY = m_scrollY + m_velocity * dt;
 
-        // 停止条件
-        if (std::abs(m_velocity) < MIN_VELOCITY) {
+        // 检查：如果禁用了回弹 且 下一步会越界
+        if (!m_bounces && isOutOfBounds(nextY)) {
+            // 1. 强制吸附到边界
+            m_scrollY = getBoundaryY(nextY);
+            // 2. 像撞墙一样，速度瞬间清零
             m_velocity = 0;
+            // 3. 立即停止动画
             m_animator->stop();
             hideScrollbar();
+        } else {
+            // 正常移动
+            m_scrollY = nextY;
+
+            // 正常停止条件 (速度过小)
+            if (std::abs(m_velocity) < MIN_VELOCITY) {
+                m_velocity = 0;
+                m_animator->stop();
+                hideScrollbar();
+            }
         }
 
         // 特殊情况：Fling 过程中冲出了边界
@@ -270,6 +296,10 @@ void LFScrollView::setScrollBarEnabled(bool enabled) {
         }
         markDirty(); // 触发重绘以清除残影
     }
+}
+
+void LFScrollView::setBounces(bool bounces) {
+    m_bounces = bounces;
 }
 
 void LFScrollView::onDrawOverlay(NVGcontext* vg) {
