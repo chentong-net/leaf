@@ -291,6 +291,8 @@ void LFNode::render(NVGcontext* vg) {
     // 10. 绘制边框 (在子节点之上，防止被内容遮挡)
     drawBorder(vg, w, h);
 
+    onDrawOverlay(vg);
+
     // 11. 恢复状态
     nvgRestore(vg);
 }

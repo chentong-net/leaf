@@ -199,6 +199,10 @@ protected:
     // 内容绘制在背景之上，子视图之下
     virtual void onDrawContent(NVGcontext* vg) {}
 
+    // 子类实现顶层绘制 (如滚动条、角标)
+    // 绘制在子视图和边框之上
+    virtual void onDrawOverlay(NVGcontext* vg) {}
+
 private:
     // 内部绘制实现
     void drawShadow(NVGcontext* vg, float w, float h);
