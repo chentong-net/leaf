@@ -232,7 +232,22 @@ void LFScrollView::scrollTo(float y, bool animate) {
 // 滚动条绘制
 // ==========================================
 
+void LFScrollView::setScrollBarEnabled(bool enabled) {
+    if (m_scrollBarEnabled == enabled) return;
+    m_scrollBarEnabled = enabled;
+
+    // 如果被关闭，立即隐藏当前可能正在显示的滚动条
+    if (!enabled) {
+        m_scrollbarOpacity = 0.0f;
+        if (m_barFadeAnimator && m_barFadeAnimator->isRunning()) {
+            m_barFadeAnimator->stop();
+        }
+        markDirty(); // 触发重绘以清除残影
+    }
+}
+
 void LFScrollView::onDrawOverlay(NVGcontext* vg) {
+    if (!m_scrollBarEnabled) return;
     if (m_scrollbarOpacity <= 0) return;
 
     float viewH = getLayoutHeight();
@@ -275,6 +290,7 @@ void LFScrollView::onDrawOverlay(NVGcontext* vg) {
 }
 
 void LFScrollView::showScrollbar() {
+    if (!m_scrollBarEnabled) return;
     m_scrollbarOpacity = 1.0f;
     if (m_barFadeAnimator) {
         m_barFadeAnimator->stop();
@@ -284,6 +300,7 @@ void LFScrollView::showScrollbar() {
 
 void LFScrollView::hideScrollbar() {
     // 淡出动画
+    if (!m_scrollBarEnabled) return;
     if (m_scrollbarOpacity <= 0) return;
 
     m_barFadeAnimator = LFValueAnimator<float>::of(m_scrollbarOpacity, 0.0f);

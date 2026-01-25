@@ -84,6 +84,7 @@ void leaf_eval_js(const char *code) {
     root->matchParentWidth();
     root->matchParentHeight();
     root->setBackgroundColor(0xFF121212);  // Material Design 深色背景
+    root->setScrollBarEnabled(false);
 
     // 主内容区域 - 垂直线性布局
     auto contentColumn = LFLinear::createVertical();

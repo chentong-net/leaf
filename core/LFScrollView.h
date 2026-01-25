@@ -38,6 +38,9 @@ public:
 
     float getScrollY() const { return m_scrollY; }
 
+    void setScrollBarEnabled(bool enabled);
+    bool isScrollBarEnabled() const { return m_scrollBarEnabled; }
+
 protected:
     // 绘制滚动条
     void onDrawOverlay(NVGcontext* vg) override;
@@ -92,6 +95,8 @@ private:
     std::shared_ptr<LFValueAnimator<float>> m_barFadeAnimator;
     void showScrollbar();
     void hideScrollbar();
+
+    bool m_scrollBarEnabled = true;
 };
 
 #endif // LEAF_LFSCROLLVIEW_H
