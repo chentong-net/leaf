@@ -67,7 +67,7 @@ private:
     bool m_isDragging = false;    // 是否正在被手指拖拽
 
     // --- 物理参数 ---
-    const float FRICTION = 0.95f; // 摩擦系数 (0.0~1.0)
+    const float FRICTION = 0.92f; // 摩擦系数 (0.0~1.0)
     const float MIN_VELOCITY = 10.0f; // 最小速度阈值
 
     // --- 动画控制器 ---

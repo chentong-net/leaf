@@ -18,8 +18,10 @@ LFScrollView::Ptr LFScrollView::createVertical() {
 LFScrollView::LFScrollView() {
 
     // 初始化物理弹簧
-    // 质量1.0, 刚度150(较软), 阻尼18(适中回弹)
-    m_spring.setPhysicalParameters(1.0, 150.0, 18.0);
+    // 质量 m = 1.0
+    // 刚度 k = 120.0 (从 70 提回 120，稍微硬一点，回弹更有力)
+    // 阻尼 c = 25.0 (临界阻尼约为 22，设为 25 属于过阻尼，确保最后停下来时不震荡)
+    m_spring.setPhysicalParameters(1.0, 120.0, 25.0);
 
     // 初始化物理驱动器
 }
@@ -99,9 +101,17 @@ void LFScrollView::initGestures() {
             float dy = delta.y;
 
             // 3. 阻尼效果 (Resistance)
-            // 当拖拽超出边界时，施加阻力，让用户感觉拉不动
+            // 模拟 iOS 的非线性阻尼
             if (self->isOutOfBounds(self->m_scrollY)) {
-                dy *= 0.5f; // 移动距离减半
+                // 1. 获取当前视口高度
+                float height = self->getLayoutHeight();
+                // 2. 计算越界距离的比例 (越界越远，ratio 越大)
+                float ratio = std::abs(self->m_scrollY) / height;
+                // 3. 阻力因子：距离越远，因子越小 (从 0.5 迅速衰减到 0)
+                // 这里的 0.55 是基础系数，ratio * 1.5 是衰减速率
+                float damping = 0.55f / (1.0f + ratio * 10.0f);
+
+                dy *= damping;
             }
 
             // 4. 应用位移
@@ -145,10 +155,15 @@ void LFScrollView::updatePhysics(float dt) {
 
     // 状态 A: 越界回弹 (Spring Mode)
     if (isOutOfBounds(m_scrollY)) {
+        float targetY = getBoundaryY(m_scrollY);
         if (!m_inSpringMode) {
             // 刚进入回弹状态，初始化弹簧
             m_inSpringMode = true;
-            float targetY = getBoundaryY(m_scrollY);
+            // 撞击能量损耗 (Impact Damping)
+            // 当惯性撞上边界时，强制损失 70% 的速度
+            // 这样既保留了“冲一下”的动态感，又不会冲出十万八千里
+            // 0.3f 是一个经验值，越小越像撞墙，越大越软
+            m_velocity *= 0.3f;
             m_spring.setCurrentValue(m_scrollY, m_velocity);
             m_spring.setTargetValue(targetY);
         }
@@ -157,9 +172,20 @@ void LFScrollView::updatePhysics(float dt) {
         m_scrollY = (float)m_spring.advance(dt);
         m_velocity = (float)m_spring.getVelocity();
 
+        // 比之前更加激进的收敛判定
+        // 位置阈值 < 0.1f (极高精度，消除回弹不到位)
+        // 速度阈值 < 10.0f (允许稍快时截断，消除最后阶段的磨蹭感)
+        if (std::abs(m_scrollY - targetY) < 0.1f && std::abs(m_velocity) < 10.0f) {
+            // 强制归位
+            m_spring.setCurrentValue(targetY, 0.0f);
+            m_scrollY = targetY;
+            m_velocity = 0.0f;
+        }
+
         // 检查是否静止
+        // 注意：如果 LFSpring 没有 isAtRest，可以用 std::abs(m_velocity) < 1.0f && std::abs(m_scrollY - targetY) < 1.0f 代替
         if (m_spring.isAtRest()) {
-            m_scrollY = (float)m_spring.getTargetValue(); // 修正到精确值
+            m_scrollY = targetY; // 修正到精确值
             m_velocity = 0;
             m_inSpringMode = false;
             m_animator->stop(); // 结束动画
