@@ -2,6 +2,7 @@
 
 #include "LFEngine.h"
 #include "event/LFEvent.h"  // For LFPoint definition
+#include "LFScrollView.h"
 
 // 辅助函数：快速创建文本节点 (Outside extern "C" block)
 std::shared_ptr<LFText> createText(const std::string& content, float fontSize, uint32_t color, bool isBold = false) {
@@ -79,7 +80,7 @@ void leaf_eval_js(const char *code) {
     float cardRadius = 12.0f;     // 圆润但不过分
     float stdPadding = 16.0f;     // 标准边距
 
-    auto root = LFBox::create();
+    auto root = LFScrollView::createVertical();
     root->matchParentWidth();
     root->matchParentHeight();
     root->setBackgroundColor(0xFF121212);  // Material Design 深色背景
@@ -88,7 +89,7 @@ void leaf_eval_js(const char *code) {
     auto contentColumn = LFLinear::createVertical();
     contentColumn->matchParentWidth();
     contentColumn->wrapContentHeight();
-    contentColumn->setGravity(LFAlignment::Center, LFAlignment::Start); // 水平居中，垂直从头开始
+    contentColumn->setGravity(LFAlignment::Start, LFAlignment::Center); // 水平居中，垂直从头开始
     contentColumn->setSpacing(12.0f);   // 列表项间距
     contentColumn->setPadding(YGEdgeAll, stdPadding);
     // 留出顶部安全区域 (Status Bar)
@@ -265,7 +266,7 @@ void leaf_eval_js(const char *code) {
     contentColumn->addChild(arenaBox);
 
     // 最后添加到底部
-    root->addChild(contentColumn, LFBoxAlign::TopLeft);
+    root->addChild(contentColumn);
 
     // 提交
     LFEngine::getInstance().setRoot(root);
