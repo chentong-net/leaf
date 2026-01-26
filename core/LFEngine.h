@@ -5,15 +5,23 @@
 #ifndef LEAF_LFENGINE_H
 #define LEAF_LFENGINE_H
 
+#include "LFDef.h"
+#include "LFNode.h"
 #include "LFLinear.h"
 #include "LFBox.h"
-#include "LFNode.h"
 #include "LFText.h"
 #include "LFImage.h"
+#include "LFButton.h"
+#include "LFScrollView.h"
+#include "gesture/LFGestureRecognizer.h"
 #include "LFResourceProvider.h"
+#include "event/LFEvent.h"
 #include "event/LFEventDispatcher.h"
+#include "event/LFGestureArena.h"
+#include "event/LFHitTest.h"
 #include "animation/LFAnimator.h"
 #include "LFGlobalAnimationManager.h"
+#include "LFState.h"
 
 /**
  * Leaf 引擎的核心驱动器

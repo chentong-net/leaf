@@ -23,6 +23,7 @@ extern "C" {
 #include <limits>
 #include <initializer_list>
 #include <map>
+#include <type_traits>
 
 #ifdef __ANDROID__
 #include <android/log.h>
