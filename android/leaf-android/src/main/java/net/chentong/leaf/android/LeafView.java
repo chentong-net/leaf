@@ -22,6 +22,10 @@ public class LeafView extends GLSurfaceView {
     private void init(Context context) {
         // 设置 OpenGL ES 版本为 3.0
         setEGLContextClientVersion(3);
+        // 显式设置模板缓冲区
+        // LFScrollView 依赖 nvgIntersectScissor 来裁剪超出视口的内容
+        // NanoVG 内部利用模板缓冲区来标记画的内容
+        setEGLConfigChooser(8, 8, 8, 8, 16, 8);
 
         // 设置渲染器
         renderer = new LeafRenderer(context.getAssets());
