@@ -16,7 +16,9 @@
 class LFScrollView : public LFBox {
 public:
     using Ptr = std::shared_ptr<LFScrollView>;
+    static Ptr create() = delete;
     static Ptr createVertical();
+    static Ptr createHorizontal();
 
     LFScrollView();
     virtual ~LFScrollView();
@@ -49,7 +51,7 @@ protected:
     void onDrawOverlay(NVGcontext* vg) override;
 
 private:
-    void initLayout();
+    void initLayout(const LFNode::Ptr& child);
     void initGestures();
     void initAnimator();
 
@@ -62,7 +64,7 @@ private:
     bool isOutOfBounds(float y) const;
 
     // 内部容器，承载所有子节点
-    std::shared_ptr<LFBox> m_content;
+    std::shared_ptr<LFNode> m_content;
 
     // --- 滚动状态 ---
     float m_scrollY = 0.0f;       // 当前滚动位置 (通常 <= 0)

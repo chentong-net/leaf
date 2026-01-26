@@ -85,6 +85,7 @@ void leaf_eval_js(const char *code) {
     root->matchParentHeight();
     root->setBackgroundColor(0xFF121212);  // Material Design 深色背景
     root->setScrollBarEnabled(false);
+    root->setBounces(false);
 
     // 主内容区域 - 垂直线性布局
     auto contentColumn = LFLinear::createVertical();
@@ -143,7 +144,7 @@ void leaf_eval_js(const char *code) {
     // ====================
     auto longPressBox = createCard(0xFFFF9800); // Orange
 
-    auto longPressText = createLabel("Long Press Me");
+    auto longPressText = createLabel("Long Press");
     longPressBox->addChild(longPressText, LFBoxAlign::Center);
 
     longPressBox->setOnLongPress([longPressBox](const LFPoint& location) {

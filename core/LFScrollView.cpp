@@ -4,11 +4,33 @@
 
 #include "LFScrollView.h"
 #include "LFGlobalAnimationManager.h"
+#include "LFLinear.h"
 
 LFScrollView::Ptr LFScrollView::createVertical() {
     auto instance = std::make_shared<LFScrollView>();
 
-    instance->initLayout();
+    // 创建内容容器
+    auto content = LFLinear::createVertical();
+    // 宽度撑满 ScrollView
+    content->matchParentWidth();
+    // 高度由子元素决定
+    content->wrapContentHeight();
+
+    instance->initLayout(content);
+    instance->initAnimator();
+    instance->initGestures();
+
+    return instance;
+}
+
+LFScrollView::Ptr LFScrollView::createHorizontal() {
+    auto instance = std::make_shared<LFScrollView>();
+
+    auto content = LFLinear::createHorizontal();
+    content->wrapContentWidth();
+    content->matchParentHeight();
+
+    instance->initLayout(content);
     instance->initAnimator();
     instance->initGestures();
 
@@ -30,7 +52,7 @@ LFScrollView::~LFScrollView() {
     if (m_animator) m_animator->stop();
 }
 
-void LFScrollView::initLayout() {
+void LFScrollView::initLayout(const LFNode::Ptr& content) {
     // 1. 自身作为视口 (Viewport)
     // 开启裁剪，超出部分不显示
     setMasksToBounds(true);
@@ -39,23 +61,14 @@ void LFScrollView::initLayout() {
     matchParentHeight();
 
     // 2. 创建内容容器 (Content)
-    m_content = LFBox::create();
-    // 宽度撑满 ScrollView
-    m_content->matchParentWidth();
-    // 高度由子元素决定 (Wrap Content)
-    m_content->wrapContentHeight();
+    m_content = content;
 
     // 3. 将 Content 添加到自身 (使用基类方法)
     LFBox::addChild(m_content, LFBoxAlign::TopLeft);
 }
 
 void LFScrollView::addChild(const LFNode::Ptr& child) {
-    // 拦截 addChild，全部塞给 m_content
-    // 默认线性排列，所以这里假设 m_content 内部用 Flex Column
-    // 如果 m_content 是 LFBox，则需要 child 自己指定位置或流式布局
-    // 为了通用，建议 ScrollView 内部 Content 默认行为是 Vertical Linear 行为，
-    // 但因为我们用的是 LFBox，这里依赖 Yoga 的 FlexDirectionColumn 默认值
-    m_content->addChild(child, LFBoxAlign::TopLeft);
+    m_content->addChild(child);
     child->setPositionType(YGPositionTypeRelative);
     child->setPosition(YGEdgeRight, NAN);
     child->setPosition(YGEdgeBottom, NAN);
