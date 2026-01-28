@@ -1,8 +1,6 @@
 #define NANOVG_GLES3_IMPLEMENTATION
 
 #include "LFEngine.h"
-#include "event/LFEvent.h"  // For LFPoint definition
-#include "LFScrollView.h"
 
 // 辅助函数：快速创建文本节点 (Outside extern "C" block)
 std::shared_ptr<LFText> createText(const std::string& content, float fontSize, uint32_t color, bool isBold = false) {
@@ -70,7 +68,7 @@ void leaf_render() {
     LFEngine::getInstance().render();
 }
 
-void leaf_eval_js(const char *code) {
+std::shared_ptr<LFNode> buildTouchNode() {
     // ======================================
     // 手势系统完整测试 Demo (适配版)
     // ======================================
@@ -254,8 +252,8 @@ void leaf_eval_js(const char *code) {
     arenaText->setLineHeight(1.4f);
     arenaBox->addChild(arenaText, LFBoxAlign::Center);
 
-    arenaBox->setOnTap([](const LFPoint& p){
-        LF_LOGI("Arena: TAP won!");
+    arenaBox->setOnTap([arenaBox](const LFPoint& p){
+        arenaBox->setBackgroundColor(0xFF2196F3);
     });
 
     arenaBox->setOnPan(
@@ -270,8 +268,140 @@ void leaf_eval_js(const char *code) {
     // 最后添加到底部
     root->addChild(contentColumn);
 
+    return root;
+}
+
+std::shared_ptr<LFNode> buildRootNode(std::shared_ptr<LFNavigator> navigator, std::shared_ptr<LFNode> newPage) {
+    // 创建根容器
+    auto root = LFBox::create();
+    root->matchParentWidth();
+    root->matchParentHeight();
+    root->setBackgroundColor(0xFFF8F8F8); //稍微带点灰的背景，更有质感
+
+    auto contentColumn = LFLinear::createVertical();
+    contentColumn->matchParentWidth();
+    contentColumn->wrapContentHeight();
+    contentColumn->setGravity(LFAlignment::Center, LFAlignment::Center); // 水平居中
+    contentColumn->setPadding(YGEdgeTop, 60); // 避开顶部状态栏，留出大片空白
+
+    auto avatar = std::make_shared<LFImage>();
+    avatar->setSrc("avatar.jpg");
+    float avatarSize = 100;
+    avatar->setWidth(avatarSize);
+    avatar->setHeight(avatarSize);
+    avatar->setBorderRadius(avatarSize / 2.0f);
+    avatar->setBorder(3.0f, 0xFFFFFFFF);
+    avatar->setFit(LFImageFit::Cover);
+    avatar->setShadow(0, 5, 10, 0, 0x33000000);
+
+    contentColumn->addChild(avatar);
+
+    auto nameText = createText("Developer", 20, 0xFF222222, true);
+    nameText->setTextHAlign(LFTextHAlign::Center);
+    nameText->setTextVAlign(LFTextVAlign::Center);
+    nameText->setMargin(YGEdgeTop, 30); // 与头像的间距
+    contentColumn->addChild(nameText);
+
+    auto jobText = createText("Full-stack Engineer & UI Designer", 12, 0xFF888888);
+    jobText->setMargin(YGEdgeTop, 20);
+    jobText->setTextHAlign(LFTextHAlign::Center);
+    jobText->setTextVAlign(LFTextVAlign::Center);
+    contentColumn->addChild(jobText);
+
+    auto statsRow = LFLinear::createHorizontal();
+    statsRow->setWidthPercent(80.0f); // 宽度占屏幕 80%
+    statsRow->setMargin(YGEdgeTop, 24);
+    statsRow->setDistribution(LFDistribution::SpaceEvenly); // 等间距分布
+
+    // 创建单个统计项
+    auto makeStatItem = [](const std::string& count, const std::string& label) {
+        auto container = LFLinear::createVertical();
+        container->setWidth(80);
+        container->setHeight(40);
+        container->setGravity(LFAlignment::Center, LFAlignment::Center);
+
+        auto numTxt = createText(count, 14, 0xFF000000, true);
+        numTxt->wrapContentWidth();
+        numTxt->setTextHAlign(LFTextHAlign::Center);
+        numTxt->setTextVAlign(LFTextVAlign::Center);
+        auto labelTxt = createText(label, 10, 0xFF999999);
+        labelTxt->wrapContentWidth();
+        labelTxt->setTextHAlign(LFTextHAlign::Center);
+        labelTxt->setTextVAlign(LFTextVAlign::Center);
+        labelTxt->setMargin(YGEdgeTop, 10);
+
+        container->addChild(numTxt);
+        container->addChild(labelTxt);
+        return container;
+    };
+
+    statsRow->addChild(makeStatItem("99+", "Posts"));
+    statsRow->addChild(makeStatItem("12k", "Followers"));
+    statsRow->addChild(makeStatItem("350", "Following"));
+
+    contentColumn->addChild(statsRow);
+
+    auto btn = LFButton::create();
+    btn->setWidth(130); // 按钮宽度
+    btn->setHeight(40); // 按钮高度
+    btn->setMargin(YGEdgeTop, 30);
+    btn->setBackgroundColor(LFButtonState::Normal, 0xFF007AFF); // 纯黑背景
+    btn->setBackgroundColor(LFButtonState::Pressed, 0xFF0056B3);
+    btn->setBackgroundColor(LFButtonState::Disabled, 0xFFB0B0B5);
+    btn->setBorderRadius(6); // 小圆角
+    btn->setText("Edit Profile");
+    btn->setFontSize(12);
+    btn->setTextColor(0xFFFFFFFF);
+    btn->setShadow(0, 3, 6, 0, 0x40000000);
+    btn->setOnTap([btn, navigator, newPage](const LFPoint& location) {
+        LF_LOGI("tap");
+        auto nextPage = LFPage::create();
+        nextPage->setBackgroundColor(0xFFF5F5F5);
+        nextPage->addChild(newPage);
+        navigator->push(nextPage);
+    });
+
+    contentColumn->addChild(btn);
+
+    root->addChild(contentColumn, LFBoxAlign::TopLeft);
+
+    auto bottomColumn = LFLinear::createVertical();
+    bottomColumn->matchParentWidth();
+    bottomColumn->wrapContentHeight();
+    bottomColumn->setGravity(LFAlignment::Start, LFAlignment::Center);
+    bottomColumn->setSpacing(20);
+
+    auto infoText = createText("Next-Gen Cross-Platform UI Engine\nPowered by C++", 12, 0xFF007AFF);
+    infoText->matchParentWidth();
+    infoText->setLineHeight(1.5f);
+    infoText->setTextVAlign(LFTextVAlign::Center);
+    infoText->setTextHAlign(LFTextHAlign::Center);
+
+    auto contactText = createText("contact@example.com", 10, 0xFFAAAAAA);
+    contactText->wrapContentWidth();
+    contactText->setTextVAlign(LFTextVAlign::Center);
+    contactText->setTextHAlign(LFTextHAlign::Left);
+
+    bottomColumn->addChild(infoText);
+    bottomColumn->addChild(contactText);
+
+
+    root->addChild(bottomColumn, LFBoxAlign::BottomCenter, 0, -40);
+    return root;
+}
+
+void leaf_eval_js(const char *code) {
+
+    auto navigator = LFNavigator::create();
+
+    auto rootPage = LFPage::create();
+    rootPage->setBackgroundColor(0xFFF5F5F5);
+    auto root = buildRootNode(navigator, buildTouchNode());
+    rootPage->addChild(root);
+    navigator->push(rootPage);
+
     // 提交
-    LFEngine::getInstance().setRoot(root);
+    LFEngine::getInstance().setRoot(navigator);
 }
 
 }
