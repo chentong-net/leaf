@@ -22,6 +22,8 @@
 #include "animation/LFAnimator.h"
 #include "LFGlobalAnimationManager.h"
 #include "LFState.h"
+#include "LFPage.h"
+#include "LFNavigator.h"
 
 /**
  * Leaf 引擎的核心驱动器

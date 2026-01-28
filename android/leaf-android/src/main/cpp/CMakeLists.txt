@@ -60,6 +60,8 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${CORE_DIR}/LFButton.cpp
         ${CORE_DIR}/LFGlobalAnimationManager.cpp
         ${CORE_DIR}/LFScrollView.cpp
+        ${CORE_DIR}/LFPage.cpp
+        ${CORE_DIR}/LFNavigator.cpp
 
         leaf_engine_jni.cpp
         engine_bridge.cpp
