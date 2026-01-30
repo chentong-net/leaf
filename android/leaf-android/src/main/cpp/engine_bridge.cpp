@@ -2,6 +2,8 @@
 
 #include "LFEngine.h"
 
+LFNode::Ptr buildTabContainer();
+
 // 辅助函数：快速创建文本节点 (Outside extern "C" block)
 std::shared_ptr<LFText> createText(const std::string& content, float fontSize, uint32_t color, bool isBold = false) {
     auto text = std::make_shared<LFText>();
@@ -395,6 +397,8 @@ void leaf_eval_js(const char *code) {
 
     auto navigator = LFNavigator::create();
 
+    auto tabContainer = buildTabContainer();
+
     auto rootPage = LFPage::create();
     rootPage->setBackgroundColor(0xFFF5F5F5);
     auto root = buildRootNode(navigator, buildTouchNode());
@@ -402,7 +406,7 @@ void leaf_eval_js(const char *code) {
     navigator->push(rootPage);
 
     // 提交
-    LFEngine::getInstance().setRoot(navigator);
+    LFEngine::getInstance().setRoot(tabContainer);
 }
 
 }

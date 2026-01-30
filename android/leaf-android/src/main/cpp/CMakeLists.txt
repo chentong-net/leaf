@@ -62,9 +62,12 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${CORE_DIR}/LFScrollView.cpp
         ${CORE_DIR}/LFPage.cpp
         ${CORE_DIR}/LFNavigator.cpp
+        ${CORE_DIR}/LFGrid.cpp
+        ${CORE_DIR}/LFTab.cpp
 
         leaf_engine_jni.cpp
         engine_bridge.cpp
+        MainPage.cpp
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE

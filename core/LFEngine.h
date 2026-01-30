@@ -24,6 +24,8 @@
 #include "LFState.h"
 #include "LFPage.h"
 #include "LFNavigator.h"
+#include "LFGrid.h"
+#include "LFTab.h"
 
 /**
  * Leaf 引擎的核心驱动器
