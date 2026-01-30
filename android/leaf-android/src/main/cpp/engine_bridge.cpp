@@ -23,10 +23,11 @@ void leaf_init(std::function<std::string(const char *path)> loader) {
     // 2. 初始化引擎核心
     LFEngine::getInstance().init(vg);
 
-    // 4. 加载字体 (直接使用 Android 系统字体)
-    // 优先加载 Roboto，如果失败则回退到 NotoSansCJK (支持中文)
-    std::string fontData = loader("fonts/MapleMonoNormalNL-Regular.ttf");
-    if (nvgCreateFontMem(vg, "sans", (unsigned char*) fontData.data(), fontData.size(), 0) == -1) {
+    // 4. 加载字体
+    std::string fontData = loader("fonts/MapleMonoNormal-CN-Regular.ttf");
+    unsigned char* fontDataCopy = (unsigned char*)malloc(fontData.size());
+    memcpy(fontDataCopy, fontData.data(), fontData.size());
+    if (nvgCreateFontMem(vg, "sans", fontDataCopy, fontData.size(), 1) == -1) {
         // If failed (e.g. some custom ROMs)
         nvgCreateFont(vg, "sans", "/system/fonts/NotoSansCJK-Regular.ttc");
     }
