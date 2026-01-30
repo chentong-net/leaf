@@ -15,6 +15,8 @@
 static const char* CANVAS_ID = "#canvas";
 double dpr = 1.0f;
 
+LFNode::Ptr buildTabContainer();
+
 std::shared_ptr<LFText> createText(const std::string& content, float fontSize, uint32_t color, bool isBold = false) {
     auto text = std::make_shared<LFText>();
     text->setText(content);
@@ -565,7 +567,8 @@ int main() {
     auto root = buildRootNode(navigator, buildTouchNode());
     rootPage->addChild(root);
     navigator->push(rootPage);
-    LFEngine::getInstance().setRoot(navigator);
+    auto tabContainer = buildTabContainer();
+    LFEngine::getInstance().setRoot(tabContainer);
 
 
     emscripten_set_mousedown_callback(CANVAS_ID, nullptr, EM_TRUE, mouse_callback);
