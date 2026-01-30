@@ -505,7 +505,7 @@ int main() {
 
     LFEngine::getInstance().init(vg);
 
-    nvgCreateFont(vg, "sans", "fonts/MapleMonoNormalNL-Regular.ttf");
+    nvgCreateFont(vg, "sans", "fonts/MapleMonoNormal-CN-Regular.ttf");
 
     LFResourceProvider::getInstance().setImageLoader(
             [](const std::string &path,
