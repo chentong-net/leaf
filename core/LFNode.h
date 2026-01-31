@@ -127,6 +127,10 @@ public:
     float getLayoutWidth() const { return YGNodeLayoutGetWidth(m_ygNode); }
     float getLayoutHeight() const { return YGNodeLayoutGetHeight(m_ygNode); }
     float getRadius();
+    float getTranslateX() const { return m_transform.translateX; }
+    float getTranslateY() const { return m_transform.translateY; }
+    float getScaleX() const { return m_transform.scaleX; }
+    float getScaleY() const { return m_transform.scaleY; }
 
     // 获取变换（供 HitTest 使用）
     const LFTransform& getTransform() const { return m_transform; }

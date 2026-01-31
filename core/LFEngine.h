@@ -96,6 +96,9 @@ public:
      */
     double getElapsedTime() const;
 
+    float getWindowWidth() const { return m_windowWidth; }
+    float getWindowHeight() const { return m_windowHeight; }
+
 private:
     LFEngine() = default;
 
