@@ -12,6 +12,11 @@
 
 #include <sstream>
 
+const float TOP_BAR_HEIGHT = 56.0f;         // 顶部导航栏高度
+const float ADAPTER_PADDING_TOP = 30.0f;    // 正文顶部内边距 (Adapter setPadding Top)
+const float ADAPTER_PADDING_BOTTOM = 30.0f; // 正文底部内边距 (Adapter setPadding Bottom)
+const float ADAPTER_PADDING_X = 24.0f;      // 正文左/右内边距
+
 static std::string normalizeText(const std::string& input) {
     if (input.empty()) return "";
 
@@ -44,10 +49,9 @@ static std::string normalizeText(const std::string& input) {
  */
 class BookPageAdapter : public LFPageAdapter {
 public:
-    BookPageAdapter(const std::vector<std::string>& pages, float fontSize, float topPadding)
+    BookPageAdapter(const std::vector<std::string>& pages, float fontSize)
             : m_pages(pages)
             , m_fontSize(fontSize)
-            , m_topPadding(topPadding)
     {}
 
     int getCount() override {
@@ -78,9 +82,9 @@ public:
         // Top: 避开顶部标题栏
         // Bottom: 避开底部页码
         // Horizontal: 阅读舒适区
-        contentText->setPadding(YGEdgeTop, m_topPadding + 20.0f);
-        contentText->setPadding(YGEdgeBottom, 50.0f);
-        contentText->setPadding(YGEdgeHorizontal, 24.0f);
+        contentText->setPadding(YGEdgeTop, ADAPTER_PADDING_TOP);
+        contentText->setPadding(YGEdgeBottom, ADAPTER_PADDING_BOTTOM);
+        contentText->setPadding(YGEdgeHorizontal, ADAPTER_PADDING_X);
 
         // --- 页码区域 (Footer) ---
         auto footerText = std::make_shared<LFText>();
@@ -121,7 +125,6 @@ public:
 private:
     std::vector<std::string> m_pages;
     float m_fontSize;
-    float m_topPadding;
 };
 
 // ==========================================
@@ -183,13 +186,12 @@ void ReaderPage::splitContentAndInit(const std::string& rawContent) {
     const float lineHeightScale = 1.6f;
 
     // 垂直方向 (Pixels)
-    const float topBarHeight = 56.0f;       // 顶部导航栏高度
-    const float adapterPaddingTop = 20.0f;  // 正文顶部内边距 (Adapter setPadding Top)
-    const float adapterPaddingBottom = 50.0f; // 正文底部内边距 (Adapter setPadding Bottom)
-    const float footerReserve = 30.0f;      // 底部页码区域预留高度
+    const float topBarHeight = TOP_BAR_HEIGHT;       // 顶部导航栏高度
+    const float adapterPaddingTop = ADAPTER_PADDING_TOP;  // 正文顶部内边距 (Adapter setPadding Top)
+    const float adapterPaddingBottom = ADAPTER_PADDING_BOTTOM; // 正文底部内边距 (Adapter setPadding Bottom)
 
     // 水平方向 (Pixels)
-    const float adapterPaddingX = 24.0f;    // 左右内边距 (Adapter setPadding Horizontal)
+    const float adapterPaddingX = ADAPTER_PADDING_X;    // 左右内边距 (Adapter setPadding Horizontal)
 
     // ==========================================
     // 2. 获取屏幕尺寸
@@ -213,7 +215,7 @@ void ReaderPage::splitContentAndInit(const std::string& rawContent) {
     // 逻辑：屏幕高 - 顶部占用 - 底部占用 - 高度缓冲
 
     // 固定被占用的高度
-    float occupiedHeight = topBarHeight + adapterPaddingTop + adapterPaddingBottom;
+    float occupiedHeight = adapterPaddingTop + adapterPaddingBottom;
 
     // 既然 TextSplitter 现在计算很精准，我们只需要极小的缓冲来防止 float 精度误差
     float singleLineHeight = fontSize * lineHeightScale;
@@ -247,7 +249,7 @@ void ReaderPage::splitContentAndInit(const std::string& rawContent) {
     // ==========================================
     if (!pages.empty()) {
         // 创建适配器，传入 topBarHeight 以便 Adapter 内部设置正确的 Padding
-        auto adapter = std::make_shared<BookPageAdapter>(pages, fontSize, topBarHeight);
+        auto adapter = std::make_shared<BookPageAdapter>(pages, fontSize);
         m_pageView->setAdapter(adapter);
     }
 }
@@ -255,7 +257,7 @@ void ReaderPage::splitContentAndInit(const std::string& rawContent) {
 void ReaderPage::setupTopBar(const std::string& title) {
     m_topBar = LFLinear::createHorizontal();
     m_topBar->matchParentWidth();
-    m_topBar->setHeight(56.0f);
+    m_topBar->setHeight(TOP_BAR_HEIGHT);
     m_topBar->setBackgroundColor(0xFFFFFFFF); // 白底
     m_topBar->setGravity(LFAlignment::Start, LFAlignment::Center);
     m_topBar->setPadding(YGEdgeHorizontal, 10.0f);
