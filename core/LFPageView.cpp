@@ -144,7 +144,6 @@ void LFPageView::initGestures() {
 
             // 如果有正在进行的翻页/回弹动画，立即停止并接管
             if (m_animator && m_animator->isRunning()) {
-                LF_LOGI("animation stop");
                 m_animator->stop();
 
                 float threshold = m_pageWidth * 0.2f; // 阈值设小一点
