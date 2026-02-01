@@ -35,8 +35,8 @@ void leaf_init(std::function<std::string(const char *path)> loader) {
     }
 
     // 3. 配置资源加载器
-    LFResourceProvider::getInstance().setImageLoader(
-            [loader](const std::string& path, std::function<void(std::shared_ptr<LFImageData>)> callback) {
+    LFResourceProvider::getInstance().setAssetLoader(
+            [loader](const std::string& path, std::function<void(std::shared_ptr<LFData>)> callback) {
                 std::string raw = loader(path.c_str());
                 if (raw.empty()) {
                     callback(nullptr);
@@ -44,17 +44,12 @@ void leaf_init(std::function<std::string(const char *path)> loader) {
                 }
 
                 // 这里仅做数据透传演示
-                auto img = std::make_shared<LFImageData>();
-                img->size = raw.size();
-                img->data = (unsigned char*)malloc(img->size);
-                memcpy(img->data, raw.data(), img->size);
+                auto data = std::make_shared<LFData>();
+                data->size = raw.size();
+                data->data = (unsigned char*)malloc(data->size);
+                memcpy(data->data, raw.data(), data->size);
 
-                // 硬编码一下 avatar.jpg 的尺寸，防止 layout 也就是 measure 算错
-                // 实际解码后会有真实宽高
-                img->width = 200;
-                img->height = 200;
-
-                callback(img);
+                callback(data);
             }
     );
 }

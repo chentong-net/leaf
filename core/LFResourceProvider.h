@@ -9,20 +9,21 @@
 #include <functional>
 #include <vector>
 
-struct LFImageData {
+// TODO: 为以后扩展参数做准备，目前没有这个需求
+using LFVariant = std::variant<int, float, std::string, std::vector<unsigned char>>;
+
+struct LFData {
     unsigned char *data;
     size_t size;
-    int width;
-    int height;
 
-    ~LFImageData() {
+    ~LFData() {
         if (data) {
             free(data);
         }
     }
 };
 
-using LFImageLoader = std::function<void(const std::string&, std::function<void(std::shared_ptr<LFImageData>)>)>;
+using LFAssetLoader = std::function<void(const std::string&, std::function<void(std::shared_ptr<LFData>)>)>;
 
 class LFResourceProvider {
 public:
@@ -31,9 +32,9 @@ public:
         return instance;
     }
 
-    void setImageLoader(LFImageLoader loader) { m_nativeLoader = loader; }
+    void setAssetLoader(LFAssetLoader loader) { m_nativeLoader = loader; }
 
-    void fetchImageBuffer(const std::string& uri, std::function<void(std::shared_ptr<LFImageData>)> callback) {
+    void fetchAsset(const std::string& uri, std::function<void(std::shared_ptr<LFData>)> callback) {
         if (m_nativeLoader) {
             m_nativeLoader(uri, callback);
         }
@@ -41,7 +42,7 @@ public:
 
 private:
     LFResourceProvider() = default;
-    LFImageLoader m_nativeLoader;
+    LFAssetLoader m_nativeLoader;
 };
 
 #endif

@@ -509,9 +509,9 @@ int main() {
 
     nvgCreateFont(vg, "sans", "fonts/MapleMonoNormal-CN-Regular.ttf");
 
-    LFResourceProvider::getInstance().setImageLoader(
+    LFResourceProvider::getInstance().setAssetLoader(
             [](const std::string &path,
-               std::function<void(std::shared_ptr<LFImageData>)> callback) {
+               std::function<void(std::shared_ptr<LFData>)> callback) {
 
                 emscripten_fetch_attr_t attr;
                 emscripten_fetch_attr_init(&attr);
@@ -521,24 +521,20 @@ int main() {
 
                 // 关键点：我们需要把 callback 传给成功/失败的静态函数
                 // 我们在堆上创建一个 callback 的拷贝，生命周期交给 Fetch 管理
-                auto *callbackPtr = new std::function<void(std::shared_ptr<LFImageData>)>(callback);
+                auto *callbackPtr = new std::function<void(std::shared_ptr<LFData>)>(callback);
                 attr.userData = callbackPtr;
 
                 // 成功回调
                 attr.onsuccess = [](emscripten_fetch_t *fetch) {
                     auto *cb = static_cast<std::function<void(
-                            std::shared_ptr<LFImageData>)> *>(fetch->userData);
+                            std::shared_ptr<LFData>)> *>(fetch->userData);
 
-                    auto img = std::make_shared<LFImageData>();
-                    img->size = fetch->numBytes;
-                    img->data = (unsigned char *) malloc(img->size);
-                    memcpy(img->data, fetch->data, img->size);
+                    auto data = std::make_shared<LFData>();
+                    data->size = fetch->numBytes;
+                    data->data = (unsigned char *) malloc(data->size);
+                    memcpy(data->data, fetch->data, data->size);
 
-                    // TODO: 依然需要解码宽高，见下文
-                    img->width = 200;
-                    img->height = 200;
-
-                    (*cb)(img); // 调用引擎的回调
+                    (*cb)(data); // 调用引擎的回调
 
                     delete cb; // 清理 callback wrapper
                     emscripten_fetch_close(fetch); // 释放 fetch 资源
@@ -547,7 +543,7 @@ int main() {
                 // 失败回调
                 attr.onerror = [](emscripten_fetch_t *fetch) {
                     auto *cb = static_cast<std::function<void(
-                            std::shared_ptr<LFImageData>)> *>(fetch->userData);
+                            std::shared_ptr<LFData>)> *>(fetch->userData);
                     printf("Fetch failed: %s\n", fetch->url);
 
                     (*cb)(nullptr); // 告诉引擎加载失败

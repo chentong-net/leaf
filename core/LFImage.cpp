@@ -3,6 +3,7 @@
 //
 
 #include "LFImage.h"
+#include "stb_image.h"
 
 LFImage::LFImage() {
     YGNodeSetMeasureFunc(getYGNode(), measure);
@@ -54,7 +55,7 @@ void LFImage::startLoading() {
     int currentId = m_loadRequestId;
     auto weakThis = std::weak_ptr<LFImage>(std::static_pointer_cast<LFImage>(shared_from_this()));
 
-    LFResourceProvider::getInstance().fetchImageBuffer(m_src, [weakThis, currentId](std::shared_ptr<LFImageData> imageData) {
+    LFResourceProvider::getInstance().fetchAsset(m_src, [weakThis, currentId](std::shared_ptr<LFData> imageData) {
         auto self = weakThis.lock();
         // 检查 ID 是否匹配，不匹配说明 setSrc 又被调过了，当前结果已过时
         if (!self || self->m_loadRequestId != currentId) return;
@@ -63,8 +64,11 @@ void LFImage::startLoading() {
             self->m_pendingData = imageData;
             self->m_needUpload = true; // 标记需要上传
 
-            self->m_imgWidth = imageData->width;
-            self->m_imgHeight = imageData->height;
+
+            int width, height, channels;
+            stbi_info_from_memory(imageData->data, imageData->size, &width, &height, &channels);
+            self->m_imgWidth = width;
+            self->m_imgHeight = height;
 
             if (self->m_imgHeight > 0) {
                 float ratio = (float)self->m_imgWidth / (float)self->m_imgHeight;

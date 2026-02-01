@@ -41,7 +41,7 @@ private:
     int m_imgHeight = 0;
 
     // 异步加载状态
-    std::shared_ptr<LFImageData> m_pendingData = nullptr;
+    std::shared_ptr<LFData> m_pendingData = nullptr;
     bool m_needUpload = false;
 
     // 加载请求 ID，解决异步竞态问题
