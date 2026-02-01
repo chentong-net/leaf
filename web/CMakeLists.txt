@@ -63,6 +63,7 @@ set(CORE_SOURCES
         ${CORE_DIR}/LFNavigator.cpp
         ${CORE_DIR}/LFGrid.cpp
         ${CORE_DIR}/LFTab.cpp
+        ${CORE_DIR}/LFPageView.cpp
 )
 
 message(STATUS "Building for WebAssembly")
@@ -80,6 +81,8 @@ add_executable(leaf-web
         ${CORE_SOURCES}
         web_main.cpp
         MainPage.cpp
+        ReaderPage.cpp
+        TextSplitter.cpp
 )
 
 set_target_properties(leaf-web PROPERTIES SUFFIX ".html")

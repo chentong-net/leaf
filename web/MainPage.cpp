@@ -15,6 +15,9 @@
 #include "LFText.h"
 #include "LFImage.h"
 #include "LFButton.h"
+#include "ReaderPage.h"
+
+std::shared_ptr<LFNavigator> g_navigator;
 
 // ==========================================
 // 辅助工具函数：减少重复代码
@@ -54,7 +57,7 @@ LFPage::Ptr buildDevInfoPage() {
     avatar->setHeight(avatarSize);
     avatar->setBorderRadius(avatarSize / 2.0f);
     avatar->setBorder(3.0f, 0xFFFFFFFF);
-    avatar->setFit(LFImageFit::Cover);
+    avatar->setFit(LFImageFit::Fill);
     avatar->setShadow(0, 5, 10, 0, 0x33000000);
 
     contentColumn->addChild(avatar);
@@ -220,6 +223,14 @@ LFPage::Ptr buildBookshelfPage() {
         // 点击测试
         itemLayout->setOnTap([i](const LFPoint& point){
             LF_LOGI("Clicked Book: %d", i);
+            std::string title = "十日终焉.txt";
+            LFResourceProvider::getInstance().fetchAsset(title, [title](std::shared_ptr<LFData> data) {
+                std::string content(reinterpret_cast<const char*>(data->data), data->size);
+                auto readerPage = ReaderPage::create(title, content);
+                if (g_navigator) {
+                    g_navigator->push(readerPage);
+                }
+            });
         });
 
         grid->addChild(itemLayout);
@@ -249,14 +260,14 @@ LFNode::Ptr buildTabContainer() {
     // 这是架构的关键：我们在最外层包裹一个 Navigator。
     // 这样当你在“书架”点击书本时，可以调用 navigator->push(readerPage)
     // 这个新的 readerPage 会覆盖掉整个 TabBar，这是符合移动端规范的。
-    auto navigator = LFNavigator::create();
+    g_navigator = LFNavigator::create();
 
     // 4. 创建一个宿主 Page 来容纳 Tab
     auto rootPage = LFPage::create();
     rootPage->addChild(tab); // Tab 撑满页面
 
     // 5. 将宿主页推入栈底
-    navigator->push(rootPage, false); // false = 无动画，作为第一页
+    g_navigator->push(rootPage, false); // false = 无动画，作为第一页
 
-    return navigator;
+    return g_navigator;
 }

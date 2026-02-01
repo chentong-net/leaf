@@ -64,10 +64,13 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${CORE_DIR}/LFNavigator.cpp
         ${CORE_DIR}/LFGrid.cpp
         ${CORE_DIR}/LFTab.cpp
+        ${CORE_DIR}/LFPageView.cpp
 
         leaf_engine_jni.cpp
         engine_bridge.cpp
         MainPage.cpp
+        ReaderPage.cpp
+        TextSplitter.cpp
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
