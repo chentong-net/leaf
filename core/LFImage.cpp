@@ -70,11 +70,6 @@ void LFImage::startLoading() {
             self->m_imgWidth = width;
             self->m_imgHeight = height;
 
-            if (self->m_imgHeight > 0) {
-                float ratio = (float)self->m_imgWidth / (float)self->m_imgHeight;
-                YGNodeStyleSetAspectRatio(self->getYGNode(), ratio);
-            }
-
             YGNodeMarkDirty(self->getYGNode());
             self->markDirty();
         }
@@ -182,6 +177,7 @@ void LFImage::onDrawContent(NVGcontext* vg) {
     float finalY = contentY + drawY;
 
     // 4. 绘制
+    // 使用 nvgImagePattern 将纹理映射到计算出的 draw 矩形中
     NVGpaint imgPaint = nvgImagePattern(vg, finalX, finalY, drawW, drawH, 0.0f, m_imageHandle, 1.0f);
 
     float radius = getRadius();
