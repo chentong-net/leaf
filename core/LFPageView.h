@@ -80,6 +80,12 @@ public:
      */
     void setOnPageChangeListener(OnPageChangedCallback callback);
 
+    /**
+     * 当数据源发生变化时调用
+     * 让 LFPageView 重新同步状态
+     */
+    void notifyDataSetChanged();
+
 private:
     void initLayout();
     void initGestures();
