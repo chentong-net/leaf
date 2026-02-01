@@ -28,6 +28,12 @@
 #include "LFTab.h"
 
 /**
+ * 帧任务回调
+ * 返回值：true 表示任务未完成，下一帧继续；false 表示任务结束，从队列移除。
+ */
+using LFFrameTask = std::function<bool()>;
+
+/**
  * Leaf 引擎的核心驱动器
  */
 class LFEngine {
@@ -99,6 +105,12 @@ public:
     float getWindowWidth() const { return m_windowWidth; }
     float getWindowHeight() const { return m_windowHeight; }
 
+    /**
+     * 注册一个任务到主循环
+     * 任务会在每帧的 update 阶段被调用执行一次
+     */
+    void addFrameTask(LFFrameTask task);
+
 private:
     LFEngine() = default;
 
@@ -119,6 +131,10 @@ private:
 
     // Time base for gesture timing
     std::chrono::steady_clock::time_point m_startTime;
+
+    // 任务队列
+    std::vector<LFFrameTask> m_frameTasks;
+    std::mutex m_taskMutex; // 保证任务注册的线程安全
 };
 
 #endif // LEAF_LFENGINE_H

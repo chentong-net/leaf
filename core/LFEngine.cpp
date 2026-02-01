@@ -49,6 +49,21 @@ void LFEngine::update(float dt) {
     // 2. 处理动画系统 (TODO: LFAnimator::update(dt))
     LFGlobalAnimationManager::getInstance().update(dt);
 
+    // 3. 处理帧任务
+    if (!m_frameTasks.empty()) {
+        std::lock_guard<std::mutex> lock(m_taskMutex);
+
+        // 使用迭代器进行安全删除
+        for (auto it = m_frameTasks.begin(); it != m_frameTasks.end(); ) {
+            bool keepAlive = (*it)(); // 执行任务分片
+            if (!keepAlive) {
+                it = m_frameTasks.erase(it); // 任务完成，移除
+            } else {
+                ++it; // 任务未完，保留至下一帧
+            }
+        }
+    }
+
     // 3. 处理定时器 (TODO: LFTimer::update(dt))
     // 4. 执行 JS 里的 requestAnimationFrame
 }
@@ -101,4 +116,10 @@ double LFEngine::getElapsedTime() const {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
         now - m_startTime
     ).count() / 1000.0;  // Convert to seconds
+}
+
+void LFEngine::addFrameTask(LFFrameTask task) {
+    if (!task) return;
+    std::lock_guard<std::mutex> lock(m_taskMutex);
+    m_frameTasks.push_back(task);
 }
