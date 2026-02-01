@@ -21,6 +21,12 @@ struct SplitConfig {
     std::string fontFamily = "sans"; // 字体名称
 };
 
+struct SplitIterator {
+    const char* currentPos;
+    const char* endPos;
+    bool isFinished = false;
+};
+
 class TextSplitter {
 public:
     /**
@@ -32,6 +38,16 @@ public:
      * @return std::vector<std::string> 每一页的文本内容
      */
     static std::vector<std::string> split(const std::string& fullText, const SplitConfig& config);
+
+    /**
+     * 单步分片切分
+     * @param iter 迭代器，保存当前切分进度
+     * @param batchSize 本次迭代切出的最大页数
+     * @return 本次切出的页面列表
+     */
+    static std::vector<std::string> splitStep(SplitIterator& iter,
+                                              const SplitConfig& config,
+                                              int batchSize = 10);
 
 private:
     // 禁止实例化，纯工具类

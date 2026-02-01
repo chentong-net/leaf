@@ -12,6 +12,8 @@
 
 #include <sstream>
 
+std::shared_ptr<std::atomic<bool>> m_splitStopFlag;
+
 const float TOP_BAR_HEIGHT = 56.0f;         // 顶部导航栏高度
 const float ADAPTER_PADDING_TOP = 30.0f;    // 正文顶部内边距 (Adapter setPadding Top)
 const float ADAPTER_PADDING_BOTTOM = 30.0f; // 正文底部内边距 (Adapter setPadding Bottom)
@@ -122,6 +124,10 @@ public:
         footerText->setText(ss.str());
     }
 
+    void addPages(const std::vector<std::string>& newPages) {
+        m_pages.insert(m_pages.end(), newPages.begin(), newPages.end());
+    }
+
 private:
     std::vector<std::string> m_pages;
     float m_fontSize;
@@ -176,7 +182,7 @@ void ReaderPage::initLayout(const std::string& title, const std::string& content
 }
 
 void ReaderPage::splitContentAndInit(const std::string& rawContent) {
-    std::string content = normalizeText(rawContent);
+    m_fullContent = normalizeText(rawContent);
     // ==========================================
     // 1. 布局常量定义 (The Source of Truth)
     // ==========================================
@@ -239,18 +245,31 @@ void ReaderPage::splitContentAndInit(const std::string& rawContent) {
     LF_LOGI("Layout Logic: Win=%.0fx%.0f, Safe=%.0fx%.0f (Buffer=%.1f)",
             windowW, windowH, safeWidth, safeHeight, safetyBuffer);
 
-    // 调用业务工具切分 (耗时操作，建议在正式版中放入线程池)
-    auto pages = TextSplitter::split(content, config);
+    m_splitIter.currentPos = m_fullContent.c_str();
+    m_splitIter.endPos = m_splitIter.currentPos + m_fullContent.size();
+    m_splitIter.isFinished = false;
 
-    LF_LOGI("Split Result: %zu pages generated.", pages.size());
-
-    // ==========================================
-    // 6. 设置适配器
-    // ==========================================
-    if (!pages.empty()) {
-        // 创建适配器，传入 topBarHeight 以便 Adapter 内部设置正确的 Padding
-        auto adapter = std::make_shared<BookPageAdapter>(pages, fontSize);
+    auto firstBatch = TextSplitter::splitStep(m_splitIter, config, 10);
+    if (!firstBatch.empty()) {
+        auto adapter = std::make_shared<BookPageAdapter>(firstBatch, fontSize);
         m_pageView->setAdapter(adapter);
+
+        // 将剩余的繁重切分任务提交给 LFEngine 的“Looper”
+        // 使用 std::weak_ptr 防止异步任务执行时 Page 已经销毁导致崩溃
+        std::weak_ptr<ReaderPage> weakSelf = std::static_pointer_cast<ReaderPage>(shared_from_this());
+        LFEngine::getInstance().addFrameTask([weakSelf, config, adapter]() mutable -> bool {
+            auto self = weakSelf.lock();
+            if (!self) return false; // 页面已销毁，停止任务
+
+            // 每一帧切 20 页
+            auto batch = TextSplitter::splitStep(self->m_splitIter, config, 20);
+            if (!batch.empty()) {
+                adapter->addPages(batch);
+                self->m_pageView->notifyDataSetChanged();
+            }
+            // 如果还没切完，返回 true 要求 LFEngine 下一帧继续调用
+            return !self->m_splitIter.isFinished;
+        });
     }
 }
 

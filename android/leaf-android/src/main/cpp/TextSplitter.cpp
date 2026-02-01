@@ -83,3 +83,56 @@ std::vector<std::string> TextSplitter::split(const std::string& fullText, const 
     nvgRestore(ctx);
     return pages;
 }
+
+std::vector<std::string> TextSplitter::splitStep(SplitIterator& iter, const SplitConfig& config, int batchSize) {
+    std::vector<std::string> pages;
+    if (iter.isFinished || !iter.currentPos || iter.currentPos >= iter.endPos) {
+        iter.isFinished = true;
+        return pages;
+    }
+
+    NVGcontext* ctx = LFEngine::getInstance().getNVGContext();
+    nvgSave(ctx);
+    nvgFontSize(ctx, config.fontSize);
+    nvgFontFace(ctx, config.fontFamily.c_str());
+    nvgTextAlign(ctx, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+    nvgTextLineHeight(ctx, config.lineHeight);
+
+    float rowHeight = config.fontSize * config.lineHeight;
+
+    while (iter.currentPos < iter.endPos && pages.size() < batchSize) {
+        nvgFontSize(ctx, config.fontSize);
+        nvgFontFace(ctx, config.fontFamily.c_str());
+        const char* pageStart = iter.currentPos;
+        float currentY = 0.0f;
+        int lineCount = 0;
+
+        while (iter.currentPos < iter.endPos) {
+            if (currentY + rowHeight > config.height) {
+                if (lineCount > 0) break;
+            }
+
+            NVGtextRow row;
+            int count = nvgTextBreakLines(ctx, iter.currentPos, iter.endPos, config.width, &row, 1);
+            if (count == 0) {
+                if (iter.currentPos < iter.endPos) iter.currentPos++;
+                else break;
+            } else {
+                currentY += rowHeight;
+                lineCount++;
+                iter.currentPos = row.next;
+            }
+        }
+
+        if (iter.currentPos > pageStart) {
+            pages.emplace_back(pageStart, iter.currentPos - pageStart);
+        }
+    }
+
+    if (iter.currentPos >= iter.endPos) {
+        iter.isFinished = true;
+    }
+
+    nvgRestore(ctx);
+    return pages;
+}

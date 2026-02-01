@@ -11,6 +11,7 @@
 #include "LFBox.h"
 #include "LFPageView.h" // 核心组件
 #include <string>
+#include "TextSplitter.h"
 
 class ReaderPage : public LFPage {
 public:
@@ -42,6 +43,9 @@ private:
 
     // 状态
     bool m_isMenuVisible = true;
+
+    SplitIterator m_splitIter;
+    std::string m_fullContent;
 };
 
 #endif // READERPAGE_H
