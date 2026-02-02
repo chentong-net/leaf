@@ -21,7 +21,6 @@ void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loade
     memcpy(fontDataCopy, fontData.data(), fontData.size());
     if (nvgCreateFontMem(vg, "sans", fontDataCopy, fontData.size(), 1) == -1) {
         // If failed (e.g. some custom ROMs)
-        free(fontDataCopy);
         nvgCreateFont(vg, "sans", "/system/fonts/NotoSansCJK-Regular.ttc");
     }
 
