@@ -12,12 +12,15 @@ set(QUICKJS_DIR ${DEPS_DIR}/quickjs)
 set(NANOVG_DIR ${DEPS_DIR}/nanovg/src)
 set(YOGA_DIR ${DEPS_DIR}/yoga)
 
+set(READER_APP_EXAMPLE_DIR ${CORE_DIR}/../examples/reader_app)
+
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CORE_DIR}
         ${QUICKJS_DIR}
         ${NANOVG_DIR}
         ${YOGA_DIR}
+        ${READER_APP_EXAMPLE_DIR}
 )
 
 add_library(${CMAKE_PROJECT_NAME} SHARED
@@ -66,11 +69,14 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${CORE_DIR}/LFTab.cpp
         ${CORE_DIR}/LFPageView.cpp
 
+        ${READER_APP_EXAMPLE_DIR}/ReaderApp.cpp
+        ${READER_APP_EXAMPLE_DIR}/BookshelfPage.cpp
+        ${READER_APP_EXAMPLE_DIR}/ProfilePage.cpp
+        ${READER_APP_EXAMPLE_DIR}/ReaderPage.cpp
+        ${READER_APP_EXAMPLE_DIR}/TextSplitter.cpp
+
         leaf_engine_jni.cpp
         engine_bridge.cpp
-        MainPage.cpp
-        ReaderPage.cpp
-        TextSplitter.cpp
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE

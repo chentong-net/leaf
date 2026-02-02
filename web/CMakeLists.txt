@@ -12,12 +12,15 @@ set(QUICKJS_DIR ${DEPS_DIR}/quickjs)
 set(NANOVG_DIR ${DEPS_DIR}/nanovg/src)
 set(YOGA_DIR ${DEPS_DIR}/yoga)
 
+set(READER_APP_EXAMPLE_DIR ${CORE_DIR}/../examples/reader_app)
+
 include_directories(
         ${CORE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${QUICKJS_DIR}
         ${NANOVG_DIR}
         ${YOGA_DIR}
+        ${READER_APP_EXAMPLE_DIR}
 )
 
 set(CORE_SOURCES
@@ -79,10 +82,12 @@ add_link_options(
 
 add_executable(leaf-web
         ${CORE_SOURCES}
+        ${READER_APP_EXAMPLE_DIR}/ReaderApp.cpp
+        ${READER_APP_EXAMPLE_DIR}/BookshelfPage.cpp
+        ${READER_APP_EXAMPLE_DIR}/ProfilePage.cpp
+        ${READER_APP_EXAMPLE_DIR}/ReaderPage.cpp
+        ${READER_APP_EXAMPLE_DIR}/TextSplitter.cpp
         web_main.cpp
-        MainPage.cpp
-        ReaderPage.cpp
-        TextSplitter.cpp
 )
 
 set_target_properties(leaf-web PROPERTIES SUFFIX ".html")
