@@ -13,6 +13,7 @@ set(NANOVG_DIR ${DEPS_DIR}/nanovg/src)
 set(YOGA_DIR ${DEPS_DIR}/yoga)
 
 set(READER_APP_EXAMPLE_DIR ${CORE_DIR}/../examples/reader_app)
+set(MY_PROFILE_EXAMPLE_DIR ${CORE_DIR}/../examples/my_profile)
 
 include_directories(
         ${CORE_DIR}
@@ -21,6 +22,7 @@ include_directories(
         ${NANOVG_DIR}
         ${YOGA_DIR}
         ${READER_APP_EXAMPLE_DIR}
+        ${MY_PROFILE_EXAMPLE_DIR}
 )
 
 set(CORE_SOURCES
@@ -87,6 +89,7 @@ add_executable(leaf-web
         ${READER_APP_EXAMPLE_DIR}/ProfilePage.cpp
         ${READER_APP_EXAMPLE_DIR}/ReaderPage.cpp
         ${READER_APP_EXAMPLE_DIR}/TextSplitter.cpp
+        ${MY_PROFILE_EXAMPLE_DIR}/MyProfilePage.cpp
         web_main.cpp
 )
 

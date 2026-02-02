@@ -13,6 +13,7 @@ set(NANOVG_DIR ${DEPS_DIR}/nanovg/src)
 set(YOGA_DIR ${DEPS_DIR}/yoga)
 
 set(READER_APP_EXAMPLE_DIR ${CORE_DIR}/../examples/reader_app)
+set(MY_PROFILE_EXAMPLE_DIR ${CORE_DIR}/../examples/my_profile)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -21,6 +22,7 @@ include_directories(
         ${NANOVG_DIR}
         ${YOGA_DIR}
         ${READER_APP_EXAMPLE_DIR}
+        ${MY_PROFILE_EXAMPLE_DIR}
 )
 
 add_library(${CMAKE_PROJECT_NAME} SHARED
@@ -74,6 +76,8 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${READER_APP_EXAMPLE_DIR}/ProfilePage.cpp
         ${READER_APP_EXAMPLE_DIR}/ReaderPage.cpp
         ${READER_APP_EXAMPLE_DIR}/TextSplitter.cpp
+
+        ${MY_PROFILE_EXAMPLE_DIR}/MyProfilePage.cpp
 
         leaf_engine_jni.cpp
         engine_bridge.cpp

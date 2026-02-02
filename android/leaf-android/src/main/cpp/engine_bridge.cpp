@@ -2,6 +2,7 @@
 
 #include "LFEngine.h"
 #include "ReaderApp.h"
+#include "MyProfilePage.h"
 
 extern "C" {
 
@@ -16,7 +17,7 @@ void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loade
     LFEngine::getInstance().init(vg);
 
     // 4. 加载字体
-    std::vector<unsigned char> fontData = loader("fonts/MapleMonoNormal-CN-Regular.ttf");
+    std::vector<unsigned char> fontData = loader("fonts/Alibaba-PuHuiTi-Regular.ttf");
     unsigned char* fontDataCopy = (unsigned char*)malloc(fontData.size());
     memcpy(fontDataCopy, fontData.data(), fontData.size());
     if (nvgCreateFontMem(vg, "sans", fontDataCopy, fontData.size(), 1) == -1) {

@@ -12,6 +12,7 @@
 #include "event/LFEventDispatcher.h"
 #include "LFButton.h"
 #include "ReaderApp.h"
+#include "MyProfilePage.h"
 
 static const char* CANVAS_ID = "#canvas";
 double dpr = 1.0f;
@@ -175,7 +176,7 @@ int main() {
 
     LFEngine::getInstance().init(vg);
 
-    nvgCreateFont(vg, "sans", "fonts/MapleMonoNormal-CN-Regular.ttf");
+    nvgCreateFont(vg, "sans", "fonts/Alibaba-PuHuiTi-Regular.ttf");
 
     LFResourceProvider::getInstance().setAssetLoader(
             [](const std::string &path,
