@@ -3,18 +3,9 @@
 #include "LFEngine.h"
 #include "ReaderApp.h"
 
-// 辅助函数：快速创建文本节点 (Outside extern "C" block)
-std::shared_ptr<LFText> createText(const std::string& content, float fontSize, uint32_t color, bool isBold = false) {
-    auto text = std::make_shared<LFText>();
-    text->setText(content);
-    text->setFontSize(fontSize);
-    text->setTextColor(color);
-    return text;
-}
-
 extern "C" {
 
-void leaf_init(std::function<std::string(const char *path)> loader) {
+void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loader) {
     // 1. 创建 NanoVG 上下文
     int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES;
     NVGcontext* vg = nvgCreateGLES3(flags);
@@ -25,24 +16,24 @@ void leaf_init(std::function<std::string(const char *path)> loader) {
     LFEngine::getInstance().init(vg);
 
     // 4. 加载字体
-    std::string fontData = loader("fonts/MapleMonoNormal-CN-Regular.ttf");
+    std::vector<unsigned char> fontData = loader("fonts/MapleMonoNormal-CN-Regular.ttf");
     unsigned char* fontDataCopy = (unsigned char*)malloc(fontData.size());
     memcpy(fontDataCopy, fontData.data(), fontData.size());
     if (nvgCreateFontMem(vg, "sans", fontDataCopy, fontData.size(), 1) == -1) {
         // If failed (e.g. some custom ROMs)
+        free(fontDataCopy);
         nvgCreateFont(vg, "sans", "/system/fonts/NotoSansCJK-Regular.ttc");
     }
 
     // 3. 配置资源加载器
     LFResourceProvider::getInstance().setAssetLoader(
             [loader](const std::string& path, std::function<void(std::shared_ptr<LFData>)> callback) {
-                std::string raw = loader(path.c_str());
+                std::vector<unsigned char> raw = loader(path.c_str());
                 if (raw.empty()) {
                     callback(nullptr);
                     return;
                 }
 
-                // 这里仅做数据透传演示
                 auto data = std::make_shared<LFData>();
                 data->size = raw.size();
                 data->data = (unsigned char*)malloc(data->size);

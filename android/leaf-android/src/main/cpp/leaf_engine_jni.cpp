@@ -1,36 +1,30 @@
 #include <jni.h>
 #include <android/asset_manager_jni.h>
-#include <string>
 #include <android/log.h>
-#include <functional>
-#include <vector>
-#include <chrono>
-#include "event/LFEvent.h"
-#include "event/LFEventDispatcher.h"
 #include "LFEngine.h"
 
 static float g_density = 1.0f;
 
 // 声明 LFEngine.cpp 中的外部函数
 extern "C" {
-void leaf_init(std::function<std::string(const char* path)> loader);
+void leaf_init(std::function<std::vector<unsigned char>(const char* path)> loader);
 void leaf_update_size(float w, float h, float d);
 void leaf_render();
 void leaf_eval_js(const char* code);
 }
 
 // 实现具体的读取逻辑
-std::string read_asset_js(AAssetManager* mgr, const char* path) {
+std::vector<unsigned char> read_asset(AAssetManager* mgr, const char* path) {
     std::string p = path;
-    __android_log_print(ANDROID_LOG_INFO, "Leaf", "%s", path);
-    if (p.find("./") == 0) p = p.substr(2); // 处理 JS 相对路径
+    LF_LOGI("read asset: %s", path);
+    if (p.find("./") == 0) p = p.substr(2);
 
     AAsset* asset = AAssetManager_open(mgr, p.c_str(), AASSET_MODE_BUFFER);
-    if (!asset) return "";
+    if (!asset) return std::vector<unsigned char>();
 
     size_t size = AAsset_getLength(asset);
-    std::string content(size, '\0');
-    AAsset_read(asset, &content[0], size);
+    std::vector<unsigned char> content(size);
+    AAsset_read(asset, content.data(), size);
     AAsset_close(asset);
     return content;
 }
@@ -38,8 +32,8 @@ std::string read_asset_js(AAssetManager* mgr, const char* path) {
 extern "C" JNIEXPORT void JNICALL
 Java_net_chentong_leaf_android_LeafRenderer_nativeOnSurfaceCreated(JNIEnv* env, jobject thiz, jobject asset_mgr) {
     AAssetManager* mgr = AAssetManager_fromJava(env, asset_mgr);
-    auto asset_loader = [mgr](const char* path) -> std::string {
-        return read_asset_js(mgr, path);
+    auto asset_loader = [mgr](const char* path) -> std::vector<unsigned char>{
+        return read_asset(mgr, path);
     };
     leaf_init(asset_loader);
     std::string js_code = "js_code";
