@@ -8,11 +8,8 @@
 #include <emscripten.h>
 #include <emscripten/html5.h>
 #include <emscripten/fetch.h>
-#include "event/LFEvent.h"
-#include "event/LFEventDispatcher.h"
-#include "component/LFButton.h"
 #include "ReaderApp.h"
-#include "MyProfilePage.h"
+#include "ProfilePage.h"
 
 static const char* CANVAS_ID = "#canvas";
 double dpr = 1.0f;

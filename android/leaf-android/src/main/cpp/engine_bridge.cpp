@@ -2,7 +2,7 @@
 
 #include "LFEngine.h"
 #include "ReaderApp.h"
-#include "MyProfilePage.h"
+#include "ProfilePage.h"
 
 extern "C" {
 

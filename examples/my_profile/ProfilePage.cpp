@@ -2,14 +2,7 @@
 // Created by Chen Tong on 2026/2/2.
 //
 
-#include "MyProfilePage.h"
-
-#include <LFJSONParser.h>
-
-#include "component/LFImage.h"
-#include "component/LFText.h"
-#include "component/LFButton.h"
-#include "component/LFNavigator.h"
+#include "ProfilePage.h"
 
 std::shared_ptr<LFNode> buildICP(std::string icpText);
 
@@ -39,8 +32,8 @@ static const float FS_HEAD   = 18.0f;
 static const float FS_BODY   = 15.0f;
 static const float FS_SMALL  = 13.0f;
 
-std::shared_ptr<MyProfilePage> MyProfilePage::create() {
-    auto page = std::make_shared<MyProfilePage>();
+std::shared_ptr<ProfilePage> ProfilePage::create() {
+    auto page = std::make_shared<ProfilePage>();
     LFResourceProvider::getInstance().fetchAsset("profile.json", [page](std::shared_ptr<LFData> data) {
         std::string jsonCode = reinterpret_cast<const char*>(data->data);
         page->data = LFJSONParser::parse(jsonCode);
@@ -51,16 +44,16 @@ std::shared_ptr<MyProfilePage> MyProfilePage::create() {
     return page;
 }
 
-MyProfilePage::MyProfilePage() {
+ProfilePage::ProfilePage() {
     // 构造函数
 }
 
-void MyProfilePage::onEnter() {
+void ProfilePage::onEnter() {
     LFPage::onEnter();
     // 可以在这里做埋点统计
 }
 
-void MyProfilePage::initUI() {
+void ProfilePage::initUI() {
     setBackgroundColor(COL_BG);
 
     // 1. 全局滚动容器
@@ -140,7 +133,12 @@ void MyProfilePage::initUI() {
         ));
     }
 
-    content->addChild(buildICP(data->at("icp").asString()));
+    // ICP 备案信息
+    auto icpText = data->at("icp");
+    if (!icpText.asString().empty()) {
+        content->addChild(buildICP(icpText.asString()));
+    }
+
     scrollView->addChild(content);
 }
 
@@ -148,7 +146,7 @@ void MyProfilePage::initUI() {
 // 组件实现细节
 // ==========================================
 
-std::shared_ptr<LFNode> MyProfilePage::createHeaderSection() {
+std::shared_ptr<LFNode> ProfilePage::createHeaderSection() {
     auto card = LFLinear::createVertical();
     card->matchParentWidth();
     card->setHeight(200);
@@ -197,7 +195,7 @@ std::shared_ptr<LFNode> MyProfilePage::createHeaderSection() {
     return card;
 }
 
-std::shared_ptr<LFNode> MyProfilePage::createStatsBar() {
+std::shared_ptr<LFNode> ProfilePage::createStatsBar() {
     auto container = LFLinear::createHorizontal();
     container->matchParentWidth();
     container->setDistribution(LFDistribution::SpaceAround); // 平均分布
@@ -226,7 +224,7 @@ std::shared_ptr<LFNode> MyProfilePage::createStatsBar() {
     return container;
 }
 
-std::shared_ptr<LFNode> MyProfilePage::createSectionTitle(const std::string& title) {
+std::shared_ptr<LFNode> ProfilePage::createSectionTitle(const std::string& title) {
     auto text = createLabel(title, FS_HEAD, COL_TEXT_MAIN, true);
     text->setTextHAlign(LFTextHAlign::Left);
     text->setMargin(YGEdgeTop, 15);
@@ -247,7 +245,7 @@ std::shared_ptr<LFNode> MyProfilePage::createSectionTitle(const std::string& tit
     return wrapper;
 }
 
-std::shared_ptr<LFNode> MyProfilePage::createSkillCloud() {
+std::shared_ptr<LFNode> ProfilePage::createSkillCloud() {
     auto card = LFLinear::createVertical();
     card->matchParentWidth();
     card->wrapContentHeight();
@@ -300,7 +298,7 @@ std::shared_ptr<LFNode> MyProfilePage::createSkillCloud() {
     return card;
 }
 
-std::shared_ptr<LFNode> MyProfilePage::createWorkExperienceItem(
+std::shared_ptr<LFNode> ProfilePage::createWorkExperienceItem(
         const std::string& company,
         const std::string& role,
         const std::string& time,
@@ -358,7 +356,7 @@ std::shared_ptr<LFNode> MyProfilePage::createWorkExperienceItem(
     return row;
 }
 
-std::shared_ptr<LFNode> MyProfilePage::createEducationCard(
+std::shared_ptr<LFNode> ProfilePage::createEducationCard(
         const std::string& universityText,
         const std::string& timeText,
         const std::string& deptText,
@@ -433,7 +431,7 @@ std::shared_ptr<LFNode> MyProfilePage::createEducationCard(
     return card;
 }
 
-std::shared_ptr<LFNode> MyProfilePage::createProjectCard(
+std::shared_ptr<LFNode> ProfilePage::createProjectCard(
         const std::string& title,
         const std::string& tags,
         const std::string& info,
