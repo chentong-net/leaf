@@ -1,0 +1,76 @@
+{
+  "name": "",
+  "role": "",
+  "avatar": "",
+  "email": "",
+  "icp": "",
+  "stats": [
+    {
+      "label": "工作经验",
+      "value": ""
+    },
+    {
+      "label": "年龄",
+      "value": ""
+    },
+    {
+      "label": "学历",
+      "value": ""
+    }
+  ],
+  "skill": {
+    "title": "专业技能"
+  },
+  "edu": {
+    "title": "教育背景",
+    "list": [
+      {
+        "school": "",
+        "time": "",
+        "department": "",
+        "degree": "",
+        "logoSrc": ""
+      }
+    ]
+  },
+  "work": {
+    "title": "工作经历",
+    "list": [
+      {
+        "company": "",
+        "role": "",
+        "time": "",
+        "logoSrc": ""
+      }
+    ]
+  },
+  "project": {
+    "title": "项目经历",
+    "list": [
+      {
+        "title": "",
+        "tags": "",
+        "info": "",
+        "note": ""
+      },
+      {
+        "title": "",
+        "tags": "",
+        "info": "",
+        "note": ""
+      },
+      {
+        "title": "",
+        "tags": "",
+        "info": "",
+        "note": ""
+      },
+      {
+        "title": "",
+        "tags": "",
+        "info": "",
+        "note": ""
+      }
+    ]
+  }
+}

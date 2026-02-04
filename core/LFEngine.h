@@ -26,6 +26,7 @@
 #include "component/LFNavigator.h"
 #include "component/LFGrid.h"
 #include "component/LFTab.h"
+#include "LFJSONParser.h"
 
 /**
  * 帧任务回调
