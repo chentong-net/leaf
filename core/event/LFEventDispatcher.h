@@ -8,7 +8,7 @@
 
 #include "LFEvent.h"
 #include "LFHitTest.h"
-#include "../LFNode.h"
+#include "component/LFNode.h"
 #include <map>
 #include <vector>
 #include <memory>

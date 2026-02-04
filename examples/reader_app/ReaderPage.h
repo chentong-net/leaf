@@ -6,10 +6,10 @@
 #ifndef READERPAGE_H
 #define READERPAGE_H
 
-#include "LFPage.h"
-#include "LFLinear.h"
-#include "LFBox.h"
-#include "LFPageView.h" // 核心组件
+#include "component/LFPage.h"
+#include "component/LFLinear.h"
+#include "component/LFBox.h"
+#include "component/LFPageView.h" // 核心组件
 #include <string>
 #include "TextSplitter.h"
 

@@ -3,10 +3,10 @@
 //
 
 #include "ProfilePage.h"
-#include "LFBox.h"
-#include "LFLinear.h"
-#include "LFImage.h"
-#include "LFButton.h"
+#include "component/LFBox.h"
+#include "component/LFLinear.h"
+#include "component/LFImage.h"
+#include "component/LFButton.h"
 #include "AppUtils.h"
 
 std::shared_ptr<ProfilePage> ProfilePage::create() {

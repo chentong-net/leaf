@@ -6,13 +6,13 @@
 #define LEAF_LFENGINE_H
 
 #include "LFDef.h"
-#include "LFNode.h"
-#include "LFLinear.h"
-#include "LFBox.h"
-#include "LFText.h"
-#include "LFImage.h"
-#include "LFButton.h"
-#include "LFScrollView.h"
+#include "component/LFNode.h"
+#include "component/LFLinear.h"
+#include "component/LFBox.h"
+#include "component/LFText.h"
+#include "component/LFImage.h"
+#include "component/LFButton.h"
+#include "component/LFScrollView.h"
 #include "gesture/LFGestureRecognizer.h"
 #include "LFResourceProvider.h"
 #include "event/LFEvent.h"
@@ -22,10 +22,10 @@
 #include "animation/LFAnimator.h"
 #include "LFGlobalAnimationManager.h"
 #include "LFState.h"
-#include "LFPage.h"
-#include "LFNavigator.h"
-#include "LFGrid.h"
-#include "LFTab.h"
+#include "component/LFPage.h"
+#include "component/LFNavigator.h"
+#include "component/LFGrid.h"
+#include "component/LFTab.h"
 
 /**
  * 帧任务回调

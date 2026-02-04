@@ -10,7 +10,7 @@
 #include <emscripten/fetch.h>
 #include "event/LFEvent.h"
 #include "event/LFEventDispatcher.h"
-#include "LFButton.h"
+#include "component/LFButton.h"
 #include "ReaderApp.h"
 #include "MyProfilePage.h"
 

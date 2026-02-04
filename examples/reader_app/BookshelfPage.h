@@ -6,8 +6,8 @@
 #define BOOKSHELFPAGE_H
 
 #include <memory>
-#include "LFPage.h"
-#include "LFNavigator.h"
+#include "component/LFPage.h"
+#include "component/LFNavigator.h"
 
 class BookshelfPage : public LFPage {
 public:

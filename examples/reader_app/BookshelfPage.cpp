@@ -3,10 +3,10 @@
 //
 
 #include "BookshelfPage.h"
-#include "LFLinear.h"
-#include "LFScrollView.h"
-#include "LFGrid.h"
-#include "LFBox.h"
+#include "component/LFLinear.h"
+#include "component/LFScrollView.h"
+#include "component/LFGrid.h"
+#include "component/LFBox.h"
 #include "ReaderPage.h"
 #include "LFResourceProvider.h"
 #include "AppUtils.h"

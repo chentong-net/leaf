@@ -7,7 +7,7 @@
 
 #include <memory>
 #include <string>
-#include "LFText.h"
+#include "component/LFText.h"
 
 namespace AppUtils {
 

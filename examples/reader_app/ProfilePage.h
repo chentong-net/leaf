@@ -6,7 +6,7 @@
 #define PROFILEPAGE_H
 
 #include <memory>
-#include "LFPage.h"
+#include "component/LFPage.h"
 
 class ProfilePage : public LFPage {
 public:

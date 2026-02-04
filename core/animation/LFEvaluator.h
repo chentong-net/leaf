@@ -6,7 +6,7 @@
 #define LEAF_LFEVALUATOR_H
 
 #include "event/LFEvent.h"  // For LFPoint, LFRect
-#include "LFNode.h"         // For LFTransform
+#include "component/LFNode.h"         // For LFTransform
 
 /**
  * 估值器接口
