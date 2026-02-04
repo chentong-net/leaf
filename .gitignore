@@ -10,3 +10,4 @@
 **/TODO.md
 **/build_web
 **/cmake-build-debug
+**/cmake-build-wasm
