@@ -53,10 +53,13 @@ private:
     // 项目经历
     std::shared_ptr<LFNode> createProjectCard(
             const std::string& title,
+            const std::string& respLabel,
+            const std::string& urlLabel,
             const std::string& tags,
             const std::string& info,
             const std::string& note,
-            const std::vector<std::string> resp
+            const std::vector<std::string> resp,
+            std::string url
     );
 
     // 技能标签

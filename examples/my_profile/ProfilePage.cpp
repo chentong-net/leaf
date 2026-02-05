@@ -134,10 +134,13 @@ void ProfilePage::initUI() {
         }
         content->addChild(createProjectCard(
             item.at("title").asString(),
+            data->at("project").at("resp-title").asString(),
+            data->at("project").at("url-title").asString(),
             item.at("tags").asString(),
             item.at("info").asString(),
             item.at("note").asString(),
-            tl
+            tl,
+            item.at("url").asString()
         ));
     }
 
@@ -441,10 +444,13 @@ std::shared_ptr<LFNode> ProfilePage::createEducationCard(
 
 std::shared_ptr<LFNode> ProfilePage::createProjectCard(
         const std::string& title,
+        const std::string& respLabel,
+        const std::string& urlLabel,
         const std::string& tags,
         const std::string& info,
         const std::string& noteText,
-        const std::vector<std::string> resp)
+        const std::vector<std::string> resp,
+        std::string url)
 {
 
     auto card = LFLinear::createVertical();
@@ -492,7 +498,7 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
     card->addChild(layout);
 
     // 主要职责
-    if (!resp.empty()) {
+    if (!resp.empty() || !url.empty()) {
         // 展开容器
         auto respBox = LFLinear::createVertical();
         respBox->matchParentWidth();
@@ -517,33 +523,60 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
         respContent->wrapContentHeight();
         respContent->setPadding(YGEdgeAll, 16); // 内部留白
 
-        // 职责标题
-        auto rTitle = createLabel("主要职责", 13, COL_TEXT_MAIN, true);
-        rTitle->setTextHAlign(LFTextHAlign::Left);
-        rTitle->setMargin(YGEdgeBottom, 10);
-        respContent->addChild(rTitle);
+        if (!resp.empty()) {
+            // 职责标题
+            auto rTitle = createLabel(respLabel, 13, COL_TEXT_MAIN, true);
+            rTitle->setTextHAlign(LFTextHAlign::Left);
+            rTitle->setMargin(YGEdgeBottom, 10);
+            respContent->addChild(rTitle);
 
-        // 职责列表
-        for (const auto& itemStr : resp) {
-            auto row = LFLinear::createHorizontal();
-            row->setMargin(YGEdgeBottom, 6);
-            row->setGravity(LFAlignment::Start, LFAlignment::Center);
+            // 职责列表
+            for (const auto& itemStr : resp) {
+                auto row = LFLinear::createHorizontal();
+                row->setMargin(YGEdgeBottom, 6);
+                row->setGravity(LFAlignment::Start, LFAlignment::Start);
 
-            // 圆点
-            auto dot = createLabel("•", 14, COL_PRIMARY);
-            dot->setMargin(YGEdgeRight, 8);
+                // 圆点
+                auto dot = createLabel("•", 14, COL_PRIMARY);
+                dot->setMargin(YGEdgeRight, 8);
 
-            // 文字
-            auto text = createLabel(itemStr, 13, 0xFF666666);
-            text->setTextHAlign(LFTextHAlign::Left);
-            text->setTextVAlign(LFTextVAlign::Center);
-            text->setLineHeight(1.4f);
-            text->setFlexGrow(1.0f);
-            text->setFlexShrink(1); // 允许换行
+                // 文字
+                auto text = createLabel(itemStr, 13, 0xFF666666);
+                text->setTextHAlign(LFTextHAlign::Left);
+                text->setTextVAlign(LFTextVAlign::Center);
+                text->setLineHeight(1.4f);
+                text->setFlexGrow(1.0f);
+                text->setFlexShrink(1); // 允许换行
 
-            row->addChild(dot);
-            row->addChild(text);
-            respContent->addChild(row);
+                row->addChild(dot);
+                row->addChild(text);
+                respContent->addChild(row);
+            }
+        }
+
+        if (!url.empty()) {
+            auto urlRow = LFLinear::createHorizontal();
+            urlRow->matchParentWidth();
+            urlRow->wrapContentHeight();
+            // 如果上面有列表，给个顶部间距；如果只是链接，就不需要间距
+            float topMargin = resp.empty() ? 0.0f : 10.0f;
+            urlRow->setMargin(YGEdgeTop, topMargin);
+            urlRow->setAlignItems(YGAlignFlexStart);
+
+            // 标签
+            auto label = createLabel(urlLabel, 13, COL_TEXT_MAIN);
+            label->setTextHAlign(LFTextHAlign::Left);
+
+            // 链接
+            auto link = createLabel(url, 13, COL_PRIMARY); // 品牌蓝
+            link->setTextHAlign(LFTextHAlign::Left);
+            link->matchParentWidth();
+            link->setFlexGrow(1.0f);
+            link->setFlexShrink(1); // URL太长允许换行
+
+            urlRow->addChild(label);
+            urlRow->addChild(link);
+            respContent->addChild(urlRow);
         }
 
         respBox->addChild(respContent);
@@ -569,7 +602,8 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
             if (*isExpanded) {
                 box->wrapContentHeight();
                 float availableWidth = card->getLayoutWidth();
-                box->calculateLayout(availableWidth, NAN);
+                // 减去左右 Padding 的大小
+                box->calculateLayout(availableWidth - 32, NAN);
                 box->setHeight(startH);
                 endH = box->getLayoutHeight();
             }
@@ -588,6 +622,14 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
                     // 简单映射：高度 > 10px 开始显示
                     float alpha = std::min(1.0f, h / 50.0f);
                     b->setOpacity(alpha);
+                }
+            });
+
+            anim->setOnEnd([weakResp, expanding]() {
+                if (expanding) {
+                    if (auto b = weakResp.lock()) {
+                        b->wrapContentHeight(); // 设回 Auto
+                    }
                 }
             });
 
