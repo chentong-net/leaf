@@ -24,13 +24,6 @@ namespace ProfileSecurity {
     }
 
     inline std::string decrypt_profile_data(const std::vector<unsigned char>& encryptedData) {
-        LF_LOGI("Decrypting size: %zu", encryptedData.size());
-        if (encryptedData.size() >= 8) {
-            // 打印前8个字节的十六进制
-            LF_LOGI("Header Hex: %02X %02X %02X %02X | %02X %02X %02X %02X",
-                encryptedData[0], encryptedData[1], encryptedData[2], encryptedData[3],
-                encryptedData[4], encryptedData[5], encryptedData[6], encryptedData[7]);
-        }
         if (encryptedData.size() < 4) return "";
         uint32_t originalLen = 0;
         originalLen |= ((uint32_t)(uint8_t)encryptedData[0]);
