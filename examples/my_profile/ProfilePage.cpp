@@ -3,6 +3,7 @@
 //
 
 #include "ProfilePage.h"
+#include "ProfileSecurity.h"
 
 std::shared_ptr<LFNode> buildICP(std::string icpText);
 
@@ -34,8 +35,9 @@ static const float FS_SMALL  = 13.0f;
 
 std::shared_ptr<ProfilePage> ProfilePage::create() {
     auto page = std::make_shared<ProfilePage>();
-    LFResourceProvider::getInstance().fetchAsset("profile.json", [page](std::shared_ptr<LFData> data) {
-        std::string jsonCode = reinterpret_cast<const char*>(data->data);
+    LFResourceProvider::getInstance().fetchAsset("profile", [page](std::shared_ptr<LFData> data) {
+        std::vector<unsigned char> rawData(data->data, data->data + data->size);
+        std::string jsonCode = ProfileSecurity::decrypt_profile_data(rawData);
         page->data = LFJSONParser::parse(jsonCode);
         if (page->data) {
             page->initUI();
