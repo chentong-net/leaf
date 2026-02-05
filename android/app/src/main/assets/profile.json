@@ -46,30 +46,16 @@
   },
   "project": {
     "title": "项目经历",
+    "resp-title": "主要职责",
+    "url-title": "项目地址",
     "list": [
       {
         "title": "",
         "tags": "",
         "info": "",
-        "note": ""
-      },
-      {
-        "title": "",
-        "tags": "",
-        "info": "",
-        "note": ""
-      },
-      {
-        "title": "",
-        "tags": "",
-        "info": "",
-        "note": ""
-      },
-      {
-        "title": "",
-        "tags": "",
-        "info": "",
-        "note": ""
+        "note": "",
+        "resp": [],
+        "url": ""
       }
     ]
   }
