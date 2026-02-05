@@ -125,11 +125,19 @@ void ProfilePage::initUI() {
     content->addChild(createSectionTitle(data->at("project").at("title").asString()));
     auto projectList = data->at("project").at("list").asArray();
     for (auto item : projectList) {
+        auto respList = item.at("resp").asArray();
+        auto tl = std::vector<std::string>();
+        if (!respList.empty()) {
+            for (auto t : respList) {
+                tl.push_back(t.asString());
+            }
+        }
         content->addChild(createProjectCard(
             item.at("title").asString(),
             item.at("tags").asString(),
             item.at("info").asString(),
-            item.at("note").asString()
+            item.at("note").asString(),
+            tl
         ));
     }
 
@@ -435,7 +443,8 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
         const std::string& title,
         const std::string& tags,
         const std::string& info,
-        const std::string& noteText)
+        const std::string& noteText,
+        const std::vector<std::string> resp)
 {
 
     auto card = LFLinear::createVertical();
@@ -481,6 +490,113 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
     }
 
     card->addChild(layout);
+
+    // 主要职责
+    if (!resp.empty()) {
+        // 展开容器
+        auto respBox = LFLinear::createVertical();
+        respBox->matchParentWidth();
+        respBox->wrapContentHeight();
+        respBox->setGravity(LFAlignment::Start, LFAlignment::Start);
+        respBox->setMasksToBounds(true);         // 关键：裁剪内容，实现高度动画
+        respBox->setHeight(0);                   // 初始高度为 0 (折叠状态)
+        respBox->setOpacity(0);                  // 初始透明度 0
+
+        auto divide = std::make_shared<LFNode>();
+        divide->matchParentWidth();
+        divide->setHeight(16);
+        divide->setBackgroundColor(0x00000000);
+        respBox->addChild(divide);
+
+        // 内容填充
+        auto respContent = LFLinear::createVertical();
+        respContent->setGravity(LFAlignment::Start, LFAlignment::Start);
+        respContent->setBorderRadius(CARD_RADIUS);
+        respContent->setBackgroundColor(0xFFF7F8FA); // 浅灰背景，与白卡区分
+        respContent->matchParentWidth();
+        respContent->wrapContentHeight();
+        respContent->setPadding(YGEdgeAll, 16); // 内部留白
+
+        // 职责标题
+        auto rTitle = createLabel("主要职责", 13, COL_TEXT_MAIN, true);
+        rTitle->setTextHAlign(LFTextHAlign::Left);
+        rTitle->setMargin(YGEdgeBottom, 10);
+        respContent->addChild(rTitle);
+
+        // 职责列表
+        for (const auto& itemStr : resp) {
+            auto row = LFLinear::createHorizontal();
+            row->setMargin(YGEdgeBottom, 6);
+            row->setGravity(LFAlignment::Start, LFAlignment::Center);
+
+            // 圆点
+            auto dot = createLabel("•", 14, COL_PRIMARY);
+            dot->setMargin(YGEdgeRight, 8);
+
+            // 文字
+            auto text = createLabel(itemStr, 13, 0xFF666666);
+            text->setTextHAlign(LFTextHAlign::Left);
+            text->setTextVAlign(LFTextVAlign::Center);
+            text->setLineHeight(1.4f);
+            text->setFlexGrow(1.0f);
+            text->setFlexShrink(1); // 允许换行
+
+            row->addChild(dot);
+            row->addChild(text);
+            respContent->addChild(row);
+        }
+
+        respBox->addChild(respContent);
+        card->addChild(respBox);
+
+        // 展开/收起
+        // 使用 shared_ptr 捕获状态，使得状态能跟随卡片生命周期
+        auto isExpanded = std::make_shared<bool>(false);
+        std::weak_ptr<LFLinear> weakResp = respBox;
+
+        card->setOnTap([card, weakResp, isExpanded](const LFPoint& p) {
+            auto box = weakResp.lock();
+            if (!box) return;
+
+            // 切换状态
+            bool expanding = !(*isExpanded);
+            *isExpanded = expanding;
+
+            // 确定动画起止点
+            float startH = box->getLayoutHeight();
+            float endH = 0.0f;
+
+            if (*isExpanded) {
+                box->wrapContentHeight();
+                float availableWidth = card->getLayoutWidth();
+                box->calculateLayout(availableWidth, NAN);
+                box->setHeight(startH);
+                endH = box->getLayoutHeight();
+            }
+
+            // 创建高度动画
+            auto anim = LFValueAnimator<float>::of(startH, endH);
+            anim->setDuration(0.3f); // 300ms
+            anim->setEasing(LFEasingType::QuadOut); // 舒缓的减速曲线
+
+            // 更新回调
+            anim->addUpdateListener([weakResp, expanding](const float& h) {
+                if (auto b = weakResp.lock()) {
+                    b->setHeight(h);
+                    // 顺便做一个透明度渐变，体验更丝滑
+                    // 展开时：透明度随高度增加；收起时：随高度减小
+                    // 简单映射：高度 > 10px 开始显示
+                    float alpha = std::min(1.0f, h / 50.0f);
+                    b->setOpacity(alpha);
+                }
+            });
+
+            anim->start();
+            // 注册到全局管理器以保持动画存活
+            LFGlobalAnimationManager::getInstance().addAnimator(anim);
+        });
+    }
+
     return card;
 }
 

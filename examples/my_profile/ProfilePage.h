@@ -55,7 +55,8 @@ private:
             const std::string& title,
             const std::string& tags,
             const std::string& info,
-            const std::string& note
+            const std::string& note,
+            const std::vector<std::string> resp
     );
 
     // 技能标签
