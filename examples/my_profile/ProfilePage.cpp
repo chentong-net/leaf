@@ -467,12 +467,21 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
     layout->matchParentWidth();
 
     auto topRow = LFLinear::createHorizontal();
+    topRow->setGravity(LFAlignment::Center, LFAlignment::Center);
     topRow->setDistribution(LFDistribution::SpaceBetween);
     topRow->matchParentWidth();
 
     auto t = createLabel(title, 17, COL_TEXT_MAIN, true);
     t->setTextHAlign(LFTextHAlign::Left);
     topRow->addChild(t);
+
+    auto add = std::make_shared<LFImage>();
+    add->setSrc("arrow-right.png");
+    add->setWidth(16);
+    add->setHeight(16);
+    add->setFit(LFImageFit::Fill);
+    add->setVisible(false);
+    topRow->addChild(add);
 
     layout->addChild(topRow);
 
@@ -499,6 +508,7 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
 
     // 主要职责
     if (!resp.empty() || !url.empty()) {
+        add->setVisible(true);
         // 展开容器
         auto respBox = LFLinear::createVertical();
         respBox->matchParentWidth();
@@ -586,8 +596,9 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
         // 使用 shared_ptr 捕获状态，使得状态能跟随卡片生命周期
         auto isExpanded = std::make_shared<bool>(false);
         std::weak_ptr<LFLinear> weakResp = respBox;
+        std::weak_ptr<LFImage> weakAdd = add;
 
-        card->setOnTap([card, weakResp, isExpanded](const LFPoint& p) {
+        card->setOnTap([card, weakAdd, weakResp, isExpanded](const LFPoint& p) {
             auto box = weakResp.lock();
             if (!box) return;
 
@@ -613,6 +624,18 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
             anim->setDuration(0.3f); // 300ms
             anim->setEasing(LFEasingType::QuadOut); // 舒缓的减速曲线
 
+            float startR, endR;
+            if (*isExpanded) {
+                startR = 0;
+                endR = 90;
+            } else {
+                startR = 90;
+                endR = 0;
+            }
+            auto addAnim = LFValueAnimator<float>::of(startR, endR);
+            addAnim->setDuration(0.3f); // 300ms
+            addAnim->setEasing(LFEasingType::QuadOut); // 舒缓的减速曲线
+
             // 更新回调
             anim->addUpdateListener([weakResp, expanding](const float& h) {
                 if (auto b = weakResp.lock()) {
@@ -625,6 +648,12 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
                 }
             });
 
+            addAnim->addUpdateListener([weakAdd, expanding](const float& r) {
+                if (auto i = weakAdd.lock()) {
+                    i->setRotate(r);
+                }
+            });
+
             anim->setOnEnd([weakResp, expanding]() {
                 if (expanding) {
                     if (auto b = weakResp.lock()) {
@@ -634,8 +663,10 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
             });
 
             anim->start();
+            addAnim->start();
             // 注册到全局管理器以保持动画存活
             LFGlobalAnimationManager::getInstance().addAnimator(anim);
+            LFGlobalAnimationManager::getInstance().addAnimator(addAnim);
         });
     }
 
