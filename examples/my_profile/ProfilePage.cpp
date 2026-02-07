@@ -545,6 +545,7 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
             // 职责列表
             for (const auto& itemStr : resp) {
                 auto row = LFLinear::createHorizontal();
+                row->matchParentWidth();
                 row->setMargin(YGEdgeBottom, 6);
                 row->setGravity(LFAlignment::Start, LFAlignment::Start);
 
