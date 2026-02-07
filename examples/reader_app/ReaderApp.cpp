@@ -19,8 +19,8 @@ LFNode::Ptr ReaderApp::start() {
 
     // 3. 添加子页面
     // 显式传递 navigator 给书架页，实现解耦
-    tab->addTab("书架", BookshelfPage::create(m_navigator), "", "");
-    tab->addTab("开发者信息", ProfilePage::create(), "", "");
+    tab->addTab("书架", BookshelfPage::create(m_navigator), "icon-read-unselect.png", "icon-read-selected.png");
+    tab->addTab("开发者信息", ProfilePage::create(), "icon-my-unselect.png", "icon-my-selected.png");
 
     // 4. 创建宿主 Page 来容纳 Tab
     auto rootPage = LFPage::create();
