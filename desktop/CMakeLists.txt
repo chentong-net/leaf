@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 
-project("leaf-web")
+project("leaf-desktop")
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
@@ -11,9 +11,16 @@ set(DEPS_DIR ${CORE_DIR}/../third_party)
 set(QUICKJS_DIR ${DEPS_DIR}/quickjs)
 set(NANOVG_DIR ${DEPS_DIR}/nanovg/src)
 set(YOGA_DIR ${DEPS_DIR}/yoga)
+set(GLAD_DIR ${DEPS_DIR}/glad)
+set(GLFW_DIR ${DEPS_DIR}/glfw)
 
 set(READER_APP_EXAMPLE_DIR ${CORE_DIR}/../examples/reader_app)
 set(PROFILE_EXAMPLE_DIR ${CORE_DIR}/../examples/my_profile)
+
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(${GLFW_DIR} glfw_build)
 
 include_directories(
         ${CORE_DIR}
@@ -21,8 +28,10 @@ include_directories(
         ${QUICKJS_DIR}
         ${NANOVG_DIR}
         ${YOGA_DIR}
+        ${GLAD_DIR}
         ${READER_APP_EXAMPLE_DIR}
         ${PROFILE_EXAMPLE_DIR}
+        ${GLFW_DIR}/include
 )
 
 set(CORE_SOURCES
@@ -31,6 +40,8 @@ set(CORE_SOURCES
         ${QUICKJS_DIR}/libunicode.c
         ${QUICKJS_DIR}/cutils.c
         ${QUICKJS_DIR}/dtoa.c
+
+        ${GLAD_DIR}/glad.c
 
         ${NANOVG_DIR}/nanovg.c
 
@@ -71,37 +82,30 @@ set(CORE_SOURCES
         ${CORE_DIR}/LFEngine.cpp
 )
 
-message(STATUS "Building for WebAssembly")
+message(STATUS "Building for Desktop")
 
-add_link_options(
-        -sUSE_WEBGL2=1
-        -sFULL_ES3=1
-        -sALLOW_MEMORY_GROWTH=1   # 允许内存动态增长
-        -sASSERTIONS=1            # 开启断言调试
-        -sFETCH=1
-        # -sASYNCIFY=1            # 如果后面需要处理复杂的 QuickJS 异步，可能需要开启
-)
-
-add_executable(leaf-web
+add_executable(leaf-desktop
         ${CORE_SOURCES}
         ${READER_APP_EXAMPLE_DIR}/ReaderApp.cpp
         ${READER_APP_EXAMPLE_DIR}/BookshelfPage.cpp
         ${READER_APP_EXAMPLE_DIR}/ReaderPage.cpp
         ${READER_APP_EXAMPLE_DIR}/TextSplitter.cpp
         ${PROFILE_EXAMPLE_DIR}/ProfilePage.cpp
-        web_main.cpp
+        desktop_main.cpp
 )
 
-set_target_properties(leaf-web PROPERTIES SUFFIX ".html")
+#target_include_directories(leaf-desktop PRIVATE ${GLFW_DIR}/include)
+target_link_libraries(leaf-desktop PRIVATE glfw)
+
+#if(APPLE)
+#    target_link_libraries(leaf-desktop PRIVATE "-framework OpenGL" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
+#endif()
 
 # 宏定义
-target_compile_definitions(leaf-web PRIVATE
+target_compile_definitions(leaf-desktop PRIVATE
         _GNU_SOURCE
         CONFIG_VERSION="2025-09-13"
         __STDC_FORMAT_MACROS # 关键：解决 PRId64 报错
         CONFIG_BIGNUM
-        __WEB__ # 自定义宏，用于在代码中判断环境
+        __DESKTOP__
 )
-
-target_link_options(leaf-web PRIVATE --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/fonts@/fonts)
-target_link_options(leaf-web PRIVATE --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html)
