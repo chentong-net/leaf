@@ -77,7 +77,7 @@ private:
     // 常量
     const float BAR_HEIGHT = 56.0f;
     const uint32_t COLOR_TEXT_NORMAL = 0xFF999999;
-    const uint32_t COLOR_TEXT_SELECT = 0xFF007AFF;
+    const uint32_t COLOR_TEXT_SELECT = 0xFF212121;
 };
 
 #endif // LEAF_LFTAB_H

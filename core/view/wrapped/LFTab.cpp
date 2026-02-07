@@ -131,6 +131,7 @@ void LFTab::addTab(const std::string& title,
     text->setText(title);
     text->setFontSize(10);
     text->setTextColor(COLOR_TEXT_NORMAL);
+    text->setTextHAlign(LFTextHAlign::Center);
     inner->addChild(text);
 
     btn->addChild(inner, LFBoxAlign::Center);
