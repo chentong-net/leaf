@@ -2,7 +2,7 @@
 // Created by Chen Tong on 2026/1/17.
 //
 
-#include "LFText.h"
+#include "view/base/LFText.h"
 
 // 初始化静态成员
 NVGcontext *LFText::s_measureContext = nullptr;

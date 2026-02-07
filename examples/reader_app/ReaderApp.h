@@ -5,9 +5,7 @@
 #ifndef APP_H
 #define APP_H
 
-#include <memory>
-#include "component/LFNode.h"
-#include "component/LFNavigator.h"
+#include "LFEngine.h"
 
 class ReaderApp {
 public:

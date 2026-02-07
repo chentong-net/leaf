@@ -5,7 +5,7 @@
 #ifndef LEAF_LFLINEAR_H
 #define LEAF_LFLINEAR_H
 
-#include "LFNode.h"
+#include "view/base/LFNode.h"
 
 enum class LFOrientation { Vertical, Horizontal };
 enum class LFAlignment { Start, Center, End, Stretch, Baseline };

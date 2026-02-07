@@ -47,11 +47,18 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${YOGA_DIR}/YGNodePrint.cpp
         ${YOGA_DIR}/event/event.cpp
 
-        ${CORE_DIR}/component/LFBox.cpp
-        ${CORE_DIR}/component/LFLinear.cpp
-        ${CORE_DIR}/component/LFImage.cpp
-        ${CORE_DIR}/component/LFNode.cpp
-        ${CORE_DIR}/component/LFText.cpp
+        ${CORE_DIR}/view/base/LFNode.cpp
+        ${CORE_DIR}/view/base/LFText.cpp
+        ${CORE_DIR}/view/base/LFImage.cpp
+        ${CORE_DIR}/view/base/LFNavigator.cpp
+        ${CORE_DIR}/view/base/LFPage.cpp
+        ${CORE_DIR}/view/layout/LFLinear.cpp
+        ${CORE_DIR}/view/layout/LFBox.cpp
+        ${CORE_DIR}/view/layout/LFGrid.cpp
+        ${CORE_DIR}/view/wrapped/LFButton.cpp
+        ${CORE_DIR}/view/wrapped/LFScrollView.cpp
+        ${CORE_DIR}/view/wrapped/LFTab.cpp
+        ${CORE_DIR}/view/wrapped/LFPageView.cpp
         ${CORE_DIR}/event/LFHitTest.cpp
         ${CORE_DIR}/event/LFEventDispatcher.cpp
         ${CORE_DIR}/event/LFGestureArena.cpp
@@ -61,13 +68,6 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${CORE_DIR}/animation/LFSpring.cpp
         ${CORE_DIR}/animation/LFAnimator.cpp
         ${CORE_DIR}/animation/LFAnimationSet.cpp
-        ${CORE_DIR}/component/LFButton.cpp
-        ${CORE_DIR}/component/LFScrollView.cpp
-        ${CORE_DIR}/component/LFPage.cpp
-        ${CORE_DIR}/component/LFNavigator.cpp
-        ${CORE_DIR}/component/LFGrid.cpp
-        ${CORE_DIR}/component/LFTab.cpp
-        ${CORE_DIR}/component/LFPageView.cpp
         ${CORE_DIR}/LFGlobalAnimationManager.cpp
         ${CORE_DIR}/LFEngine.cpp
 

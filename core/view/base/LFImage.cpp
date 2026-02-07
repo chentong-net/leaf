@@ -2,7 +2,7 @@
 // Created by Chen Tong on 2026/1/18.
 //
 
-#include "LFImage.h"
+#include "view/base/LFImage.h"
 #include "stb_image.h"
 
 LFImage::LFImage() {

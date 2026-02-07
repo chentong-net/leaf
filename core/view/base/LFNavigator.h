@@ -5,8 +5,8 @@
 #ifndef LEAF_LFNAVIGATOR_H
 #define LEAF_LFNAVIGATOR_H
 
-#include "LFBox.h"
-#include "LFPage.h"
+#include "view/layout/LFBox.h"
+#include "view/base/LFPage.h"
 #include <vector>
 
 /**

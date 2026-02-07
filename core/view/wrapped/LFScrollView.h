@@ -6,7 +6,7 @@
 #define LEAF_LFSCROLLVIEW_H
 
 #include "LFDef.h"
-#include "LFBox.h"
+#include "view/layout/LFBox.h"
 #include "animation/LFAnimator.h"
 #include "gesture/LFGestureRecognizer.h"
 

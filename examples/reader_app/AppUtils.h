@@ -5,9 +5,7 @@
 #ifndef APPUTILS_H
 #define APPUTILS_H
 
-#include <memory>
-#include <string>
-#include "component/LFText.h"
+#include "LFEngine.h"
 
 namespace AppUtils {
 

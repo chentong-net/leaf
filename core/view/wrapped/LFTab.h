@@ -5,9 +5,9 @@
 #ifndef LEAF_LFTAB_H
 #define LEAF_LFTAB_H
 
-#include "LFLinear.h"
-#include "LFBox.h"
-#include "LFPage.h"
+#include "view/layout/LFLinear.h"
+#include "view/layout/LFBox.h"
+#include "view/base/LFPage.h"
 #include "LFButton.h"
 
 /**

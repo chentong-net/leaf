@@ -4,7 +4,7 @@
 
 #include "LFPageView.h"
 #include "LFGlobalAnimationManager.h"
-#include "LFLinear.h"
+#include "view/layout/LFLinear.h"
 
 LFPageView::Ptr LFPageView::create() {
     auto view = std::make_shared<LFPageView>();

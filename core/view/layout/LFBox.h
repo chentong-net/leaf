@@ -5,7 +5,7 @@
 #ifndef LEAF_LFBOX_H
 #define LEAF_LFBOX_H
 
-#include "LFNode.h"
+#include "view/base/LFNode.h"
 
 // 对齐方式
 enum class LFBoxAlign {

@@ -2,7 +2,7 @@
 // Created by Chen Tong on 2026/1/29.
 //
 
-#include "LFPage.h"
+#include "view/base/LFPage.h"
 // #include "LFNavigator.h" // 如果需要调用 Navigator 的方法，可能需要这个，但此处仅用于类型完整性
 
 LFPage::Ptr LFPage::create() {

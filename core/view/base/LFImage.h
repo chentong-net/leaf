@@ -5,7 +5,7 @@
 #ifndef LEAF_LFIMAGE_H
 #define LEAF_LFIMAGE_H
 
-#include "LFNode.h"
+#include "view/base/LFNode.h"
 #include "LFResourceProvider.h"
 
 enum class LFImageFit { Fill, Contain, Cover };

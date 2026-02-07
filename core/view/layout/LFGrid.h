@@ -5,7 +5,7 @@
 #ifndef LEAF_LFGRID_H
 #define LEAF_LFGRID_H
 
-#include "LFLinear.h"
+#include "view/layout/LFLinear.h"
 #include <unordered_map>
 
 /**

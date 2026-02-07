@@ -6,7 +6,7 @@
 #ifndef LEAF_LFHITTEST_H
 #define LEAF_LFHITTEST_H
 
-#include "component/LFNode.h"
+#include "view/base/LFNode.h"
 #include "LFEvent.h"
 #include <vector>
 

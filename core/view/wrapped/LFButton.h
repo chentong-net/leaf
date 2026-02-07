@@ -11,9 +11,9 @@
 #define LEAF_LFBUTTON_H
 
 #include "LFDef.h"
-#include "LFBox.h"
+#include "view/layout/LFBox.h"
 #include "animation/LFAnimator.h"
-#include "LFText.h"
+#include "view/base/LFText.h"
 #include "LFGlobalAnimationManager.h"
 
 enum class LFButtonState {

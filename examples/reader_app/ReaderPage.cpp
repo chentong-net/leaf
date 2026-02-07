@@ -3,11 +3,6 @@
 //
 
 #include "ReaderPage.h"
-#include "LFEngine.h"
-#include "component/LFButton.h"
-#include "component/LFText.h"
-#include "component/LFNavigator.h"
-#include "LFGlobalAnimationManager.h"
 #include "TextSplitter.h" // 引入业务层的工具
 
 #include <sstream>

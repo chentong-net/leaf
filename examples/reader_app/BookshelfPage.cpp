@@ -3,12 +3,7 @@
 //
 
 #include "BookshelfPage.h"
-#include "component/LFLinear.h"
-#include "component/LFScrollView.h"
-#include "component/LFGrid.h"
-#include "component/LFBox.h"
 #include "ReaderPage.h"
-#include "LFResourceProvider.h"
 #include "AppUtils.h"
 
 std::shared_ptr<BookshelfPage> BookshelfPage::create(std::weak_ptr<LFNavigator> nav) {

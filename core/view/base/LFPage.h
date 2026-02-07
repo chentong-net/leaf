@@ -5,7 +5,7 @@
 #ifndef LEAF_LFPAGE_H
 #define LEAF_LFPAGE_H
 
-#include "LFNode.h"
+#include "view/base/LFNode.h"
 
 // 前置声明，避免循环依赖
 class LFNavigator;

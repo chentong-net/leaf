@@ -6,11 +6,7 @@
 #ifndef READERPAGE_H
 #define READERPAGE_H
 
-#include "component/LFPage.h"
-#include "component/LFLinear.h"
-#include "component/LFBox.h"
-#include "component/LFPageView.h" // 核心组件
-#include <string>
+#include "LFEngine.h"
 #include "TextSplitter.h"
 
 class ReaderPage : public LFPage {

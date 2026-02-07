@@ -3,7 +3,7 @@
 //
 
 #include "LFGrid.h"
-#include "LFBox.h"
+#include "view/layout/LFBox.h"
 
 LFGrid::Ptr LFGrid::create(int columnCount, float spacing) {
     auto grid = std::make_shared<LFGrid>();

@@ -3,9 +3,9 @@
 //
 
 #include "LFTab.h"
-#include "LFText.h"
-#include "LFImage.h"
-#include  "LFLinear.h"
+#include "view/base/LFText.h"
+#include "view/base/LFImage.h"
+#include "view/layout/LFLinear.h"
 
 // 辅助函数：更新按钮样式
 static void setTabButtonStyle(LFButton::Ptr btn, const std::string& iconPath, uint32_t textColor) {

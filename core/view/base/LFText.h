@@ -5,7 +5,7 @@
 #ifndef LEAF_LFTEXT_H
 #define LEAF_LFTEXT_H
 
-#include "LFNode.h"
+#include "view/base/LFNode.h"
 
 enum class LFTextHAlign { Left, Center, Right };
 enum class LFTextVAlign { Top, Center, Bottom };

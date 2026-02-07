@@ -3,8 +3,6 @@
 //
 
 #include "ReaderApp.h"
-#include "component/LFPage.h"
-#include "component/LFTab.h"
 #include "BookshelfPage.h"
 #include "ProfilePage.h"
 

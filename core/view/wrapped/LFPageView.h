@@ -5,7 +5,7 @@
 #ifndef LEAF_LFPAGEVIEW_H
 #define LEAF_LFPAGEVIEW_H
 
-#include "LFBox.h"
+#include "view/layout/LFBox.h"
 #include "animation/LFAnimator.h"
 #include "gesture/LFGestureRecognizer.h"
 #include <vector>

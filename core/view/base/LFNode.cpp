@@ -2,7 +2,7 @@
 // Created by Chen Tong on 2026/1/17.
 //
 
-#include "LFNode.h"
+#include "view/base/LFNode.h"
 
 // 简化 setter 编写，只有值变了才 markDirty
 #define SET_STYLE_VAL(prop, value) \

@@ -2,7 +2,7 @@
 // Created by Chen Tong on 2026/1/18.
 //
 
-#include "LFBox.h"
+#include "view/layout/LFBox.h"
 
 LFBox::LFBox() {
     // Box 默认不需要特定的 Flex 方向，通常作为一个 Wrapper
