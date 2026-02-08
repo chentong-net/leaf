@@ -1,0 +1,1 @@
+export const initEngine: (resMgr: any, density: number) => void;

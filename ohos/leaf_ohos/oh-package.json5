@@ -1,0 +1,10 @@
+{
+  "name": "leaf_ohos",
+  "version": "1.0.0",
+  "description": "Platform View for Leaf Engine",
+  "main": "Index.ets",
+  "author": "Chen Tong",
+  "dependencies": {
+    "libleaf_ohos.so": "file:./src/main/cpp/types/libleaf_ohos"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "leaf_ohos",
+    "type": "har",
+    "description": "A Simple Engine for App Development, Built with C++",
+    "deviceTypes": [
+      "phone"
+    ],
+  }
+}

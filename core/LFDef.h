@@ -20,6 +20,14 @@
 #define LF_LOGI(...) printf("[Leaf]: " __VA_ARGS__); printf("\n")
 #endif
 
+#ifdef __OHOS__
+#include <ace/xcomponent/native_interface_xcomponent.h>
+#include <EGL/egl.h>
+#include <GLES3/gl3.h>
+#include <hilog/log.h>
+#define LF_LOGI(...) ((void)OH_LOG_Print(LOG_APP, LOG_INFO, 0x0000, "Leaf", __VA_ARGS__))
+#endif
+
 extern "C" {
 #include "quickjs.h"
 }
