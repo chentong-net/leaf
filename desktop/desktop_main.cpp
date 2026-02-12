@@ -168,6 +168,10 @@ int main() {
 
     // 初始化引擎
     LFEngine::getInstance().init(vg);
+    LFEngine::getInstance().setTextInputCursorCallback([window](float x, float y, float lineHeight) {
+        (void) lineHeight;
+        glfwSetTextInputCursorPos(window, (double) x, (double) y);
+    });
 
     // 加载字体
     nvgCreateFont(vg, "sans", "fonts/Alibaba-PuHuiTi-Regular.ttf");
