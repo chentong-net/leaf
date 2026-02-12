@@ -7,6 +7,7 @@
 #define READERPAGE_H
 
 #include "LFEngine.h"
+#include "ReadingProgressStore.h"
 #include "TextSplitter.h"
 
 class ReaderPage : public LFPage {
@@ -22,6 +23,8 @@ public:
 
     ReaderPage();
     virtual ~ReaderPage() = default;
+    void onDisappear() override;
+    void onExit() override;
 
 private:
     void initLayout(const std::string& title, const std::string& content);
@@ -29,6 +32,9 @@ private:
 
     // 核心逻辑：切分文本并初始化 Pager
     void splitContentAndInit(const std::string& content);
+    void persistCurrentProgress();
+    void onPageChanged(int index);
+    size_t sanitizeResumeOffset(size_t rawOffset) const;
 
     // 交互逻辑：切换菜单显示/隐藏
     void toggleMenu();
@@ -40,8 +46,14 @@ private:
     // 状态
     bool m_isMenuVisible = true;
 
-    SplitIterator m_splitIter;
+    SplitIterator m_forwardIter;
+    size_t m_frontCursorOffset = 0;
+
+    LFPageAdapter::Ptr m_adapter;
+    std::string m_bookId;
     std::string m_fullContent; // 解决空指针问题
+    SplitConfig m_splitConfig;
+    IReadingProgressStore* m_progressStore = nullptr;
 };
 
 #endif // READERPAGE_H

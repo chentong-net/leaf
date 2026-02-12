@@ -3,99 +3,65 @@
 //
 
 #include "ReaderPage.h"
-#include "TextSplitter.h" // 引入业务层的工具
 
+#include <algorithm>
 #include <sstream>
 
-std::shared_ptr<std::atomic<bool>> m_splitStopFlag;
-
 const float TOP_BAR_HEIGHT = 56.0f;         // 顶部导航栏高度
-const float ADAPTER_PADDING_TOP = 30.0f;    // 正文顶部内边距 (Adapter setPadding Top)
-const float ADAPTER_PADDING_BOTTOM = 30.0f; // 正文底部内边距 (Adapter setPadding Bottom)
-const float ADAPTER_PADDING_X = 24.0f;      // 正文左/右内边距
+const float ADAPTER_PADDING_TOP = 30.0f;    // 正文顶部内边距
+const float ADAPTER_PADDING_BOTTOM = 30.0f; // 正文底部内边距
+const float ADAPTER_PADDING_X = 24.0f;      // 正文左右内边距
 
 static std::string normalizeText(const std::string& input) {
     if (input.empty()) return "";
 
     std::string output;
     output.reserve(input.size());
-
-    // 1. 遍历清洗
     for (char c : input) {
-        // 彻底丢弃 \r (Carriage Return)，它是导致行高计算翻倍的元凶
-        if (c == '\r') {
-            continue;
-        }
+        if (c == '\r') continue;
         output.push_back(c);
     }
-
-    // 2. (可选) 处理连续的空行？
-    // 如果想要紧凑排版，可以将连续的 \n\n\n 压缩为 \n\n。
-    // 但考虑到小说需要空行表现节奏，这里我们只去 \r，保留 \n。
-
     return output;
 }
 
-// ==========================================
-// Internal Adapter Implementation
-// ==========================================
-
 /**
  * 书籍页面适配器
- * 负责将 TextSplitter 切好的 string 数据绑定到 View 上
+ * 使用 front+main 双段数据实现“从恢复点打开 + 向前补齐”
  */
 class BookPageAdapter : public LFPageAdapter {
 public:
-    BookPageAdapter(const std::vector<std::string>& pages, float fontSize)
-            : m_pages(pages)
-            , m_fontSize(fontSize)
-    {}
+    BookPageAdapter(const std::vector<SplitPage>& mainPages, float fontSize)
+        : m_mainPages(mainPages), m_fontSize(fontSize) {}
 
     int getCount() override {
-        return (int)m_pages.size();
+        return static_cast<int>(m_frontPages.size() + m_mainPages.size());
     }
 
     LFNode::Ptr createView() override {
-        // 1. 根容器 (LFBox)
-        // 我们需要一个 Box 来包裹 "正文" 和 "页码"
         auto container = LFBox::create();
         container->matchParentWidth();
         container->matchParentHeight();
-        // 容器本身透明，背景色由 ReaderPage 统一设置
 
-        // --- 正文区域 ---
         auto contentText = std::make_shared<LFText>();
         contentText->setFontSize(m_fontSize);
-        contentText->setLineHeight(1.6f);      // 舒适行高
-        contentText->setTextColor(0xFF333333); // 深灰字 (#333333)
+        contentText->setLineHeight(1.6f);
+        contentText->setTextColor(0xFF333333);
         contentText->setTextHAlign(LFTextHAlign::Left);
         contentText->setTextVAlign(LFTextVAlign::Top);
-
-        // 布局设置：撑满宽度
         contentText->matchParentWidth();
         contentText->matchParentHeight();
-
-        // 关键：内边距设置
-        // Top: 避开顶部标题栏
-        // Bottom: 避开底部页码
-        // Horizontal: 阅读舒适区
         contentText->setPadding(YGEdgeTop, ADAPTER_PADDING_TOP);
         contentText->setPadding(YGEdgeBottom, ADAPTER_PADDING_BOTTOM);
         contentText->setPadding(YGEdgeHorizontal, ADAPTER_PADDING_X);
 
-        // --- 页码区域 (Footer) ---
         auto footerText = std::make_shared<LFText>();
         footerText->setFontSize(11.0f);
-        footerText->setTextColor(0xFFAAAAAA); // 浅灰 (#AAAAAA)
+        footerText->setTextColor(0xFFAAAAAA);
         footerText->setTextHAlign(LFTextHAlign::Center);
         footerText->setTextVAlign(LFTextVAlign::Center);
 
-        // 将子 View 加入容器
-        // Index 0: 正文
         container->addChild(contentText, LFBoxAlign::MatchParent);
-        // Index 1: 页码 (使用绝对定位放在底部)
         container->addChild(footerText, LFBoxAlign::BottomCenter, 0, -20.0f);
-
         return container;
     }
 
@@ -104,33 +70,57 @@ public:
         auto children = container->getChildren();
         if (children.size() < 2) return;
 
-        // 1. 绑定正文
         auto contentText = std::static_pointer_cast<LFText>(children[0]);
-        if (index >= 0 && index < m_pages.size()) {
-            contentText->setText(m_pages[index]);
+        auto footerText = std::static_pointer_cast<LFText>(children[1]);
+
+        const SplitPage* page = getPage(index);
+        if (page) {
+            contentText->setText(page->text);
         } else {
-            contentText->setText(""); // 安全清空
+            contentText->setText("");
         }
 
-        // 2. 绑定页码 "1 / 150"
-        auto footerText = std::static_pointer_cast<LFText>(children[1]);
         std::stringstream ss;
-        ss << (index + 1) << " / " << m_pages.size();
+        ss << (index + 1) << " / " << getCount();
         footerText->setText(ss.str());
     }
 
-    void addPages(const std::vector<std::string>& newPages) {
-        m_pages.insert(m_pages.end(), newPages.begin(), newPages.end());
+    void appendMainPages(const std::vector<SplitPage>& pages) {
+        if (pages.empty()) return;
+        m_mainPages.insert(m_mainPages.end(), pages.begin(), pages.end());
+    }
+
+    int prependFrontPages(const std::vector<SplitPage>& pages) {
+        if (pages.empty()) return 0;
+        m_frontPages.insert(m_frontPages.begin(), pages.begin(), pages.end());
+        return static_cast<int>(pages.size());
+    }
+
+    size_t getPageStartOffset(int index) const {
+        const SplitPage* page = getPage(index);
+        return page ? page->startOffset : 0;
     }
 
 private:
-    std::vector<std::string> m_pages;
-    float m_fontSize;
-};
+    const SplitPage* getPage(int index) const {
+        if (index < 0) return nullptr;
 
-// ==========================================
-// ReaderPage Implementation
-// ==========================================
+        const int frontCount = static_cast<int>(m_frontPages.size());
+        if (index < frontCount) {
+            return &m_frontPages[index];
+        }
+
+        int mainIndex = index - frontCount;
+        if (mainIndex >= 0 && mainIndex < static_cast<int>(m_mainPages.size())) {
+            return &m_mainPages[mainIndex];
+        }
+        return nullptr;
+    }
+
+    std::vector<SplitPage> m_frontPages;
+    std::vector<SplitPage> m_mainPages;
+    float m_fontSize = 18.0f;
+};
 
 ReaderPage::Ptr ReaderPage::create(const std::string& bookTitle, const std::string& content) {
     auto page = std::make_shared<ReaderPage>();
@@ -139,160 +129,240 @@ ReaderPage::Ptr ReaderPage::create(const std::string& bookTitle, const std::stri
 }
 
 ReaderPage::ReaderPage() {
-    // 设置经典的护眼背景色 (米黄/羊皮纸色)
     setBackgroundColor(0xFFF6F1E1);
+    m_progressStore = &InMemoryReadingProgressStore::getInstance();
+}
+
+void ReaderPage::onDisappear() {
+    persistCurrentProgress();
+    LFPage::onDisappear();
+}
+
+void ReaderPage::onExit() {
+    persistCurrentProgress();
+    LFPage::onExit();
 }
 
 void ReaderPage::initLayout(const std::string& title, const std::string& content) {
-    // 根节点：Box 布局 (用于层叠 PageView 和 TopBar)
+    m_bookId = title;
+
     auto root = LFBox::create();
     root->matchParentWidth();
     root->matchParentHeight();
 
-    // 1. 创建 PageView (核心阅读器)
     m_pageView = LFPageView::create();
     m_pageView->matchParentWidth();
     m_pageView->matchParentHeight();
 
-    // 2. 添加点击事件 (唤出/隐藏菜单)
-    // 这里的 setOnTap 是 LFNode 的方法。
-    // 手势竞技场会自动处理：如果是滑动，PageView 消耗 Pan 事件；如果是点击，这里触发 Tap。
     std::weak_ptr<ReaderPage> weakSelf = std::static_pointer_cast<ReaderPage>(shared_from_this());
-    m_pageView->setOnTap([weakSelf](const LFPoint& p) {
+    m_pageView->setOnTap([weakSelf](const LFPoint&) {
         if (auto self = weakSelf.lock()) {
             self->toggleMenu();
+        }
+    });
+    m_pageView->setOnPageChangeListener([weakSelf](int index) {
+        if (auto self = weakSelf.lock()) {
+            self->onPageChanged(index);
         }
     });
 
     root->addChild(m_pageView, LFBoxAlign::MatchParent);
 
-    // 3. 设置 TopBar (UI 放在上面)
     setupTopBar(title);
     root->addChild(m_topBar, LFBoxAlign::TopLeft);
 
     addChild(root);
-
-    // 4. 数据处理 (同步或异步)
     splitContentAndInit(content);
+}
+
+size_t ReaderPage::sanitizeResumeOffset(size_t rawOffset) const {
+    if (m_fullContent.empty()) return 0;
+    size_t offset = std::min(rawOffset, m_fullContent.size() - 1);
+
+    // 保护 UTF-8 边界：如果落在 continuation byte，则回退到字符头
+    while (offset > 0) {
+        unsigned char c = static_cast<unsigned char>(m_fullContent[offset]);
+        if ((c & 0xC0) != 0x80) break;
+        --offset;
+    }
+    return offset;
 }
 
 void ReaderPage::splitContentAndInit(const std::string& rawContent) {
     m_fullContent = normalizeText(rawContent);
-    // ==========================================
-    // 1. 布局常量定义 (The Source of Truth)
-    // ==========================================
-    // 必须与 BookPageAdapter::createView 中的设置严格一致
-    // ------------------------------------------
+    if (m_fullContent.empty()) return;
+
     const float fontSize = 18.0f;
     const float lineHeightScale = 1.6f;
 
-    // 垂直方向 (Pixels)
-    const float topBarHeight = TOP_BAR_HEIGHT;       // 顶部导航栏高度
-    const float adapterPaddingTop = ADAPTER_PADDING_TOP;  // 正文顶部内边距 (Adapter setPadding Top)
-    const float adapterPaddingBottom = ADAPTER_PADDING_BOTTOM; // 正文底部内边距 (Adapter setPadding Bottom)
-
-    // 水平方向 (Pixels)
-    const float adapterPaddingX = ADAPTER_PADDING_X;    // 左右内边距 (Adapter setPadding Horizontal)
-
-    // ==========================================
-    // 2. 获取屏幕尺寸
-    // ==========================================
     float windowW = LFEngine::getInstance().getWindowWidth();
     float windowH = LFEngine::getInstance().getWindowHeight();
 
-    // ==========================================
-    // 3. 计算安全宽度 (Width Safety)
-    // ==========================================
-    // 逻辑：屏幕宽 - (左边距 + 右边距) - 宽度公差
-    // [宽度公差 5.0f]: 防止 Splitter 认为刚好能排满一行，而渲染器因为精度误差挤到下一行
     const float widthTolerance = 5.0f;
-    float safeWidth = windowW - (adapterPaddingX * 2.0f) - widthTolerance;
+    float safeWidth = windowW - (ADAPTER_PADDING_X * 2.0f) - widthTolerance;
+    if (safeWidth <= 0) safeWidth = 100.0f;
 
-    if (safeWidth <= 0) safeWidth = 100; // 防御性保护
-
-    // ==========================================
-    // 4. 计算安全高度 (Height Safety)
-    // ==========================================
-    // 逻辑：屏幕高 - 顶部占用 - 底部占用 - 高度缓冲
-
-    // 固定被占用的高度
-    float occupiedHeight = adapterPaddingTop + adapterPaddingBottom;
-
-    // 既然 TextSplitter 现在计算很精准，我们只需要极小的缓冲来防止 float 精度误差
+    float occupiedHeight = ADAPTER_PADDING_TOP + ADAPTER_PADDING_BOTTOM;
     float singleLineHeight = fontSize * lineHeightScale;
     float safetyBuffer = 5.0f;
-
     float safeHeight = windowH - occupiedHeight - safetyBuffer;
-
-    // 防御性检查
     if (safeHeight < singleLineHeight) safeHeight = singleLineHeight;
 
-    // ==========================================
-    // 5. 配置与执行切分
-    // ==========================================
-    SplitConfig config;
-    config.width = safeWidth;
-    config.height = safeHeight; // 传给 Splitter 一个更矮的高度限制
-    config.fontSize = fontSize;
-    config.lineHeight = lineHeightScale;
-    config.fontFamily = "sans"; // 确保和 Adapter 字体一致
+    m_splitConfig.width = safeWidth;
+    m_splitConfig.height = safeHeight;
+    m_splitConfig.fontSize = fontSize;
+    m_splitConfig.lineHeight = lineHeightScale;
+    m_splitConfig.fontFamily = "sans";
 
-    LF_LOGI("Layout Logic: Win=%.0fx%.0f, Safe=%.0fx%.0f (Buffer=%.1f)",
-            windowW, windowH, safeWidth, safeHeight, safetyBuffer);
+    const char* base = m_fullContent.c_str();
+    const char* end = base + m_fullContent.size();
 
-    m_splitIter.currentPos = m_fullContent.c_str();
-    m_splitIter.endPos = m_splitIter.currentPos + m_fullContent.size();
-    m_splitIter.isFinished = false;
-
-    auto firstBatch = TextSplitter::splitStep(m_splitIter, config, 10);
-    if (!firstBatch.empty()) {
-        auto adapter = std::make_shared<BookPageAdapter>(firstBatch, fontSize);
-        m_pageView->setAdapter(adapter);
-
-        // 将剩余的繁重切分任务提交给 LFEngine 的“Looper”
-        // 使用 std::weak_ptr 防止异步任务执行时 Page 已经销毁导致崩溃
-        std::weak_ptr<ReaderPage> weakSelf = std::static_pointer_cast<ReaderPage>(shared_from_this());
-        LFEngine::getInstance().addFrameTask([weakSelf, config, adapter]() mutable -> bool {
-            auto self = weakSelf.lock();
-            if (!self) return false; // 页面已销毁，停止任务
-
-            // 每一帧切 20 页
-            auto batch = TextSplitter::splitStep(self->m_splitIter, config, 20);
-            if (!batch.empty()) {
-                adapter->addPages(batch);
-                self->m_pageView->notifyDataSetChanged();
-            }
-            // 如果还没切完，返回 true 要求 LFEngine 下一帧继续调用
-            return !self->m_splitIter.isFinished;
-        });
+    size_t resumeOffset = 0;
+    ReadingProgress progress;
+    if (m_progressStore && m_progressStore->get(m_bookId, progress)) {
+        resumeOffset = sanitizeResumeOffset(progress.pageStartOffset);
     }
+    const char* anchor = base + resumeOffset;
+
+    m_forwardIter.basePos = base;
+    m_forwardIter.currentPos = anchor;
+    m_forwardIter.endPos = end;
+    m_forwardIter.isFinished = (anchor >= end);
+
+    m_frontCursorOffset = resumeOffset;
+
+    auto firstBatch = TextSplitter::splitStep(m_forwardIter, m_splitConfig, 10);
+
+    // 兜底：若恢复点不可用，退回书籍开头
+    if (firstBatch.empty()) {
+        m_forwardIter.currentPos = base;
+        m_forwardIter.endPos = end;
+        m_forwardIter.isFinished = (base >= end);
+        m_frontCursorOffset = 0;
+        firstBatch = TextSplitter::splitStep(m_forwardIter, m_splitConfig, 10);
+    }
+
+    if (firstBatch.empty()) return;
+
+    auto adapter = std::make_shared<BookPageAdapter>(firstBatch, fontSize);
+    m_adapter = adapter;
+    m_pageView->setAdapter(m_adapter);
+    m_pageView->setCurrentItem(0, false);
+
+    std::weak_ptr<ReaderPage> weakSelf = std::static_pointer_cast<ReaderPage>(shared_from_this());
+
+    // 后向加载：从恢复页向书尾增量加载
+    LFEngine::getInstance().addFrameTask([weakSelf]() mutable -> bool {
+        auto self = weakSelf.lock();
+        if (!self) return false;
+
+        if (self->m_forwardIter.isFinished) return false;
+
+        auto adapterPtr = std::dynamic_pointer_cast<BookPageAdapter>(self->m_adapter);
+        if (!adapterPtr) return false;
+
+        auto batch = TextSplitter::splitStep(self->m_forwardIter, self->m_splitConfig, 20);
+        if (!batch.empty()) {
+            adapterPtr->appendMainPages(batch);
+            self->m_pageView->notifyDataSetChanged();
+        }
+        return !self->m_forwardIter.isFinished;
+    });
+
+    // 前向补齐：从书头向恢复页前增量加载
+    LFEngine::getInstance().addFrameTask([weakSelf]() mutable -> bool {
+        auto self = weakSelf.lock();
+        if (!self) return false;
+
+        if (self->m_frontCursorOffset == 0) return false;
+
+        auto adapterPtr = std::dynamic_pointer_cast<BookPageAdapter>(self->m_adapter);
+        if (!adapterPtr) return false;
+
+        const char* base = self->m_fullContent.c_str();
+        if (!base) return false;
+
+        // 从恢复点向前分块回溯，优先补齐“当前页之前”最近的内容
+        static const size_t WINDOW_BYTES = 64 * 1024;
+        size_t scanStartOffset = 0;
+        if (self->m_frontCursorOffset > WINDOW_BYTES) {
+            scanStartOffset = self->m_frontCursorOffset - WINDOW_BYTES;
+        }
+
+        SplitIterator windowIter;
+        windowIter.basePos = base;
+        windowIter.currentPos = base + scanStartOffset;
+        windowIter.endPos = base + self->m_frontCursorOffset;
+        windowIter.isFinished = (windowIter.currentPos >= windowIter.endPos);
+
+        std::vector<SplitPage> windowPages;
+        while (!windowIter.isFinished) {
+            auto chunk = TextSplitter::splitStep(windowIter, self->m_splitConfig, 200);
+            if (chunk.empty()) break;
+            windowPages.insert(windowPages.end(), chunk.begin(), chunk.end());
+        }
+
+        if (!windowPages.empty()) {
+            int currentIndex = self->m_pageView->getCurrentItem();
+            int added = adapterPtr->prependFrontPages(windowPages);
+
+            self->m_pageView->notifyDataSetChanged();
+            self->m_pageView->setCurrentItem(currentIndex + added, false);
+
+            // 下一轮继续向更早位置回溯
+            self->m_frontCursorOffset = windowPages.front().startOffset;
+        } else {
+            // 当前窗口无法再切分时，直接跳到窗口起点，避免卡死循环
+            self->m_frontCursorOffset = scanStartOffset;
+        }
+
+        return self->m_frontCursorOffset > 0;
+    });
+
+    // 初始化时立即写入一次（用于首次打开后快速退出）
+    persistCurrentProgress();
+}
+
+void ReaderPage::onPageChanged(int) {
+    persistCurrentProgress();
+}
+
+void ReaderPage::persistCurrentProgress() {
+    if (!m_progressStore || !m_pageView || m_bookId.empty()) return;
+
+    auto adapter = std::dynamic_pointer_cast<BookPageAdapter>(m_adapter);
+    if (!adapter) return;
+
+    int currentIndex = m_pageView->getCurrentItem();
+    ReadingProgress progress;
+    progress.pageIndex = currentIndex;
+    progress.pageStartOffset = adapter->getPageStartOffset(currentIndex);
+    progress.updatedAt = LFEngine::getInstance().getElapsedTime();
+    m_progressStore->put(m_bookId, progress);
 }
 
 void ReaderPage::setupTopBar(const std::string& title) {
     m_topBar = LFLinear::createHorizontal();
     m_topBar->matchParentWidth();
     m_topBar->setHeight(TOP_BAR_HEIGHT);
-    m_topBar->setBackgroundColor(0xFFFFFFFF); // 白底
+    m_topBar->setBackgroundColor(0xFFFFFFFF);
     m_topBar->setGravity(LFAlignment::Start, LFAlignment::Center);
     m_topBar->setPadding(YGEdgeHorizontal, 10.0f);
-
-    // 增加一点阴影让层级更明显
     m_topBar->setShadow(0, 2, 8, 0, 0x1A000000);
 
     std::weak_ptr<ReaderPage> weakSelf = std::static_pointer_cast<ReaderPage>(shared_from_this());
 
-    // 返回按钮
     auto backBtn = LFButton::create();
     backBtn->setWidth(44);
     backBtn->setHeight(44);
 
     auto backText = std::make_shared<LFText>();
-    backText->setText("<"); // 或使用图标
+    backText->setText("<");
     backText->setFontSize(24);
     backText->setTextColor(0xFF333333);
     backBtn->addChild(backText, LFBoxAlign::Center);
 
-    backBtn->setOnClick([weakSelf](LFButton* btn){
+    backBtn->setOnClick([weakSelf](LFButton*) {
         if (auto self = weakSelf.lock()) {
             if (auto nav = self->getNavigator()) {
                 nav->pop();
@@ -300,43 +370,31 @@ void ReaderPage::setupTopBar(const std::string& title) {
         }
     });
 
-    // 标题
     auto titleText = std::make_shared<LFText>();
     titleText->setText(title);
     titleText->setFontSize(16);
     titleText->setTextColor(0xFF333333);
-    // 限制标题长度，超出... (需要 Text 支持，或者简单截断)
 
     m_topBar->addChild(backBtn);
     m_topBar->addChild(titleText);
-
-    // 初始状态：显示
     m_isMenuVisible = true;
 }
 
 void ReaderPage::toggleMenu() {
     m_isMenuVisible = !m_isMenuVisible;
+    if (!m_topBar) return;
 
-    // 简单的动画效果：改变透明度或位置
-    if (m_topBar) {
-        // 使用 LFValueAnimator 做一个简单的滑出/滑入动画会更棒
-        // 这里为了简单演示，直接 toggle visibility
-        // m_topBar->setVisible(m_isMenuVisible);
+    float startY = m_topBar->getTranslateY();
+    float endY = m_isMenuVisible ? 0.0f : -60.0f;
 
-        // 进阶：使用 Translation 动画
-        float startY = m_topBar->getTranslateY();
-        float endY = m_isMenuVisible ? 0.0f : -60.0f; // 向上收起
+    auto anim = LFValueAnimator<float>::of(startY, endY);
+    anim->setDuration(0.2f);
+    anim->setEasing(LFEasingType::QuadOut);
 
-        auto anim = LFValueAnimator<float>::of(startY, endY);
-        anim->setDuration(0.2f);
-        anim->setEasing(LFEasingType::QuadOut);
-
-        // 捕获 strong ptr 因为 topBar 是成员变量
-        auto topBar = m_topBar;
-        anim->addUpdateListener([topBar](float val) {
-            topBar->setTranslate(0, val);
-        });
-        anim->start();
-        LFGlobalAnimationManager::getInstance().addAnimator(anim);
-    }
+    auto topBar = m_topBar;
+    anim->addUpdateListener([topBar](float val) {
+        topBar->setTranslate(0, val);
+    });
+    anim->start();
+    LFGlobalAnimationManager::getInstance().addAnimator(anim);
 }

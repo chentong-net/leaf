@@ -6,8 +6,8 @@
 #include <cmath>
 #include <algorithm>
 
-std::vector<std::string> TextSplitter::split(const std::string& fullText, const SplitConfig& config) {
-    std::vector<std::string> pages;
+std::vector<SplitPage> TextSplitter::split(const std::string& fullText, const SplitConfig& config) {
+    std::vector<SplitPage> pages;
 
     if (fullText.empty()) return pages;
     if (config.width <= 0 || config.height <= 0) return pages;
@@ -74,7 +74,11 @@ std::vector<std::string> TextSplitter::split(const std::string& fullText, const 
 
         // 截取页面
         if (current > pageStart) {
-            pages.emplace_back(pageStart, current - pageStart);
+            SplitPage page;
+            page.text.assign(pageStart, current - pageStart);
+            page.startOffset = static_cast<size_t>(pageStart - start);
+            page.endOffset = static_cast<size_t>(current - start);
+            pages.push_back(std::move(page));
         } else {
             break;
         }
@@ -84,11 +88,15 @@ std::vector<std::string> TextSplitter::split(const std::string& fullText, const 
     return pages;
 }
 
-std::vector<std::string> TextSplitter::splitStep(SplitIterator& iter, const SplitConfig& config, int batchSize) {
-    std::vector<std::string> pages;
+std::vector<SplitPage> TextSplitter::splitStep(SplitIterator& iter, const SplitConfig& config, int batchSize) {
+    std::vector<SplitPage> pages;
     if (iter.isFinished || !iter.currentPos || iter.currentPos >= iter.endPos) {
         iter.isFinished = true;
         return pages;
+    }
+
+    if (!iter.basePos) {
+        iter.basePos = iter.currentPos;
     }
 
     NVGcontext* ctx = LFEngine::getInstance().getNVGContext();
@@ -125,7 +133,11 @@ std::vector<std::string> TextSplitter::splitStep(SplitIterator& iter, const Spli
         }
 
         if (iter.currentPos > pageStart) {
-            pages.emplace_back(pageStart, iter.currentPos - pageStart);
+            SplitPage page;
+            page.text.assign(pageStart, iter.currentPos - pageStart);
+            page.startOffset = static_cast<size_t>(pageStart - iter.basePos);
+            page.endOffset = static_cast<size_t>(iter.currentPos - iter.basePos);
+            pages.push_back(std::move(page));
         }
     }
 
