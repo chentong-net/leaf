@@ -332,28 +332,9 @@ void LFBox::onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {
             continue;
         }
 
+        ChildLayoutMeta meta = getLayoutMetaForChild(child);
         YGValue childWidthStyle = YGNodeStyleGetWidth(childNode);
         YGValue childHeightStyle = YGNodeStyleGetHeight(childNode);
-        float childOwnerWidth = resolveChildMeasureSize(childNode, childWidthStyle, contentOwnerWidth);
-        float childOwnerHeight = resolveChildMeasureSize(childNode, childHeightStyle, contentOwnerHeight);
-
-        if (YGFloatIsUndefined(childOwnerWidth)) {
-            childOwnerWidth = contentOwnerWidth;
-        }
-        if (YGFloatIsUndefined(childOwnerHeight)) {
-            childOwnerHeight = contentOwnerHeight;
-        }
-
-        YGNodeCalculateLayout(childNode, childOwnerWidth, childOwnerHeight, YGDirectionLTR);
-
-        float childWidth = YGNodeLayoutGetWidth(childNode);
-        float childHeight = YGNodeLayoutGetHeight(childNode);
-
-        ChildLayoutMeta meta = getLayoutMetaForChild(child);
-        float marginStart = meta.marginStart + resolveMargin(childNode, YGEdgeLeft, contentOwnerWidth);
-        float marginTop = meta.marginTop + resolveMargin(childNode, YGEdgeTop, contentOwnerHeight);
-        float marginEnd = meta.marginEnd + resolveMargin(childNode, YGEdgeRight, contentOwnerWidth);
-        float marginBottom = meta.marginBottom + resolveMargin(childNode, YGEdgeBottom, contentOwnerHeight);
 
         bool hasLeft = isValueDefined(YGNodeStyleGetPosition(childNode, YGEdgeLeft));
         bool hasRight = isValueDefined(YGNodeStyleGetPosition(childNode, YGEdgeRight));
@@ -363,6 +344,27 @@ void LFBox::onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {
         bool heightPercent100 = childHeightStyle.unit == YGUnitPercent && almostEqual(childHeightStyle.value, 100.0f);
         bool matchParentWidth = meta.align == LFBoxAlign::MatchParent || widthPercent100 || (hasLeft && hasRight);
         bool matchParentHeight = meta.align == LFBoxAlign::MatchParent || heightPercent100 || (hasTop && hasBottom);
+
+        float childOwnerWidth = resolveChildMeasureSize(childNode, childWidthStyle, contentOwnerWidth);
+        float childOwnerHeight = resolveChildMeasureSize(childNode, childHeightStyle, contentOwnerHeight);
+
+        // 关键策略：wrap轴上auto子节点应按自然尺寸测量，不应强制吃满父尺寸
+        if (YGFloatIsUndefined(childOwnerWidth)) {
+            childOwnerWidth = (wrapWidth && !matchParentWidth) ? YGUndefined : contentOwnerWidth;
+        }
+        if (YGFloatIsUndefined(childOwnerHeight)) {
+            childOwnerHeight = (wrapHeight && !matchParentHeight) ? YGUndefined : contentOwnerHeight;
+        }
+
+        YGNodeCalculateLayout(childNode, childOwnerWidth, childOwnerHeight, YGDirectionLTR);
+
+        float childWidth = YGNodeLayoutGetWidth(childNode);
+        float childHeight = YGNodeLayoutGetHeight(childNode);
+
+        float marginStart = meta.marginStart + resolveMargin(childNode, YGEdgeLeft, contentOwnerWidth);
+        float marginTop = meta.marginTop + resolveMargin(childNode, YGEdgeTop, contentOwnerHeight);
+        float marginEnd = meta.marginEnd + resolveMargin(childNode, YGEdgeRight, contentOwnerWidth);
+        float marginBottom = meta.marginBottom + resolveMargin(childNode, YGEdgeBottom, contentOwnerHeight);
 
         if (!wrapWidth || !matchParentWidth) {
             measuredChildrenWidth = std::max(measuredChildrenWidth, childWidth + marginStart + marginEnd);
