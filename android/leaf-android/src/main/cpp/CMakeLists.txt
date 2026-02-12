@@ -50,6 +50,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${CORE_DIR}/view/base/LFNode.cpp
         ${CORE_DIR}/view/base/LFText.cpp
         ${CORE_DIR}/view/base/LFImage.cpp
+        ${CORE_DIR}/view/base/LFInput.cpp
         ${CORE_DIR}/view/base/LFNavigator.cpp
         ${CORE_DIR}/view/base/LFPage.cpp
         ${CORE_DIR}/view/layout/LFLinear.cpp

@@ -5,6 +5,43 @@
 
 static float g_density = 1.0f;
 
+namespace {
+
+LFKeyCode toLFKeyCode(jint rawKeyCode) {
+    switch (rawKeyCode) {
+        case 13:
+            return LFKeyCode::Enter;
+        case 9:
+            return LFKeyCode::Tab;
+        case 8:
+            return LFKeyCode::Backspace;
+        case 27:
+            return LFKeyCode::Escape;
+        case 127:
+            return LFKeyCode::Delete;
+        case 1001:
+            return LFKeyCode::Left;
+        case 1002:
+            return LFKeyCode::Right;
+        case 1003:
+            return LFKeyCode::Up;
+        case 1004:
+            return LFKeyCode::Down;
+        case 1005:
+            return LFKeyCode::Home;
+        case 1006:
+            return LFKeyCode::End;
+        default:
+            return LFKeyCode::Unknown;
+    }
+}
+
+LFKeyEventType toLFKeyEventType(jint rawType) {
+    return rawType == 1 ? LFKeyEventType::Up : LFKeyEventType::Down;
+}
+
+}
+
 // 声明 LFEngine.cpp 中的外部函数
 extern "C" {
 void leaf_init(std::function<std::vector<unsigned char>(const char* path)> loader);
@@ -51,6 +88,31 @@ Java_net_chentong_leaf_android_LeafRenderer_nativeOnSurfaceChanged(JNIEnv* env, 
 extern "C" JNIEXPORT void JNICALL
 Java_net_chentong_leaf_android_LeafRenderer_nativeOnDrawFrame(JNIEnv* env, jobject thiz) {
     leaf_render();
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_net_chentong_leaf_android_LeafRenderer_nativeIsTextInputFocused(JNIEnv* env, jobject thiz) {
+    return LFEventDispatcher::getInstance().getFocusedNode() ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_net_chentong_leaf_android_LeafRenderer_nativeDispatchKeyEvent(
+    JNIEnv* env, jobject thiz, jint type, jint keyCode, jint modifiers, jboolean repeat
+) {
+    LFEventDispatcher::getInstance().dispatchKeyEvent(
+        toLFKeyEventType(type),
+        toLFKeyCode(keyCode),
+        static_cast<uint32_t>(modifiers),
+        repeat == JNI_TRUE
+    );
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_net_chentong_leaf_android_LeafRenderer_nativeDispatchCharInput(
+    JNIEnv* env, jobject thiz, jint codepoint
+) {
+    if (codepoint <= 0) return;
+    LFEventDispatcher::getInstance().dispatchCharInput(static_cast<uint32_t>(codepoint));
 }
 
 extern "C" JNIEXPORT void JNICALL
