@@ -259,9 +259,15 @@ void LFPageView::handlePanEnd(float velocityX) {
     // 创建动画从当前 offset 到 target
     m_animator = LFValueAnimator<float>::of(m_dragOffset, targetOffset);
 
-    // 使用 Spring 获得原生级手感
-    // DampingRatio: 0.8 (较少震荡), Frequency: 0.5 (适中响应)
-    m_animator->setSpring(0.8f, 0.5f);
+    // 使用弹簧吸附，但改为临界/轻微过阻尼，避免翻页后“duang”回弹
+    // dampingRatio >= 1.0 时基本无过冲
+    if (direction == 0) {
+        // 回原页：更稳更快
+        m_animator->setSpring(1.18f, 0.52f);
+    } else {
+        // 真翻页：保留滑动动势但不二次回弹
+        m_animator->setSpring(1.08f, 0.48f);
+    }
 
     // 如果有初速度，传递给 Spring (需要 LFAnimator 支持 setStartVelocity，
     // 目前 LFSpringAdapter/LFValueAnimator 暂时没有暴露 velocity 接口，
