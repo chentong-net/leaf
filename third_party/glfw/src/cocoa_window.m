@@ -703,7 +703,13 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
                          actualRange:(NSRangePointer)actualRange
 {
     const NSRect frame = [window->ns.view frame];
-    return NSMakeRect(frame.origin.x, frame.origin.y, 0.0, 0.0);
+    const double x = window->textInputCursorPosX;
+    const double y = window->textInputCursorPosY;
+
+    NSRect rect = NSMakeRect(x, frame.size.height - y, 0.0, 0.0);
+    rect = [window->ns.view convertRect:rect toView:nil];
+    rect = [window->ns.object convertRectToScreen:rect];
+    return rect;
 }
 
 - (void)insertText:(id)string replacementRange:(NSRange)replacementRange
@@ -2069,4 +2075,3 @@ GLFWAPI id glfwGetCocoaView(GLFWwindow* handle)
 }
 
 #endif // _GLFW_COCOA
-

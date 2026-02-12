@@ -833,6 +833,17 @@ GLFWAPI void glfwSetCursorPos(GLFWwindow* handle, double xpos, double ypos)
     }
 }
 
+GLFWAPI void glfwSetTextInputCursorPos(GLFWwindow* handle, double xpos, double ypos)
+{
+    _GLFWwindow* window = (_GLFWwindow*) handle;
+    assert(window != NULL);
+
+    _GLFW_REQUIRE_INIT();
+
+    window->textInputCursorPosX = xpos;
+    window->textInputCursorPosY = ypos;
+}
+
 GLFWAPI GLFWcursor* glfwCreateCursor(const GLFWimage* image, int xhot, int yhot)
 {
     _GLFWcursor* cursor;
@@ -1502,4 +1513,3 @@ GLFWAPI uint64_t glfwGetTimerFrequency(void)
     _GLFW_REQUIRE_INIT_OR_RETURN(0);
     return _glfwPlatformGetTimerFrequency();
 }
-
