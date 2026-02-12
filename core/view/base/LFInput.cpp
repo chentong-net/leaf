@@ -301,6 +301,30 @@ void LFInput::ensureCursorVisible(float contentWidth) {
     m_scrollX = std::clamp(m_scrollX, 0.0f, maxScroll);
 }
 
+std::pair<float, float> LFInput::localToWindow(float x, float y) const {
+    float outX = x;
+    float outY = y;
+
+    const LFNode* current = this;
+    while (current) {
+        outX += current->getLayoutX();
+        outY += current->getLayoutY();
+
+        const LFTransform& transform = current->getTransform();
+        outX += transform.translateX;
+        outY += transform.translateY;
+
+        float width = current->getLayoutWidth();
+        float height = current->getLayoutHeight();
+        outX += width * transform.translatePercentX / 100.0f;
+        outY += height * transform.translatePercentY / 100.0f;
+
+        current = current->getParent();
+    }
+
+    return {outX, outY};
+}
+
 size_t LFInput::prevUtf8Index(const std::string& text, size_t index) {
     if (index == 0 || text.empty()) return 0;
     size_t pos = std::min(index, text.size());
@@ -408,10 +432,14 @@ void LFInput::onDrawContent(NVGcontext* vg) {
     nvgText(vg, contentX - m_scrollX, drawY, drawText.c_str(), nullptr);
 
     if (hasFocus()) {
+        float cursorX = contentX + measureCursorOffset() - m_scrollX;
+        float cursorBottom = contentY + std::max(0.0f, (contentH - m_fontSize) * 0.5f) + m_fontSize;
+        auto cursorInWindow = localToWindow(cursorX, cursorBottom);
+        LFEngine::getInstance().updateTextInputCursor(cursorInWindow.first, cursorInWindow.second, m_fontSize);
+
         double t = LFEngine::getInstance().getElapsedTime();
         bool cursorVisible = std::fmod(t, 1.0) < 0.5;
         if (cursorVisible) {
-            float cursorX = contentX + measureCursorOffset() - m_scrollX;
             float cursorTop = contentY + std::max(0.0f, (contentH - m_fontSize) * 0.5f);
             float cursorBottom = cursorTop + m_fontSize;
 

@@ -123,3 +123,13 @@ void LFEngine::addFrameTask(LFFrameTask task) {
     std::lock_guard<std::mutex> lock(m_taskMutex);
     m_frameTasks.push_back(task);
 }
+
+void LFEngine::setTextInputCursorCallback(LFTextInputCursorCallback callback) {
+    m_textInputCursorCallback = callback;
+}
+
+void LFEngine::updateTextInputCursor(float x, float y, float lineHeight) {
+    if (m_textInputCursorCallback) {
+        m_textInputCursorCallback(x, y, lineHeight);
+    }
+}

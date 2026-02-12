@@ -35,6 +35,7 @@
  * 返回值：true 表示任务未完成，下一帧继续；false 表示任务结束，从队列移除。
  */
 using LFFrameTask = std::function<bool()>;
+using LFTextInputCursorCallback = std::function<void(float x, float y, float lineHeight)>;
 
 /**
  * Leaf 引擎的核心驱动器
@@ -114,6 +115,10 @@ public:
      */
     void addFrameTask(LFFrameTask task);
 
+    // 输入法锚点回调（桌面端用于同步 IME 候选框位置）
+    void setTextInputCursorCallback(LFTextInputCursorCallback callback);
+    void updateTextInputCursor(float x, float y, float lineHeight);
+
 private:
     LFEngine() = default;
 
@@ -138,6 +143,8 @@ private:
     // 任务队列
     std::vector<LFFrameTask> m_frameTasks;
     std::mutex m_taskMutex; // 保证任务注册的线程安全
+
+    LFTextInputCursorCallback m_textInputCursorCallback;
 };
 
 #endif // LEAF_LFENGINE_H

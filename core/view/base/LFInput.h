@@ -6,6 +6,7 @@
 #define LEAF_LFINPUT_H
 
 #include "view/base/LFNode.h"
+#include <utility>
 
 /**
  * 单行输入框组件
@@ -57,6 +58,7 @@ private:
     float measureTextWidth(const std::string& text) const;
     float measureCursorOffset() const;
     void ensureCursorVisible(float contentWidth);
+    std::pair<float, float> localToWindow(float x, float y) const;
 
     static size_t prevUtf8Index(const std::string& text, size_t index);
     static size_t nextUtf8Index(const std::string& text, size_t index);
