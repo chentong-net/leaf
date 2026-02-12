@@ -66,6 +66,70 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
     }
 }
 
+uint32_t toLFKeyMods(int glfwMods) {
+    uint32_t mods = LFKeyModNone;
+    if (glfwMods & GLFW_MOD_SHIFT) mods |= LFKeyModShift;
+    if (glfwMods & GLFW_MOD_CONTROL) mods |= LFKeyModCtrl;
+    if (glfwMods & GLFW_MOD_ALT) mods |= LFKeyModAlt;
+    if (glfwMods & GLFW_MOD_SUPER) mods |= LFKeyModSuper;
+    return mods;
+}
+
+LFKeyCode toLFKeyCode(int key) {
+    switch (key) {
+        case GLFW_KEY_ENTER:
+        case GLFW_KEY_KP_ENTER:
+            return LFKeyCode::Enter;
+        case GLFW_KEY_TAB:
+            return LFKeyCode::Tab;
+        case GLFW_KEY_BACKSPACE:
+            return LFKeyCode::Backspace;
+        case GLFW_KEY_ESCAPE:
+            return LFKeyCode::Escape;
+        case GLFW_KEY_DELETE:
+            return LFKeyCode::Delete;
+        case GLFW_KEY_LEFT:
+            return LFKeyCode::Left;
+        case GLFW_KEY_RIGHT:
+            return LFKeyCode::Right;
+        case GLFW_KEY_UP:
+            return LFKeyCode::Up;
+        case GLFW_KEY_DOWN:
+            return LFKeyCode::Down;
+        case GLFW_KEY_HOME:
+            return LFKeyCode::Home;
+        case GLFW_KEY_END:
+            return LFKeyCode::End;
+        default:
+            return LFKeyCode::Unknown;
+    }
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    LFKeyCode keyCode = toLFKeyCode(key);
+    uint32_t lfMods = toLFKeyMods(mods);
+
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        LFEventDispatcher::getInstance().dispatchKeyEvent(
+            LFKeyEventType::Down,
+            keyCode,
+            lfMods,
+            action == GLFW_REPEAT
+        );
+    } else if (action == GLFW_RELEASE) {
+        LFEventDispatcher::getInstance().dispatchKeyEvent(
+            LFKeyEventType::Up,
+            keyCode,
+            lfMods,
+            false
+        );
+    }
+}
+
+void char_callback(GLFWwindow* window, unsigned int codepoint) {
+    LFEventDispatcher::getInstance().dispatchCharInput(codepoint);
+}
+
 int main() {
     // 初始化 GLFW
     if (!glfwInit()) return -1;
@@ -88,6 +152,8 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetCharCallback(window, char_callback);
 
 
     // 初始化 GLAD
