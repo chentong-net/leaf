@@ -21,6 +21,18 @@ enum class LFBoxAlign {
     MatchParent  // 撑满
 };
 
+struct LFBoxInsets {
+    float start = 0.0f;
+    float top = 0.0f;
+    float end = 0.0f;
+    float bottom = 0.0f;
+};
+
+struct LFBoxLayoutParams {
+    LFBoxAlign align = LFBoxAlign::TopLeft;
+    LFBoxInsets margin;
+};
+
 /**
  * 层叠布局
  */
@@ -37,8 +49,27 @@ public:
      * @param offsetY Y轴偏移 (像素)
      */
     void addChild(const LFNode::Ptr& child, LFBoxAlign align, float offsetX = 0.0f, float offsetY = 0.0f);
+    void addChild(const LFNode::Ptr& child, const LFBoxLayoutParams& layoutParams);
 
     static std::shared_ptr<LFBox> create();
+
+protected:
+    void onBeforeCalculateLayout(float ownerWidth, float ownerHeight) override;
+    void onAfterCalculateLayout() override;
+
+private:
+    void applyLayoutParams(const LFNode::Ptr& child, const LFBoxLayoutParams& layoutParams);
+    LFBoxLayoutParams getLayoutParamsForChild(const LFNode::Ptr& child) const;
+    float resolveChildMeasureSize(YGNodeRef node, YGValue value, float ownerSize) const;
+    float resolveMargin(YGNodeRef node, YGEdge edge, float ownerSize) const;
+    float resolvePadding(YGEdge edge, float ownerSize) const;
+    float resolveBorder(YGEdge edge) const;
+    bool isWrapContentWidth() const;
+    bool isWrapContentHeight() const;
+
+    std::unordered_map<LFNode*, LFBoxLayoutParams> m_layoutParams;
+    bool m_restoreAutoWidth = false;
+    bool m_restoreAutoHeight = false;
 };
 
 #endif // LEAF_LFBOX_H

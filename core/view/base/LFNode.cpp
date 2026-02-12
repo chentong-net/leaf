@@ -14,6 +14,20 @@
     func(m_ygNode, __VA_ARGS__); \
     markDirty();
 
+namespace {
+
+float resolveOwnerAxis(const YGValue& axis, float ownerSize) {
+    if (axis.unit == YGUnitPoint) {
+        return axis.value;
+    }
+    if (axis.unit == YGUnitPercent && !YGFloatIsUndefined(ownerSize)) {
+        return ownerSize * axis.value / 100.0f;
+    }
+    return YGUndefined;
+}
+
+}
+
 LFNode::LFNode() {
     m_ygNode = YGNodeNew();
     YGNodeSetContext(m_ygNode, this);
@@ -220,10 +234,45 @@ void LFNode::markDirty() {
 }
 
 void LFNode::calculateLayout(float ownerWidth, float ownerHeight) {
+    prepareLayoutTree(ownerWidth, ownerHeight);
+
     // 布局
     // 注意：每次 update 都会调用，Yoga 内部有缓存机制优化
     YGNodeCalculateLayout(m_ygNode, ownerWidth, ownerHeight, YGDirectionLTR);
+
+    finalizeLayoutTree();
     m_isDirty = false;
+}
+
+void LFNode::prepareLayoutTree(float ownerWidth, float ownerHeight) {
+    onBeforeCalculateLayout(ownerWidth, ownerHeight);
+
+    float childOwnerWidth = ownerWidth;
+    float childOwnerHeight = ownerHeight;
+
+    YGValue selfWidth = YGNodeStyleGetWidth(m_ygNode);
+    YGValue selfHeight = YGNodeStyleGetHeight(m_ygNode);
+    float resolvedSelfWidth = resolveOwnerAxis(selfWidth, ownerWidth);
+    float resolvedSelfHeight = resolveOwnerAxis(selfHeight, ownerHeight);
+
+    if (!YGFloatIsUndefined(resolvedSelfWidth)) {
+        childOwnerWidth = resolvedSelfWidth;
+    }
+    if (!YGFloatIsUndefined(resolvedSelfHeight)) {
+        childOwnerHeight = resolvedSelfHeight;
+    }
+
+    for (auto& child : m_children) {
+        child->prepareLayoutTree(childOwnerWidth, childOwnerHeight);
+    }
+}
+
+void LFNode::finalizeLayoutTree() {
+    onAfterCalculateLayout();
+
+    for (auto& child : m_children) {
+        child->finalizeLayoutTree();
+    }
 }
 
 /**

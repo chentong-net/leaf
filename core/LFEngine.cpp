@@ -77,9 +77,21 @@ void LFEngine::render() {
     glViewport(0, 0, phyWidth, phyHeight);
 
     // 布局
-    // Yoga 内部有缓存机制，如果根节点没有 markDirty，calculateLayout 几乎无消耗
+    // 根节点设置为wrap_content时，传Undefined让子树按内容自适应测量
+    float ownerWidth = m_windowWidth;
+    float ownerHeight = m_windowHeight;
+    YGValue rootWidth = YGNodeStyleGetWidth(m_rootNode->getYGNode());
+    YGValue rootHeight = YGNodeStyleGetHeight(m_rootNode->getYGNode());
+    if (rootWidth.unit == YGUnitAuto) {
+        ownerWidth = YGUndefined;
+    }
+    if (rootHeight.unit == YGUnitAuto) {
+        ownerHeight = YGUndefined;
+    }
+
+    // Yoga内部有缓存机制，如果根节点没有markDirty，calculateLayout几乎无消耗
     // 所以每帧调用是安全的，确保布局始终正确
-    m_rootNode->calculateLayout(m_windowWidth, m_windowHeight);
+    m_rootNode->calculateLayout(ownerWidth, ownerHeight);
 
     // 绘制
     nvgBeginFrame(m_vg, m_windowWidth, m_windowHeight, m_pixelRatio);

@@ -199,6 +199,12 @@ public:
     static NVGcolor colorToNVG(uint32_t argb);
 
 protected:
+    // 布局前钩子，允许子类在正式布局前做尺寸准备
+    virtual void onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {}
+
+    // 布局后钩子，允许子类恢复临时样式
+    virtual void onAfterCalculateLayout() {}
+
     // 子类实现具体内容绘制
     // 内容绘制在背景之上，子视图之下
     virtual void onDrawContent(NVGcontext* vg) {}
@@ -208,6 +214,9 @@ protected:
     virtual void onDrawOverlay(NVGcontext* vg) {}
 
 private:
+    void prepareLayoutTree(float ownerWidth, float ownerHeight);
+    void finalizeLayoutTree();
+
     // 内部绘制实现
     void drawShadow(NVGcontext* vg, float w, float h);
     void drawBackground(NVGcontext* vg, float w, float h);
