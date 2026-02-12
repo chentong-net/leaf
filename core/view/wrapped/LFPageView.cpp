@@ -64,13 +64,15 @@ void LFPageView::initLayout() {
 
 void LFPageView::refreshData() {
     // 清空现有子节点
+    // 必须先物理移除旧节点，否则多次 refresh 会把旧页面叠在新页面上
+    auto oldChildren = getChildren();
+    for (const auto& child : oldChildren) {
+        LFNode::removeChild(child);
+    }
+
     m_prevView = nullptr;
     m_currView = nullptr;
     m_nextView = nullptr;
-    // 这里使用 LFBox::removeAllChildren() 的逻辑，手动移除
-    // 由于 LFBox 没有直接暴露 removeAll，我们通过循环移除
-    // 或者直接重建（为了简单，我们假设 Adapter 设置时通常是初始化）
-    // 实际上复用 LFNode 比较麻烦，直接在这里根据 Adapter 创建 3 个新的
 
     if (!m_adapter) return;
 
