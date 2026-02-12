@@ -79,74 +79,108 @@ bool almostEqual(float a, float b) {
 }
 
 LFBox::LFBox() {
-    // Box 默认不需要特定的 Flex 方向，通常作为一个 Wrapper
+    // Box默认不需要特定的Flex方向，通常作为一个Wrapper
+}
+
+void LFBox::setWidth(float width) {
+    m_wrapContentWidthRequested = width < 0.0f;
+    LFNode::setWidth(width);
+}
+
+void LFBox::setHeight(float height) {
+    m_wrapContentHeightRequested = height < 0.0f;
+    LFNode::setHeight(height);
+}
+
+void LFBox::setWidthPercent(float percent) {
+    m_wrapContentWidthRequested = false;
+    LFNode::setWidthPercent(percent);
+}
+
+void LFBox::setHeightPercent(float percent) {
+    m_wrapContentHeightRequested = false;
+    LFNode::setHeightPercent(percent);
+}
+
+void LFBox::matchParentWidth() {
+    m_wrapContentWidthRequested = false;
+    LFNode::matchParentWidth();
+}
+
+void LFBox::matchParentHeight() {
+    m_wrapContentHeightRequested = false;
+    LFNode::matchParentHeight();
+}
+
+void LFBox::wrapContentWidth() {
+    m_wrapContentWidthRequested = true;
+    LFNode::wrapContentWidth();
+}
+
+void LFBox::wrapContentHeight() {
+    m_wrapContentHeightRequested = true;
+    LFNode::wrapContentHeight();
 }
 
 void LFBox::addChild(const LFNode::Ptr& child, LFBoxAlign align, float offsetX, float offsetY) {
-    LFBoxLayoutParams layoutParams;
-    layoutParams.align = align;
+    if (!child) return;
+
+    ChildLayoutMeta meta;
+    meta.align = align;
 
     switch (align) {
         case LFBoxAlign::TopLeft:
-            layoutParams.margin.start = offsetX;
-            layoutParams.margin.top = offsetY;
+            meta.marginStart = offsetX;
+            meta.marginTop = offsetY;
             break;
         case LFBoxAlign::TopRight:
-            layoutParams.margin.end = offsetX;
-            layoutParams.margin.top = offsetY;
+            meta.marginEnd = offsetX;
+            meta.marginTop = offsetY;
             break;
         case LFBoxAlign::BottomLeft:
-            layoutParams.margin.start = offsetX;
-            layoutParams.margin.bottom = offsetY;
+            meta.marginStart = offsetX;
+            meta.marginBottom = offsetY;
             break;
         case LFBoxAlign::BottomRight:
-            layoutParams.margin.end = offsetX;
-            layoutParams.margin.bottom = offsetY;
+            meta.marginEnd = offsetX;
+            meta.marginBottom = offsetY;
             break;
         case LFBoxAlign::MatchParent:
-            layoutParams.margin.start = offsetX;
-            layoutParams.margin.top = offsetY;
-            layoutParams.margin.end = 0.0f;
-            layoutParams.margin.bottom = 0.0f;
+            // 兼容旧语义：MatchParent始终四边为0，offset参数忽略
             break;
         case LFBoxAlign::Center:
-            layoutParams.margin.start = offsetX;
-            layoutParams.margin.top = offsetY;
-            break;
         case LFBoxAlign::TopCenter:
-            layoutParams.margin.start = offsetX;
-            layoutParams.margin.top = offsetY;
-            break;
         case LFBoxAlign::BottomCenter:
-            layoutParams.margin.start = offsetX;
-            layoutParams.margin.bottom = offsetY;
-            break;
         case LFBoxAlign::CenterLeft:
-            layoutParams.margin.start = offsetX;
-            layoutParams.margin.top = offsetY;
-            break;
         case LFBoxAlign::CenterRight:
-            layoutParams.margin.end = offsetX;
-            layoutParams.margin.top = offsetY;
+            // 兼容旧语义：中心系对齐的offset通过Translate处理
             break;
     }
 
-    addChild(child, layoutParams);
-}
-
-void LFBox::addChild(const LFNode::Ptr& child, const LFBoxLayoutParams& layoutParams) {
     LFNode::addChild(child);
-    applyLayoutParams(child, layoutParams);
-    m_layoutParams[child.get()] = layoutParams;
+    applyLayoutMeta(child, meta);
+    m_layoutMeta[child.get()] = meta;
+
+    switch (align) {
+        case LFBoxAlign::Center:
+        case LFBoxAlign::TopCenter:
+        case LFBoxAlign::BottomCenter:
+        case LFBoxAlign::CenterLeft:
+        case LFBoxAlign::CenterRight:
+            if (offsetX != 0.0f || offsetY != 0.0f) {
+                child->setTranslate(offsetX, offsetY);
+            }
+            break;
+        default:
+            break;
+    }
 }
 
-void LFBox::applyLayoutParams(const LFNode::Ptr& child,
-                              const LFBoxLayoutParams& layoutParams) {
+void LFBox::applyLayoutMeta(const LFNode::Ptr& child, const ChildLayoutMeta& meta) {
     if (!child) return;
 
     child->setPositionType(YGPositionTypeAbsolute);
 
-    // 清理旧定位，避免重复添加或切换对齐时残留约束
     child->setPosition(YGEdgeLeft, YGUndefined);
     child->setPosition(YGEdgeTop, YGUndefined);
     child->setPosition(YGEdgeRight, YGUndefined);
@@ -155,72 +189,60 @@ void LFBox::applyLayoutParams(const LFNode::Ptr& child,
     child->setTranslate(0.0f, 0.0f);
     child->setTranslatePercent(0.0f, 0.0f);
 
-    const LFBoxInsets& margin = layoutParams.margin;
-    float shiftX = margin.start - margin.end;
-    float shiftY = margin.top - margin.bottom;
-
-    switch (layoutParams.align) {
+    switch (meta.align) {
         case LFBoxAlign::TopLeft:
-            child->setPosition(YGEdgeLeft, margin.start);
-            child->setPosition(YGEdgeTop, margin.top);
+            child->setPosition(YGEdgeLeft, meta.marginStart);
+            child->setPosition(YGEdgeTop, meta.marginTop);
             break;
         case LFBoxAlign::TopRight:
-            child->setPosition(YGEdgeRight, margin.end);
-            child->setPosition(YGEdgeTop, margin.top);
+            child->setPosition(YGEdgeRight, meta.marginEnd);
+            child->setPosition(YGEdgeTop, meta.marginTop);
             break;
         case LFBoxAlign::BottomLeft:
-            child->setPosition(YGEdgeLeft, margin.start);
-            child->setPosition(YGEdgeBottom, margin.bottom);
+            child->setPosition(YGEdgeLeft, meta.marginStart);
+            child->setPosition(YGEdgeBottom, meta.marginBottom);
             break;
         case LFBoxAlign::BottomRight:
-            child->setPosition(YGEdgeRight, margin.end);
-            child->setPosition(YGEdgeBottom, margin.bottom);
+            child->setPosition(YGEdgeRight, meta.marginEnd);
+            child->setPosition(YGEdgeBottom, meta.marginBottom);
             break;
         case LFBoxAlign::MatchParent:
-            child->setPosition(YGEdgeLeft, margin.start);
-            child->setPosition(YGEdgeTop, margin.top);
-            child->setPosition(YGEdgeRight, margin.end);
-            child->setPosition(YGEdgeBottom, margin.bottom);
+            child->setPosition(YGEdgeAll, 0.0f);
             break;
         case LFBoxAlign::Center:
             child->setPositionPercent(YGEdgeLeft, 50.0f);
             child->setPositionPercent(YGEdgeTop, 50.0f);
             child->setTranslatePercent(-50.0f, -50.0f);
-            child->setTranslate(shiftX, shiftY);
             break;
         case LFBoxAlign::TopCenter:
             child->setPositionPercent(YGEdgeLeft, 50.0f);
-            child->setPosition(YGEdgeTop, margin.top);
+            child->setPosition(YGEdgeTop, 0.0f);
             child->setTranslatePercent(-50.0f, 0.0f);
-            child->setTranslate(shiftX, 0.0f);
             break;
         case LFBoxAlign::BottomCenter:
             child->setPositionPercent(YGEdgeLeft, 50.0f);
-            child->setPosition(YGEdgeBottom, margin.bottom);
+            child->setPosition(YGEdgeBottom, 0.0f);
             child->setTranslatePercent(-50.0f, 0.0f);
-            child->setTranslate(shiftX, 0.0f);
             break;
         case LFBoxAlign::CenterLeft:
-            child->setPosition(YGEdgeLeft, margin.start);
+            child->setPosition(YGEdgeLeft, 0.0f);
             child->setPositionPercent(YGEdgeTop, 50.0f);
             child->setTranslatePercent(0.0f, -50.0f);
-            child->setTranslate(0.0f, shiftY);
             break;
         case LFBoxAlign::CenterRight:
-            child->setPosition(YGEdgeRight, margin.end);
+            child->setPosition(YGEdgeRight, 0.0f);
             child->setPositionPercent(YGEdgeTop, 50.0f);
             child->setTranslatePercent(0.0f, -50.0f);
-            child->setTranslate(0.0f, shiftY);
             break;
     }
 }
 
-LFBoxLayoutParams LFBox::getLayoutParamsForChild(const LFNode::Ptr& child) const {
+LFBox::ChildLayoutMeta LFBox::getLayoutMetaForChild(const LFNode::Ptr& child) const {
     if (!child) {
         return {};
     }
-    auto it = m_layoutParams.find(child.get());
-    if (it != m_layoutParams.end()) {
+    auto it = m_layoutMeta.find(child.get());
+    if (it != m_layoutMeta.end()) {
         return it->second;
     }
     return {};
@@ -249,15 +271,15 @@ float LFBox::resolveBorder(YGEdge edge) const {
 }
 
 bool LFBox::isWrapContentWidth() const {
-    return isWrapContentStyle(YGNodeStyleGetWidth(getYGNode()));
+    return m_wrapContentWidthRequested && isWrapContentStyle(YGNodeStyleGetWidth(getYGNode()));
 }
 
 bool LFBox::isWrapContentHeight() const {
-    return isWrapContentStyle(YGNodeStyleGetHeight(getYGNode()));
+    return m_wrapContentHeightRequested && isWrapContentStyle(YGNodeStyleGetHeight(getYGNode()));
 }
 
 void LFBox::onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {
-    for (auto it = m_layoutParams.begin(); it != m_layoutParams.end();) {
+    for (auto it = m_layoutMeta.begin(); it != m_layoutMeta.end();) {
         bool exists = false;
         for (const auto& child : getChildren()) {
             if (child && child.get() == it->first) {
@@ -266,7 +288,7 @@ void LFBox::onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {
             }
         }
         if (!exists) {
-            it = m_layoutParams.erase(it);
+            it = m_layoutMeta.erase(it);
         } else {
             ++it;
         }
@@ -327,11 +349,11 @@ void LFBox::onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {
         float childWidth = YGNodeLayoutGetWidth(childNode);
         float childHeight = YGNodeLayoutGetHeight(childNode);
 
-        LFBoxLayoutParams params = getLayoutParamsForChild(child);
-        float marginStart = params.margin.start + resolveMargin(childNode, YGEdgeLeft, contentOwnerWidth);
-        float marginTop = params.margin.top + resolveMargin(childNode, YGEdgeTop, contentOwnerHeight);
-        float marginEnd = params.margin.end + resolveMargin(childNode, YGEdgeRight, contentOwnerWidth);
-        float marginBottom = params.margin.bottom + resolveMargin(childNode, YGEdgeBottom, contentOwnerHeight);
+        ChildLayoutMeta meta = getLayoutMetaForChild(child);
+        float marginStart = meta.marginStart + resolveMargin(childNode, YGEdgeLeft, contentOwnerWidth);
+        float marginTop = meta.marginTop + resolveMargin(childNode, YGEdgeTop, contentOwnerHeight);
+        float marginEnd = meta.marginEnd + resolveMargin(childNode, YGEdgeRight, contentOwnerWidth);
+        float marginBottom = meta.marginBottom + resolveMargin(childNode, YGEdgeBottom, contentOwnerHeight);
 
         bool hasLeft = isValueDefined(YGNodeStyleGetPosition(childNode, YGEdgeLeft));
         bool hasRight = isValueDefined(YGNodeStyleGetPosition(childNode, YGEdgeRight));
@@ -339,8 +361,8 @@ void LFBox::onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {
         bool hasBottom = isValueDefined(YGNodeStyleGetPosition(childNode, YGEdgeBottom));
         bool widthPercent100 = childWidthStyle.unit == YGUnitPercent && almostEqual(childWidthStyle.value, 100.0f);
         bool heightPercent100 = childHeightStyle.unit == YGUnitPercent && almostEqual(childHeightStyle.value, 100.0f);
-        bool matchParentWidth = params.align == LFBoxAlign::MatchParent || widthPercent100 || (hasLeft && hasRight);
-        bool matchParentHeight = params.align == LFBoxAlign::MatchParent || heightPercent100 || (hasTop && hasBottom);
+        bool matchParentWidth = meta.align == LFBoxAlign::MatchParent || widthPercent100 || (hasLeft && hasRight);
+        bool matchParentHeight = meta.align == LFBoxAlign::MatchParent || heightPercent100 || (hasTop && hasBottom);
 
         if (!wrapWidth || !matchParentWidth) {
             measuredChildrenWidth = std::max(measuredChildrenWidth, childWidth + marginStart + marginEnd);
@@ -374,6 +396,6 @@ void LFBox::onAfterCalculateLayout() {
     }
 }
 
-std::shared_ptr<LFBox> LFBox::create() {
+LFBox::Ptr LFBox::create() {
     return std::make_shared<LFBox>();
 }
