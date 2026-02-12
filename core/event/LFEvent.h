@@ -33,6 +33,37 @@ enum class LFTouchEventType {
     Cancel      // Event cancelled (interrupted by system)
 };
 
+// Keyboard event type
+enum class LFKeyEventType {
+    Down,
+    Up,
+    Char
+};
+
+// Cross-platform key code
+enum class LFKeyCode : int32_t {
+    Unknown = 0,
+    Enter = 13,
+    Tab = 9,
+    Backspace = 8,
+    Escape = 27,
+    Delete = 127,
+    Left = 1001,
+    Right = 1002,
+    Up = 1003,
+    Down = 1004,
+    Home = 1005,
+    End = 1006
+};
+
+enum LFKeyMod : uint32_t {
+    LFKeyModNone = 0,
+    LFKeyModShift = 1 << 0,
+    LFKeyModCtrl = 1 << 1,
+    LFKeyModAlt = 1 << 2,
+    LFKeyModSuper = 1 << 3
+};
+
 // Touch point information
 struct LFTouchPoint {
     LFTouchID id = 0;               // Touch point ID (for multi-touch)
@@ -112,6 +143,21 @@ public:
     // Stop propagation
     void stopPropagation() { propagationStopped = true; }
     void preventDefault() { defaultPrevented = true; }
+};
+
+class LFKeyEvent {
+public:
+    LFKeyEventType type = LFKeyEventType::Down;
+    LFKeyCode keyCode = LFKeyCode::Unknown;
+    uint32_t codepoint = 0;
+    uint32_t modifiers = LFKeyModNone;
+    bool repeat = false;
+    bool propagationStopped = false;
+
+    std::weak_ptr<LFNode> target;
+    std::weak_ptr<LFNode> currentTarget;
+
+    void stopPropagation() { propagationStopped = true; }
 };
 
 // Point structure

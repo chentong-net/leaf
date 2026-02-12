@@ -32,6 +32,13 @@ public:
         std::shared_ptr<LFNode> root
     );
 
+    void dispatchKeyEvent(LFKeyEventType type, LFKeyCode keyCode, uint32_t modifiers = LFKeyModNone, bool repeat = false);
+    void dispatchCharInput(uint32_t codepoint);
+
+    void setFocusedNode(const std::shared_ptr<LFNode>& node);
+    void clearFocus(const std::shared_ptr<LFNode>& expectedNode = nullptr);
+    std::shared_ptr<LFNode> getFocusedNode() const;
+
     // Update gesture recognizers (for LongPress timing)
     void update(double currentTime, std::shared_ptr<LFNode> root);
 
@@ -62,9 +69,15 @@ private:
     // Update gesture recognizers recursively
     void updateNodeGestures(std::shared_ptr<LFNode> node, double currentTime);
 
+    void invokeKeyListener(
+        std::shared_ptr<LFNode> node,
+        LFKeyEvent& event
+    );
+
     // Touch point state tracking
     std::map<LFTouchID, std::weak_ptr<LFNode>> m_touchTargets;  // Touch point → target node
     std::map<LFTouchID, LFTouchPoint> m_activeTouches;          // Active touch points
+    std::weak_ptr<LFNode> m_focusedNode;
 };
 
 #endif // LEAF_LFEVENTDISPATCHER_H

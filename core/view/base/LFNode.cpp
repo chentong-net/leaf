@@ -3,6 +3,7 @@
 //
 
 #include "view/base/LFNode.h"
+#include "event/LFEventDispatcher.h"
 
 // 简化 setter 编写，只有值变了才 markDirty
 #define SET_STYLE_VAL(prop, value) \
@@ -442,6 +443,41 @@ void LFNode::setOnTouchCancel(TouchEventListener listener) {
 
 void LFNode::setOnInterceptTouchEvent(InterceptEventListener listener) {
     m_onInterceptTouchEvent = listener;
+}
+
+void LFNode::setOnKeyDown(KeyEventListener listener) {
+    m_onKeyDown = listener;
+}
+
+void LFNode::setOnKeyUp(KeyEventListener listener) {
+    m_onKeyUp = listener;
+}
+
+void LFNode::setOnCharInput(KeyEventListener listener) {
+    m_onCharInput = listener;
+}
+
+void LFNode::setOnFocusChange(FocusChangeListener listener) {
+    m_onFocusChange = listener;
+}
+
+void LFNode::requestFocus() {
+    if (!m_focusable) return;
+    LFEventDispatcher::getInstance().setFocusedNode(shared_from_this());
+}
+
+void LFNode::clearFocus() {
+    LFEventDispatcher::getInstance().clearFocus(shared_from_this());
+}
+
+void LFNode::setFocusState(bool focused) {
+    if (m_hasFocus == focused) return;
+    m_hasFocus = focused;
+    if (m_onFocusChange) {
+        m_onFocusChange(focused);
+    }
+    onFocusChanged(focused);
+    markDirty();
 }
 
 // ==========================================

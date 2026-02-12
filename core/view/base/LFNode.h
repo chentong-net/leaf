@@ -10,6 +10,7 @@
 
 // Forward declarations
 class LFTouchEvent;
+class LFKeyEvent;
 class LFNode;
 class LFGestureRecognizer;
 struct LFPoint;
@@ -41,6 +42,8 @@ public:
     // Event listener types
     using TouchEventListener = std::function<void(const LFTouchEvent&)>;
     using InterceptEventListener = std::function<bool(const LFTouchEvent&)>;
+    using KeyEventListener = std::function<void(LFKeyEvent&)>;
+    using FocusChangeListener = std::function<void(bool)>;
 
     LFNode();
     virtual ~LFNode();
@@ -153,6 +156,16 @@ public:
     void setOnTouchUp(TouchEventListener listener);
     void setOnTouchCancel(TouchEventListener listener);
     void setOnInterceptTouchEvent(InterceptEventListener listener);
+    void setOnKeyDown(KeyEventListener listener);
+    void setOnKeyUp(KeyEventListener listener);
+    void setOnCharInput(KeyEventListener listener);
+    void setOnFocusChange(FocusChangeListener listener);
+
+    void setFocusable(bool focusable) { m_focusable = focusable; }
+    bool isFocusable() const { return m_focusable; }
+    bool hasFocus() const { return m_hasFocus; }
+    void requestFocus();
+    void clearFocus();
 
     // Internal: Get event listeners (used by EventDispatcher)
     TouchEventListener getOnTouchDown() const { return m_onTouchDown; }
@@ -160,6 +173,9 @@ public:
     TouchEventListener getOnTouchUp() const { return m_onTouchUp; }
     TouchEventListener getOnTouchCancel() const { return m_onTouchCancel; }
     InterceptEventListener getOnInterceptTouchEvent() const { return m_onInterceptTouchEvent; }
+    KeyEventListener getOnKeyDown() const { return m_onKeyDown; }
+    KeyEventListener getOnKeyUp() const { return m_onKeyUp; }
+    KeyEventListener getOnCharInput() const { return m_onCharInput; }
 
     // ==========================================
     // Gesture Recognizers (阶段2：手势识别器)
@@ -205,6 +221,8 @@ protected:
     // 布局后钩子，允许子类恢复临时样式
     virtual void onAfterCalculateLayout() {}
 
+    virtual void onFocusChanged(bool focused) {}
+
     // 子类实现具体内容绘制
     // 内容绘制在背景之上，子视图之下
     virtual void onDrawContent(NVGcontext* vg) {}
@@ -214,6 +232,9 @@ protected:
     virtual void onDrawOverlay(NVGcontext* vg) {}
 
 private:
+    friend class LFEventDispatcher;
+    void setFocusState(bool focused);
+
     void prepareLayoutTree(float ownerWidth, float ownerHeight);
     void finalizeLayoutTree();
 
@@ -243,6 +264,8 @@ private:
     // Event system
     bool m_touchEnabled = true;      // Can receive touch events
     bool m_hitTestEnabled = true;    // Participate in HitTest
+    bool m_focusable = false;
+    bool m_hasFocus = false;
 
     // Event listeners
     TouchEventListener m_onTouchDown;
@@ -250,6 +273,10 @@ private:
     TouchEventListener m_onTouchUp;
     TouchEventListener m_onTouchCancel;
     InterceptEventListener m_onInterceptTouchEvent;
+    KeyEventListener m_onKeyDown;
+    KeyEventListener m_onKeyUp;
+    KeyEventListener m_onCharInput;
+    FocusChangeListener m_onFocusChange;
 
     // Gesture recognizers
     std::vector<std::shared_ptr<LFGestureRecognizer>> m_gestureRecognizers;
