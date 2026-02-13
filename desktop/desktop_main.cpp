@@ -4,6 +4,8 @@
 
 #define NANOVG_GL3_IMPLEMENTATION
 
+#include <filesystem>
+
 #include "LFEngine.h"
 #include "ReaderApp.h"
 #include "ProfilePage.h"
@@ -33,8 +35,15 @@ void dispatch_mouse_to_engine(LFTouchEventType type, GLFWwindow* window, double 
     LFTouchPoint p;
     p.id = 0; // 鼠标固定 ID 为 0
     // 将物理坐标转换回逻辑坐标
+#ifdef __APPLE__
+    // macOS
+    // GLFW 返回的坐标通常直接匹配逻辑坐标系，无需手动除以缩放比
     p.x = (float)xpos;
     p.y = (float)ypos;
+#else
+    p.x = (xscale > 0) ? (float)xpos / xscale : (float)xpos;
+    p.y = (yscale > 0) ? (float)ypos / yscale : (float)ypos;
+#endif
     p.pressure = 1.0f;
     p.timestamp = get_engine_time();
 
@@ -178,16 +187,24 @@ int main() {
 
     LFResourceProvider::getInstance().setAssetLoader(
         [](const std::string &path, std::function<void(std::shared_ptr<LFData>)> callback) {
-            std::ifstream file(path, std::ios::binary | std::ios::ate);
+            std::filesystem::path fsPath = std::filesystem::u8path(path);
+            std::ifstream file(fsPath, std::ios::binary | std::ios::ate);
 
             if (!file.is_open()) {
-                LF_LOGI("Failed to open file: %s", path.c_str());
+                std::filesystem::path absPath = std::filesystem::absolute(fsPath);
+                LF_LOGI("Failed to open file: %s (Resolved: %s)", path.c_str(), absPath.string().c_str());
                 callback(nullptr);
                 return;
             }
 
             // 获取文件大小
             std::streamsize size = file.tellg();
+            if (size <= 0) {
+                LF_LOGI("File is empty: %s", path.c_str());
+                callback(nullptr);
+                return;
+            }
+
             file.seekg(0, std::ios::beg);
 
             // 分配内存并读取内容
