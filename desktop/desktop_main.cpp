@@ -227,69 +227,6 @@ int main() {
     auto readerApp = ReaderApp::create();
     LFEngine::getInstance().setRoot(readerApp->start());
 
-    // TODO: write code here
-    auto root = LFLinear::createVertical();
-    root->matchParentWidth();
-    root->matchParentHeight();
-    root->setBackgroundColor(0xFFF5F5F5);
-    root->setPadding(YGEdgeAll, 20.0f);
-    root->setSpacing(12.0f);
-
-    auto title = std::make_shared<LFText>();
-    title->setText("LFInput Demo");
-    title->setFontSize(24.0f);
-    title->setTextColor(0xFF222222);
-    title->setTextHAlign(LFTextHAlign::Left);
-    title->wrapContentHeight();
-    root->addChild(title);
-
-    auto helper = std::make_shared<LFText>();
-    helper->setText("Click input, type text, press Enter to submit");
-    helper->setFontSize(13.0f);
-    helper->setTextColor(0xFF777777);
-    helper->setTextHAlign(LFTextHAlign::Left);
-    helper->wrapContentHeight();
-    root->addChild(helper);
-
-    auto input = LFInput::create();
-    input->matchParentWidth();
-    input->setHeight(44.0f);
-    input->setPlaceholder("Type something...");
-    input->setFontSize(18.0f);
-    root->addChild(input);
-
-    auto echo = std::make_shared<LFText>();
-    echo->setText("OnChange: ");
-    echo->setFontSize(14.0f);
-    echo->setTextColor(0xFF333333);
-    echo->setTextHAlign(LFTextHAlign::Left);
-    echo->wrapContentHeight();
-    root->addChild(echo);
-
-    auto submit = std::make_shared<LFText>();
-    submit->setText("OnSubmit: ");
-    submit->setFontSize(14.0f);
-    submit->setTextColor(0xFF333333);
-    submit->setTextHAlign(LFTextHAlign::Left);
-    submit->wrapContentHeight();
-    root->addChild(submit);
-
-    std::weak_ptr<LFText> weakEcho = echo;
-    input->setOnChange([weakEcho](const std::string& text) {
-        if (auto node = weakEcho.lock()) {
-            node->setText("OnChange: " + text);
-        }
-    });
-
-    std::weak_ptr<LFText> weakSubmit = submit;
-    input->setOnSubmit([weakSubmit](const std::string& text) {
-        if (auto node = weakSubmit.lock()) {
-            node->setText("OnSubmit: " + text);
-        }
-    });
-
-    LFEngine::getInstance().setRoot(root);
-
     // 初始化一次窗口尺寸
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);
