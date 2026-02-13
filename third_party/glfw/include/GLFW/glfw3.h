@@ -5007,9 +5007,9 @@ GLFWAPI void glfwGetCursorPos(GLFWwindow* window, double* xpos, double* ypos);
  */
 GLFWAPI void glfwSetCursorPos(GLFWwindow* window, double xpos, double ypos);
 
-/*! @brief Sets text input cursor anchor position relative to the content area.
+/*! @brief Sets input method cursor anchor position relative to the content area.
  *
- *  This function sets the anchor position used by the platform text input
+ *  This function sets the anchor position used by the platform input method
  *  system (such as IME candidate windows).  The position is specified in screen
  *  coordinates relative to the upper-left corner of the content area.
  *
@@ -5027,7 +5027,7 @@ GLFWAPI void glfwSetCursorPos(GLFWwindow* window, double xpos, double ypos);
  *
  *  @ingroup input
  */
-GLFWAPI void glfwSetTextInputCursorPos(GLFWwindow* window, double xpos, double ypos);
+GLFWAPI void glfwSetInputMethodCursorPos(GLFWwindow* window, double xpos, double ypos);
 
 /*! @brief Creates a custom cursor.
  *

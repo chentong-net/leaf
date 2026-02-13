@@ -703,8 +703,8 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
                          actualRange:(NSRangePointer)actualRange
 {
     const NSRect frame = [window->ns.view frame];
-    const double x = window->textInputCursorPosX;
-    const double y = window->textInputCursorPosY;
+    const double x = window->inputMethodCursorPosX;
+    const double y = window->inputMethodCursorPosY;
 
     NSRect rect = NSMakeRect(x, frame.size.height - y, 0.0, 0.0);
     rect = [window->ns.view convertRect:rect toView:nil];
