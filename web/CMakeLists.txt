@@ -9,18 +9,15 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(LEAF_CORE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../core)
-set(DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
-
-set(READER_APP_EXAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../examples/reader_app)
-set(PROFILE_EXAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../examples/my_profile)
+set(EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../examples)
 
 set(LEAF_PLATFORM_DEF "WEB")
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
+add_subdirectory(${EXAMPLES_DIR}/my_profile my_profile_build)
+add_subdirectory(${EXAMPLES_DIR}/reader_app reader_app_build)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${READER_APP_EXAMPLE_DIR}
-        ${PROFILE_EXAMPLE_DIR}
 )
 
 add_link_options(
@@ -33,15 +30,14 @@ add_link_options(
 )
 
 add_executable(leaf-web
-        ${READER_APP_EXAMPLE_DIR}/ReaderApp.cpp
-        ${READER_APP_EXAMPLE_DIR}/BookshelfPage.cpp
-        ${READER_APP_EXAMPLE_DIR}/ReaderPage.cpp
-        ${READER_APP_EXAMPLE_DIR}/TextSplitter.cpp
-        ${PROFILE_EXAMPLE_DIR}/ProfilePage.cpp
         web_main.cpp
 )
 
-target_link_libraries(leaf-web PRIVATE leaf-core)
+target_link_libraries(leaf-web PRIVATE
+        leaf-core
+        reader-app
+        my-profile
+)
 
 set_target_properties(leaf-web PROPERTIES SUFFIX ".html")
 
