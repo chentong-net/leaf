@@ -51,6 +51,24 @@ public:
         (void)index;
         return 0;
     }
+
+    /**
+     * 获取指定索引的预估高度
+     * 返回<=0表示使用LFListView的默认预估高度
+     */
+    virtual float getEstimatedItemExtent(int index) {
+        (void)index;
+        return -1.0f;
+    }
+
+    /**
+     * 获取指定索引的Item高度
+     * 返回<=0表示使用LFListView的默认高度
+     */
+    virtual float getItemExtent(int index) {
+        (void)index;
+        return -1.0f;
+    }
 };
 
 /**
@@ -114,6 +132,11 @@ private:
     void refreshVisibleWindow(bool forceRebind);
     void updateVisibleRange(int first, int last, bool forceRebind);
     void updateSpacerHeights(int first, int last);
+    bool syncMeasuredItemExtents();
+    void rebuildItemExtentCache(bool keepMeasured);
+    void rebuildItemOffsets();
+    float resolveItemExtent(int index) const;
+    int findIndexByOffset(float offset) const;
 
     LFNode::Ptr obtainReusableItem(int viewType);
     void recycleItem(const VisibleItem& item);
@@ -135,6 +158,9 @@ private:
 
     float m_itemExtent = 72.0f;
     int m_preloadCount = 2;
+    std::vector<float> m_itemExtents;
+    std::vector<uint8_t> m_itemExtentStates; // 0=估算,1=固定,2=实测
+    std::vector<float> m_itemOffsets;
 
     float m_lastScrollY = NAN;
     float m_lastViewportHeight = NAN;

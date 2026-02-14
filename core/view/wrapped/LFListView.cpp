@@ -12,6 +12,10 @@ int clampIndex(int value, int minValue, int maxValue) {
     return std::max(minValue, std::min(value, maxValue));
 }
 
+bool isValidExtent(float value) {
+    return std::isfinite(value) && value > 0.0f;
+}
+
 }
 
 LFListView::Ptr LFListView::createVertical() {
@@ -70,6 +74,7 @@ void LFListView::setAdapter(LFListAdapter::Ptr adapter) {
     m_recyclePool.clear();
 
     m_itemCount = m_adapter ? std::max(0, m_adapter->getCount()) : 0;
+    rebuildItemExtentCache(false);
 
     if (m_scrollView) {
         m_scrollView->scrollTo(0.0f, false);
@@ -84,12 +89,16 @@ void LFListView::setAdapter(LFListAdapter::Ptr adapter) {
 void LFListView::notifyDataSetChanged() {
     if (!m_adapter) {
         m_itemCount = 0;
+        m_itemExtents.clear();
+        m_itemExtentStates.clear();
+        m_itemOffsets.clear();
         clearVisibleItems(true);
         updateSpacerHeights(-1, -1);
         return;
     }
 
     m_itemCount = std::max(0, m_adapter->getCount());
+    rebuildItemExtentCache(false);
 
     if (m_itemCount <= 0) {
         clearVisibleItems(true);
@@ -111,10 +120,19 @@ void LFListView::setItemExtent(float extent) {
     if (std::fabs(m_itemExtent - extent) < 0.001f) return;
 
     m_itemExtent = extent;
+    rebuildItemExtentCache(true);
 
     for (auto& entry : m_visibleItems) {
-        if (entry.second.node) {
-            entry.second.node->setHeight(m_itemExtent);
+        int index = entry.first;
+        auto node = entry.second.node;
+        if (!node) continue;
+
+        bool fixedExtent = index >= 0 && index < static_cast<int>(m_itemExtentStates.size()) &&
+                           m_itemExtentStates[static_cast<size_t>(index)] == 1;
+        if (fixedExtent) {
+            node->setHeight(resolveItemExtent(index));
+        } else {
+            node->wrapContentHeight();
         }
     }
 
@@ -134,9 +152,12 @@ void LFListView::setPreloadCount(int count) {
 
 void LFListView::scrollToIndex(int index, bool animate) {
     if (!m_scrollView || m_itemCount <= 0) return;
+    if (m_itemOffsets.size() != static_cast<size_t>(m_itemCount) + 1) {
+        rebuildItemExtentCache(true);
+    }
 
     int clamped = clampIndex(index, 0, m_itemCount - 1);
-    float targetY = -static_cast<float>(clamped) * m_itemExtent;
+    float targetY = -m_itemOffsets[static_cast<size_t>(clamped)];
     m_scrollView->scrollTo(targetY, animate);
 
     m_forceRefresh = true;
@@ -177,6 +198,15 @@ void LFListView::refreshVisibleWindow(bool forceRebind) {
         return;
     }
 
+    if (m_itemExtents.size() != static_cast<size_t>(m_itemCount) ||
+        m_itemOffsets.size() != static_cast<size_t>(m_itemCount) + 1) {
+        rebuildItemExtentCache(true);
+    }
+
+    // 先用上一帧layout结果回填实测高度，再进行可见区计算
+    // 通过锚点补偿避免因为高度修正导致可视内容跳动
+    syncMeasuredItemExtents();
+
     float viewportHeight = m_scrollView->getLayoutHeight();
     if (viewportHeight <= 0.0f) {
         return;
@@ -196,8 +226,8 @@ void LFListView::refreshVisibleWindow(bool forceRebind) {
     float visibleTop = std::max(0.0f, -scrollY);
     float visibleBottom = visibleTop + viewportHeight;
 
-    int first = static_cast<int>(std::floor(visibleTop / m_itemExtent)) - m_preloadCount;
-    int last = static_cast<int>(std::floor(std::max(0.0f, visibleBottom - 1.0f) / m_itemExtent)) + m_preloadCount;
+    int first = findIndexByOffset(visibleTop) - m_preloadCount;
+    int last = findIndexByOffset(std::max(0.0f, visibleBottom - 0.1f)) + m_preloadCount;
 
     first = std::max(0, first);
     last = std::min(m_itemCount - 1, last);
@@ -210,6 +240,8 @@ void LFListView::refreshVisibleWindow(bool forceRebind) {
 
     bool rebindVisible = forceRebind || m_forceRefresh;
     if (!rebindVisible && first == m_firstVisibleIndex && last == m_lastVisibleIndex) {
+        updateSpacerHeights(first, last);
+        m_forceRefresh = false;
         return;
     }
 
@@ -239,13 +271,12 @@ void LFListView::updateVisibleRange(int first, int last, bool forceRebind) {
 
         auto it = m_visibleItems.find(index);
         bool needCreate = it == m_visibleItems.end();
-        bool typeChanged = false;
         bool needBind = forceRebind || needCreate;
         LFNode::Ptr node;
 
         if (!needCreate) {
             node = it->second.node;
-            typeChanged = it->second.viewType != viewType;
+            bool typeChanged = it->second.viewType != viewType;
             if (typeChanged) {
                 recycleItem(it->second);
                 m_visibleItems.erase(it);
@@ -275,7 +306,15 @@ void LFListView::updateVisibleRange(int first, int last, bool forceRebind) {
         node->setTranslate(0.0f, 0.0f);
         node->setTranslatePercent(0.0f, 0.0f);
         node->matchParentWidth();
-        node->setHeight(m_itemExtent);
+
+        bool fixedExtent = index >= 0 && index < static_cast<int>(m_itemExtentStates.size()) &&
+                           m_itemExtentStates[static_cast<size_t>(index)] == 1;
+        if (fixedExtent) {
+            node->setHeight(resolveItemExtent(index));
+        } else {
+            // 动态高度Item保持auto，让文本换行等真实布局自然测量
+            node->wrapContentHeight();
+        }
 
         if (needBind) {
             m_adapter->bindView(node, index);
@@ -288,16 +327,161 @@ void LFListView::updateVisibleRange(int first, int last, bool forceRebind) {
 void LFListView::updateSpacerHeights(int first, int last) {
     if (!m_topSpacer || !m_bottomSpacer) return;
 
-    if (m_itemCount <= 0 || first < 0 || last < 0 || first > last) {
+    if (m_itemCount <= 0 || first < 0 || last < 0 || first > last ||
+        m_itemOffsets.size() != static_cast<size_t>(m_itemCount) + 1) {
         m_topSpacer->setHeight(0.0f);
         m_bottomSpacer->setHeight(0.0f);
         return;
     }
 
-    float topHeight = static_cast<float>(first) * m_itemExtent;
-    float bottomHeight = static_cast<float>(m_itemCount - last - 1) * m_itemExtent;
+    float topHeight = m_itemOffsets[static_cast<size_t>(first)];
+    float bottomHeight = m_itemOffsets[static_cast<size_t>(m_itemCount)] -
+                         m_itemOffsets[static_cast<size_t>(last) + 1];
     m_topSpacer->setHeight(std::max(0.0f, topHeight));
     m_bottomSpacer->setHeight(std::max(0.0f, bottomHeight));
+}
+
+bool LFListView::syncMeasuredItemExtents() {
+    if (!m_adapter || !m_scrollView || m_visibleItems.empty()) {
+        return false;
+    }
+    if (m_itemExtents.size() != static_cast<size_t>(m_itemCount) ||
+        m_itemOffsets.size() != static_cast<size_t>(m_itemCount) + 1) {
+        return false;
+    }
+
+    float scrollY = m_scrollView->getScrollY();
+    float visibleTop = std::max(0.0f, -scrollY);
+    int anchorIndex = findIndexByOffset(visibleTop);
+    float anchorInnerOffset = 0.0f;
+    if (anchorIndex >= 0) {
+        anchorInnerOffset = visibleTop - m_itemOffsets[static_cast<size_t>(anchorIndex)];
+    }
+
+    bool changed = false;
+    for (const auto& entry : m_visibleItems) {
+        int index = entry.first;
+        if (index < 0 || index >= m_itemCount) continue;
+
+        if (m_itemExtentStates[static_cast<size_t>(index)] == 1) {
+            continue;
+        }
+
+        auto node = entry.second.node;
+        if (!node) continue;
+
+        float measured = node->getLayoutHeight();
+        if (!isValidExtent(measured)) {
+            continue;
+        }
+
+        measured = std::max(1.0f, measured);
+        float old = m_itemExtents[static_cast<size_t>(index)];
+        if (std::fabs(measured - old) > 0.5f) {
+            m_itemExtents[static_cast<size_t>(index)] = measured;
+            m_itemExtentStates[static_cast<size_t>(index)] = 2;
+            changed = true;
+        }
+    }
+
+    if (!changed) {
+        return false;
+    }
+
+    rebuildItemOffsets();
+
+    if (anchorIndex >= 0 && anchorIndex < m_itemCount) {
+        float targetVisibleTop = m_itemOffsets[static_cast<size_t>(anchorIndex)] + anchorInnerOffset;
+        m_scrollView->scrollTo(-targetVisibleTop, false);
+    }
+
+    m_forceRefresh = true;
+    m_lastScrollY = NAN;
+    return true;
+}
+
+void LFListView::rebuildItemExtentCache(bool keepMeasured) {
+    std::vector<float> oldExtents = std::move(m_itemExtents);
+    std::vector<uint8_t> oldStates = std::move(m_itemExtentStates);
+
+    m_itemExtents.assign(static_cast<size_t>(m_itemCount), std::max(1.0f, m_itemExtent));
+    m_itemExtentStates.assign(static_cast<size_t>(m_itemCount), 0);
+
+    bool canReuseMeasured = keepMeasured &&
+                            oldExtents.size() == static_cast<size_t>(m_itemCount) &&
+                            oldStates.size() == static_cast<size_t>(m_itemCount);
+
+    for (int i = 0; i < m_itemCount; ++i) {
+        float fixed = -1.0f;
+        float estimated = -1.0f;
+
+        if (m_adapter) {
+            fixed = m_adapter->getItemExtent(i);
+            estimated = m_adapter->getEstimatedItemExtent(i);
+        }
+
+        if (isValidExtent(fixed)) {
+            m_itemExtents[static_cast<size_t>(i)] = std::max(1.0f, fixed);
+            m_itemExtentStates[static_cast<size_t>(i)] = 1;
+            continue;
+        }
+
+        if (canReuseMeasured && oldStates[static_cast<size_t>(i)] == 2 &&
+            isValidExtent(oldExtents[static_cast<size_t>(i)])) {
+            m_itemExtents[static_cast<size_t>(i)] = std::max(1.0f, oldExtents[static_cast<size_t>(i)]);
+            m_itemExtentStates[static_cast<size_t>(i)] = 2;
+            continue;
+        }
+
+        if (!isValidExtent(estimated)) {
+            estimated = m_itemExtent;
+        }
+
+        m_itemExtents[static_cast<size_t>(i)] = std::max(1.0f, estimated);
+        m_itemExtentStates[static_cast<size_t>(i)] = 0;
+    }
+
+    rebuildItemOffsets();
+}
+
+void LFListView::rebuildItemOffsets() {
+    m_itemOffsets.assign(static_cast<size_t>(m_itemCount) + 1, 0.0f);
+    for (int i = 0; i < m_itemCount; ++i) {
+        float extent = resolveItemExtent(i);
+        m_itemOffsets[static_cast<size_t>(i) + 1] = m_itemOffsets[static_cast<size_t>(i)] + extent;
+    }
+}
+
+float LFListView::resolveItemExtent(int index) const {
+    if (index < 0 || index >= m_itemCount) {
+        return std::max(1.0f, m_itemExtent);
+    }
+
+    if (index < static_cast<int>(m_itemExtents.size()) &&
+        isValidExtent(m_itemExtents[static_cast<size_t>(index)])) {
+        return std::max(1.0f, m_itemExtents[static_cast<size_t>(index)]);
+    }
+
+    return std::max(1.0f, m_itemExtent);
+}
+
+int LFListView::findIndexByOffset(float offset) const {
+    if (m_itemCount <= 0 || m_itemOffsets.empty()) {
+        return -1;
+    }
+
+    if (offset <= 0.0f) {
+        return 0;
+    }
+
+    float totalExtent = m_itemOffsets[static_cast<size_t>(m_itemCount)];
+    if (offset >= totalExtent) {
+        return m_itemCount - 1;
+    }
+
+    auto it = std::upper_bound(m_itemOffsets.begin(), m_itemOffsets.end(), offset);
+    int index = static_cast<int>(it - m_itemOffsets.begin()) - 1;
+    return clampIndex(index, 0, m_itemCount - 1);
 }
 
 LFNode::Ptr LFListView::obtainReusableItem(int viewType) {
