@@ -2,78 +2,26 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project("leaf-web")
 
+add_compile_definitions(__WEB__)
+
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CORE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../core)
-set(DEPS_DIR ${CORE_DIR}/../third_party)
-set(QUICKJS_DIR ${DEPS_DIR}/quickjs)
-set(NANOVG_DIR ${DEPS_DIR}/nanovg/src)
-set(YOGA_DIR ${DEPS_DIR}/yoga)
+set(LEAF_CORE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../core)
+set(DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 
-set(READER_APP_EXAMPLE_DIR ${CORE_DIR}/../examples/reader_app)
-set(PROFILE_EXAMPLE_DIR ${CORE_DIR}/../examples/my_profile)
+set(READER_APP_EXAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../examples/reader_app)
+set(PROFILE_EXAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../examples/my_profile)
+
+set(LEAF_PLATFORM_DEF "WEB")
+add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
 
 include_directories(
-        ${CORE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${QUICKJS_DIR}
-        ${NANOVG_DIR}
-        ${YOGA_DIR}
         ${READER_APP_EXAMPLE_DIR}
         ${PROFILE_EXAMPLE_DIR}
 )
-
-set(CORE_SOURCES
-        ${QUICKJS_DIR}/quickjs.c
-        ${QUICKJS_DIR}/libregexp.c
-        ${QUICKJS_DIR}/libunicode.c
-        ${QUICKJS_DIR}/cutils.c
-        ${QUICKJS_DIR}/dtoa.c
-
-        ${NANOVG_DIR}/nanovg.c
-
-        ${YOGA_DIR}/Yoga.cpp
-        ${YOGA_DIR}/YGConfig.cpp
-        ${YOGA_DIR}/YGEnums.cpp
-        ${YOGA_DIR}/YGNode.cpp
-        ${YOGA_DIR}/YGLayout.cpp
-        ${YOGA_DIR}/YGStyle.cpp
-        ${YOGA_DIR}/YGValue.cpp
-        ${YOGA_DIR}/log.cpp
-        ${YOGA_DIR}/Utils.cpp
-        ${YOGA_DIR}/YGNodePrint.cpp
-        ${YOGA_DIR}/event/event.cpp
-
-        ${CORE_DIR}/view/base/LFNode.cpp
-        ${CORE_DIR}/view/base/LFText.cpp
-        ${CORE_DIR}/view/base/LFImage.cpp
-        ${CORE_DIR}/view/base/LFInput.cpp
-        ${CORE_DIR}/view/base/LFNavigator.cpp
-        ${CORE_DIR}/view/base/LFPage.cpp
-        ${CORE_DIR}/view/layout/LFLinear.cpp
-        ${CORE_DIR}/view/layout/LFBox.cpp
-        ${CORE_DIR}/view/layout/LFGrid.cpp
-        ${CORE_DIR}/view/wrapped/LFButton.cpp
-        ${CORE_DIR}/view/wrapped/LFScrollView.cpp
-        ${CORE_DIR}/view/wrapped/LFTab.cpp
-        ${CORE_DIR}/view/wrapped/LFPageView.cpp
-        ${CORE_DIR}/view/wrapped/LFListView.cpp
-        ${CORE_DIR}/event/LFHitTest.cpp
-        ${CORE_DIR}/event/LFEventDispatcher.cpp
-        ${CORE_DIR}/event/LFGestureArena.cpp
-        ${CORE_DIR}/gesture/LFGestureRecognizer.cpp
-        ${CORE_DIR}/animation/LFEasing.cpp
-        ${CORE_DIR}/animation/LFEvaluator.cpp
-        ${CORE_DIR}/animation/LFSpring.cpp
-        ${CORE_DIR}/animation/LFAnimator.cpp
-        ${CORE_DIR}/animation/LFAnimationSet.cpp
-        ${CORE_DIR}/LFGlobalAnimationManager.cpp
-        ${CORE_DIR}/LFEngine.cpp
-)
-
-message(STATUS "Building for WebAssembly")
 
 add_link_options(
         -sUSE_WEBGL2=1
@@ -85,7 +33,6 @@ add_link_options(
 )
 
 add_executable(leaf-web
-        ${CORE_SOURCES}
         ${READER_APP_EXAMPLE_DIR}/ReaderApp.cpp
         ${READER_APP_EXAMPLE_DIR}/BookshelfPage.cpp
         ${READER_APP_EXAMPLE_DIR}/ReaderPage.cpp
@@ -94,16 +41,9 @@ add_executable(leaf-web
         web_main.cpp
 )
 
-set_target_properties(leaf-web PROPERTIES SUFFIX ".html")
+target_link_libraries(leaf-web PRIVATE leaf-core)
 
-# 宏定义
-target_compile_definitions(leaf-web PRIVATE
-        _GNU_SOURCE
-        CONFIG_VERSION="2025-09-13"
-        __STDC_FORMAT_MACROS # 关键：解决 PRId64 报错
-        CONFIG_BIGNUM
-        __WEB__ # 自定义宏，用于在代码中判断环境
-)
+set_target_properties(leaf-web PROPERTIES SUFFIX ".html")
 
 target_link_options(leaf-web PRIVATE --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/fonts@/fonts)
 target_link_options(leaf-web PRIVATE --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html)

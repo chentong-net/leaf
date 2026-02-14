@@ -15,7 +15,6 @@
 
 #ifdef __DESKTOP__
 #include "glad.h"
-#include <GLFW/glfw3.h>
 #include <cstdio>
 #define LF_LOGI(...) printf("[Leaf]: " __VA_ARGS__); printf("\n")
 #endif

@@ -5,10 +5,10 @@
 #define NANOVG_GL3_IMPLEMENTATION
 
 #include <filesystem>
-
 #include "LFEngine.h"
 #include "ReaderApp.h"
 #include "ProfilePage.h"
+#include <GLFW/glfw3.h>
 
 // 窗口大小改变的回调
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
