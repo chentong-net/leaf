@@ -17,6 +17,7 @@
 #include "view/layout/LFGrid.h"
 #include "view/wrapped/LFScrollView.h"
 #include "view/wrapped/LFPageView.h"
+#include "view/wrapped/LFListView.h"
 #include "view/wrapped/LFButton.h"
 #include "view/wrapped/LFTab.h"
 #include "event/LFEvent.h"

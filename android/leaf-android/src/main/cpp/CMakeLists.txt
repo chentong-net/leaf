@@ -60,6 +60,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${CORE_DIR}/view/wrapped/LFScrollView.cpp
         ${CORE_DIR}/view/wrapped/LFTab.cpp
         ${CORE_DIR}/view/wrapped/LFPageView.cpp
+        ${CORE_DIR}/view/wrapped/LFListView.cpp
         ${CORE_DIR}/event/LFHitTest.cpp
         ${CORE_DIR}/event/LFEventDispatcher.cpp
         ${CORE_DIR}/event/LFGestureArena.cpp

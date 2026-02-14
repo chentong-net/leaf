@@ -58,6 +58,7 @@ add_library(leaf_ohos SHARED
         ${CORE_DIR}/view/base/LFNode.cpp
         ${CORE_DIR}/view/base/LFText.cpp
         ${CORE_DIR}/view/base/LFImage.cpp
+        ${CORE_DIR}/view/base/LFInput.cpp
         ${CORE_DIR}/view/base/LFNavigator.cpp
         ${CORE_DIR}/view/base/LFPage.cpp
         ${CORE_DIR}/view/layout/LFLinear.cpp
@@ -67,6 +68,7 @@ add_library(leaf_ohos SHARED
         ${CORE_DIR}/view/wrapped/LFScrollView.cpp
         ${CORE_DIR}/view/wrapped/LFTab.cpp
         ${CORE_DIR}/view/wrapped/LFPageView.cpp
+        ${CORE_DIR}/view/wrapped/LFListView.cpp
         ${CORE_DIR}/event/LFHitTest.cpp
         ${CORE_DIR}/event/LFEventDispatcher.cpp
         ${CORE_DIR}/event/LFGestureArena.cpp
