@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <provider
+            android:name=".LeafFilePickerInitProvider"
+            android:authorities="${applicationId}.leaf.filepicker.init"
+            android:exported="false"
+            android:initOrder="100" />
+
+        <activity
+            android:name=".LeafFilePickerProxyActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:theme="@style/LeafFilePicker.Transparent" />
+    </application>
+
+</manifest>

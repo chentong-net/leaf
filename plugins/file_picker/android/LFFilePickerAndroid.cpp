@@ -5,6 +5,8 @@
 namespace {
 
 JavaVM* g_javaVM = nullptr;
+jclass g_bridgeClass = nullptr;
+jmethodID g_openMethod = nullptr;
 
 JNIEnv* getJNIEnv(bool* needDetach) {
     if (!g_javaVM) {
@@ -46,6 +48,17 @@ std::string toStdString(JNIEnv* env, jstring value) {
 extern "C" jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     (void) reserved;
     g_javaVM = vm;
+    JNIEnv* env = nullptr;
+    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) == JNI_OK && env) {
+        jclass localClass = env->FindClass("net/chentong/leaf/filepicker/LeafFilePickerBridge");
+        if (localClass) {
+            g_bridgeClass = static_cast<jclass>(env->NewGlobalRef(localClass));
+            env->DeleteLocalRef(localClass);
+            if (g_bridgeClass) {
+                g_openMethod = env->GetStaticMethodID(g_bridgeClass, "openFilePicker", "(I)V");
+            }
+        }
+    }
     return JNI_VERSION_1_6;
 }
 
@@ -57,7 +70,16 @@ bool lfFilePickerRequestFromPlatform(int requestId, std::string& error) {
         return false;
     }
 
-    jclass bridgeClass = env->FindClass("net/chentong/leaf/android/LeafPluginBridge");
+    jclass bridgeClass = g_bridgeClass;
+    jmethodID openMethod = g_openMethod;
+
+    if (!bridgeClass || !openMethod) {
+        bridgeClass = env->FindClass("net/chentong/leaf/filepicker/LeafFilePickerBridge");
+        if (bridgeClass) {
+            openMethod = env->GetStaticMethodID(bridgeClass, "openFilePicker", "(I)V");
+        }
+    }
+
     if (!bridgeClass) {
         error = "bridge_class_not_found";
         if (needDetach) {
@@ -66,10 +88,8 @@ bool lfFilePickerRequestFromPlatform(int requestId, std::string& error) {
         return false;
     }
 
-    jmethodID openMethod = env->GetStaticMethodID(bridgeClass, "openFilePicker", "(I)V");
     if (!openMethod) {
         error = "open_method_not_found";
-        env->DeleteLocalRef(bridgeClass);
         if (needDetach) {
             g_javaVM->DetachCurrentThread();
         }
@@ -77,7 +97,9 @@ bool lfFilePickerRequestFromPlatform(int requestId, std::string& error) {
     }
 
     env->CallStaticVoidMethod(bridgeClass, openMethod, static_cast<jint>(requestId));
-    env->DeleteLocalRef(bridgeClass);
+    if (bridgeClass != g_bridgeClass) {
+        env->DeleteLocalRef(bridgeClass);
+    }
 
     if (needDetach) {
         g_javaVM->DetachCurrentThread();
@@ -86,7 +108,7 @@ bool lfFilePickerRequestFromPlatform(int requestId, std::string& error) {
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_net_chentong_leaf_android_LeafPluginBridge_nativeOnFilePickerResult(
+Java_net_chentong_leaf_filepicker_LeafFilePickerBridge_nativeOnFilePickerResult(
         JNIEnv* env,
         jclass clazz,
         jint requestId,

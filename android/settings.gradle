@@ -22,3 +22,5 @@ dependencyResolutionManagement {
 rootProject.name = "leaf"
 include ':app'
 include ':leaf-android'
+include ':leaf-plugin-file-picker-android'
+project(':leaf-plugin-file-picker-android').projectDir = file('../plugins/file_picker/android/module')
