@@ -18,11 +18,11 @@ include_directories(${NATIVERENDER_ROOT_PATH}
                     ${NATIVERENDER_ROOT_PATH}/include)
 
 set(LEAF_CORE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../core)
-set(EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../examples)
+set(APP_ADAPTER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../app_adapter)
 
 set(LEAF_PLATFORM_DEF "OHOS")
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
-add_subdirectory(${EXAMPLES_DIR}/app_bundle leaf_demo_app_bundle_build)
+add_subdirectory(${APP_ADAPTER_DIR} app_adapter_build)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -35,7 +35,7 @@ add_library(leaf_ohos SHARED
 
 target_link_libraries(leaf_ohos PUBLIC
         leaf-core
-        app-bundle
+        app-adapter
         libace_ndk.z.so
         libace_napi.z.so
         librawfile.z.so

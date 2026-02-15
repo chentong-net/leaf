@@ -9,11 +9,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(LEAF_CORE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../core)
-set(EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../examples)
+set(APP_ADAPTER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../app_adapter)
 
 set(LEAF_PLATFORM_DEF "WEB")
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
-add_subdirectory(${EXAMPLES_DIR}/app_bundle app_bundle_build)
+add_subdirectory(${APP_ADAPTER_DIR} app_adapter_build)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -34,7 +34,7 @@ add_executable(leaf-web
 
 target_link_libraries(leaf-web PRIVATE
         leaf-core
-        app-bundle
+        app-adapter
 )
 
 set_target_properties(leaf-web PROPERTIES SUFFIX ".html")
