@@ -13,21 +13,36 @@ import java.util.List;
 public final class LeafFilePickerProxyActivity extends Activity {
 
     private static final int REQUEST_FILE_PICKER = 0x4C50;
+    private static final String STATE_REQUEST_ID = "leaf_file_picker_state_request_id";
+    private static final String STATE_PICKER_OPENED = "leaf_file_picker_state_picker_opened";
 
     private int requestId = -1;
+    private boolean pickerOpened = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestId = LeafFilePickerBridge.readRequestId(getIntent());
+        if (savedInstanceState != null) {
+            requestId = savedInstanceState.getInt(STATE_REQUEST_ID, -1);
+            pickerOpened = savedInstanceState.getBoolean(STATE_PICKER_OPENED, false);
+        } else {
+            requestId = LeafFilePickerBridge.readRequestId(getIntent());
+        }
         if (requestId < 0) {
             finish();
             return;
         }
 
-        if (savedInstanceState == null) {
+        if (!pickerOpened) {
             openFilePicker();
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(STATE_REQUEST_ID, requestId);
+        outState.putBoolean(STATE_PICKER_OPENED, pickerOpened);
     }
 
     private void openFilePicker() {
@@ -38,6 +53,7 @@ public final class LeafFilePickerProxyActivity extends Activity {
             intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+            pickerOpened = true;
             startActivityForResult(Intent.createChooser(intent, "Select File"), REQUEST_FILE_PICKER);
         } catch (Throwable t) {
             LeafFilePickerBridge.deliverResult(requestId, false, null, "open_picker_failed");

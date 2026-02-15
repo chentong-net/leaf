@@ -12,7 +12,6 @@
             android:name=".LeafFilePickerProxyActivity"
             android:excludeFromRecents="true"
             android:exported="false"
-            android:noHistory="true"
             android:theme="@style/LeafFilePicker.Transparent" />
     </application>
 
