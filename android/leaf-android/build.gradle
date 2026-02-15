@@ -7,6 +7,12 @@ android {
     compileSdk 34
     ndkVersion "28.1.13356709"
 
+    sourceSets {
+        main {
+            java.srcDirs += ['../../plugins/file_picker/android/java']
+        }
+    }
+
     defaultConfig {
         minSdk 29
 

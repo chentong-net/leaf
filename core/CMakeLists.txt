@@ -50,6 +50,7 @@ set(LEAF_CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/event/LFHitTest.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/event/LFEventDispatcher.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/event/LFGestureArena.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/plugin/LFPlugin.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/gesture/LFGestureRecognizer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/animation/LFEasing.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/animation/LFEvaluator.cpp

@@ -3,9 +3,11 @@ if (NOT TARGET leaf-core)
 endif()
 
 set(EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../examples)
+set(PLUGINS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../plugins)
 
 add_subdirectory(${EXAMPLES_DIR}/my_profile my_profile_build)
 add_subdirectory(${EXAMPLES_DIR}/reader_app reader_app_build)
+add_subdirectory(${PLUGINS_DIR}/file_picker/cpp file_picker_build)
 
 add_library(app-adapter STATIC
         AppLaunch.cpp
@@ -23,4 +25,6 @@ target_link_libraries(app-adapter
         leaf-core
         reader-app
         my-profile
+        PUBLIC
+        leaf-plugin-file-picker
 )

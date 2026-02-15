@@ -42,7 +42,7 @@ LFKeyEventType toLFKeyEventType(jint rawType) {
 
 }
 
-// 声明 LFEngine.cpp 中的外部函数
+// 声明 engine_bridge.cpp 中的外部函数
 extern "C" {
 void leaf_init(std::function<std::vector<unsigned char>(const char* path)> loader);
 void leaf_update_size(float w, float h, float d);
