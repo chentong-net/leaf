@@ -1,8 +1,7 @@
 #define NANOVG_GLES3_IMPLEMENTATION
 
 #include "LFEngine.h"
-#include "ReaderApp.h"
-#include "ProfilePage.h"
+#include "LFAppLaunch.h"
 
 extern "C" {
 
@@ -52,8 +51,7 @@ void leaf_render() {
 }
 
 void leaf_eval_js(const char *code) {
-    auto readerApp = ReaderApp::create();
-    LFEngine::getInstance().setRoot(readerApp->start());
+    LFEngine::getInstance().setRoot(createAppRoot());
 }
 
 }

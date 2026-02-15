@@ -11,8 +11,7 @@ set(EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../examples)
 
 set(LEAF_PLATFORM_DEF "ANDROID")
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
-add_subdirectory(${EXAMPLES_DIR}/my_profile my_profile_build)
-add_subdirectory(${EXAMPLES_DIR}/reader_app reader_app_build)
+add_subdirectory(${EXAMPLES_DIR}/app_bundle app_bundle_build)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -25,8 +24,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
         leaf-core
-        reader-app
-        my-profile
+        app-bundle
         GLESv3
         android
         log

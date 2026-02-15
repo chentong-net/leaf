@@ -6,8 +6,7 @@
 
 #include <filesystem>
 #include "LFEngine.h"
-#include "ReaderApp.h"
-#include "ProfilePage.h"
+#include "LFAppLaunch.h"
 #include <GLFW/glfw3.h>
 
 // 窗口大小改变的回调
@@ -224,8 +223,7 @@ int main() {
     );
 
     // 设置 Root View
-    auto readerApp = ReaderApp::create();
-    LFEngine::getInstance().setRoot(readerApp->start());
+    LFEngine::getInstance().setRoot(createAppRoot());
 
     // 初始化一次窗口尺寸
     int w, h;

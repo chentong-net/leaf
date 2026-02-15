@@ -20,8 +20,7 @@ add_subdirectory(${GLFW_DIR} glfw_build)
 
 set(LEAF_PLATFORM_DEF "DESKTOP")
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
-add_subdirectory(${EXAMPLES_DIR}/my_profile my_profile_build)
-add_subdirectory(${EXAMPLES_DIR}/reader_app reader_app_build)
+add_subdirectory(${EXAMPLES_DIR}/app_bundle app_bundle_build)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -36,8 +35,7 @@ add_executable(leaf-desktop
 target_link_libraries(leaf-desktop PRIVATE
         glfw
         leaf-core
-        reader-app
-        my-profile
+        app-bundle
 )
 
 #if(APPLE)

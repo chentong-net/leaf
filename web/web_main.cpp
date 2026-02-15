@@ -8,8 +8,7 @@
 #include <emscripten.h>
 #include <emscripten/html5.h>
 #include <emscripten/fetch.h>
-#include "ReaderApp.h"
-#include "ProfilePage.h"
+#include "LFAppLaunch.h"
 
 static const char* CANVAS_ID = "#canvas";
 double dpr = 1.0f;
@@ -223,8 +222,7 @@ int main() {
             }
     );
 
-    auto readerApp = ReaderApp::create();
-    LFEngine::getInstance().setRoot(readerApp->start());
+    LFEngine::getInstance().setRoot(createAppRoot());
 
     emscripten_set_mousedown_callback(CANVAS_ID, nullptr, EM_TRUE, mouse_callback);
     emscripten_set_mouseup_callback(CANVAS_ID, nullptr, EM_TRUE, mouse_callback);
