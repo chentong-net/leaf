@@ -22,9 +22,13 @@ public final class LeafFilePickerProxyActivity extends Activity {
     private static final int REQUEST_FILE_PICKER = 0x4C50;
     private static final String STATE_REQUEST_ID = "leaf_file_picker_state_request_id";
     private static final String STATE_PICKER_OPENED = "leaf_file_picker_state_picker_opened";
+    private static final String STATE_MEDIA_TYPE = "leaf_file_picker_state_media_type";
+    private static final String STATE_COPY_TO_SANDBOX = "leaf_file_picker_state_copy_to_sandbox";
 
     private int requestId = -1;
     private boolean pickerOpened = false;
+    private int mediaType = 0;
+    private boolean copyToSandbox = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,8 +36,12 @@ public final class LeafFilePickerProxyActivity extends Activity {
         if (savedInstanceState != null) {
             requestId = savedInstanceState.getInt(STATE_REQUEST_ID, -1);
             pickerOpened = savedInstanceState.getBoolean(STATE_PICKER_OPENED, false);
+            mediaType = savedInstanceState.getInt(STATE_MEDIA_TYPE, 0);
+            copyToSandbox = savedInstanceState.getBoolean(STATE_COPY_TO_SANDBOX, true);
         } else {
             requestId = LeafFilePickerBridge.readRequestId(getIntent());
+            mediaType = LeafFilePickerBridge.readMediaType(getIntent());
+            copyToSandbox = LeafFilePickerBridge.readCopyToSandbox(getIntent());
         }
         if (requestId < 0) {
             finish();
@@ -50,13 +58,15 @@ public final class LeafFilePickerProxyActivity extends Activity {
         super.onSaveInstanceState(outState);
         outState.putInt(STATE_REQUEST_ID, requestId);
         outState.putBoolean(STATE_PICKER_OPENED, pickerOpened);
+        outState.putInt(STATE_MEDIA_TYPE, mediaType);
+        outState.putBoolean(STATE_COPY_TO_SANDBOX, copyToSandbox);
     }
 
     private void openFilePicker() {
         try {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
-            intent.setType("*/*");
+            applyMimeFilter(intent);
             intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
@@ -114,22 +124,53 @@ public final class LeafFilePickerProxyActivity extends Activity {
             }
         }
 
-        List<String> localPaths = new ArrayList<>();
-        for (Uri uri : pickedUris) {
-            String localPath = copyUriToLocalFile(uri);
-            if (localPath != null && !localPath.isEmpty()) {
-                localPaths.add(localPath);
+        List<String> resultPaths = new ArrayList<>();
+        if (copyToSandbox) {
+            for (Uri uri : pickedUris) {
+                String localPath = copyUriToLocalFile(uri);
+                if (localPath != null && !localPath.isEmpty()) {
+                    resultPaths.add(localPath);
+                }
+            }
+            if (resultPaths.isEmpty()) {
+                LeafFilePickerBridge.deliverResult(requestId, false, null, "copy_to_local_failed");
+                finish();
+                return;
+            }
+        } else {
+            for (Uri uri : pickedUris) {
+                if (uri != null) {
+                    resultPaths.add(uri.toString());
+                }
+            }
+            if (resultPaths.isEmpty()) {
+                LeafFilePickerBridge.deliverResult(requestId, false, null, "empty_result");
+                finish();
+                return;
             }
         }
 
-        if (localPaths.isEmpty()) {
-            LeafFilePickerBridge.deliverResult(requestId, false, null, "copy_to_local_failed");
-            finish();
-            return;
-        }
-
-        LeafFilePickerBridge.deliverResult(requestId, true, localPaths, "");
+        LeafFilePickerBridge.deliverResult(requestId, true, resultPaths, "");
         finish();
+    }
+
+    private void applyMimeFilter(Intent intent) {
+        switch (mediaType) {
+            case 1: // Image
+                intent.setType("image/*");
+                break;
+            case 2: // Video
+                intent.setType("video/*");
+                break;
+            case 3: // ImageOrVideo
+                intent.setType("*/*");
+                intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
+                break;
+            case 0: // Any
+            default:
+                intent.setType("*/*");
+                break;
+        }
     }
 
     private String copyUriToLocalFile(Uri uri) {

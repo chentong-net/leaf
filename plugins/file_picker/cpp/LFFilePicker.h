@@ -3,6 +3,18 @@
 
 #include "LFDef.h"
 
+enum class LFFilePickerMediaType {
+    Any = 0,
+    Image = 1,
+    Video = 2,
+    ImageOrVideo = 3
+};
+
+struct LFFilePickerOptions {
+    LFFilePickerMediaType mediaType = LFFilePickerMediaType::Any;
+    bool copyToSandbox = true;
+};
+
 struct LFFilePickerResult {
     bool ok = false;
     bool canceled = false;
@@ -15,6 +27,7 @@ using LFFilePickerCallback = std::function<void(const LFFilePickerResult&)>;
 class LFFilePicker {
 public:
     static void pickFile(LFFilePickerCallback callback);
+    static void pickFile(const LFFilePickerOptions& options, LFFilePickerCallback callback);
 };
 
 // Platform bridge callback: platform implementation -> C++ plugin core

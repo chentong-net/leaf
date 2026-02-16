@@ -36,15 +36,30 @@ std::string runCommand(const std::string& command) {
 
 }
 
-bool lfFilePickerRequestFromPlatform(int requestId, std::string& error) {
+bool lfFilePickerRequestFromPlatform(int requestId, const LFFilePickerOptions& options, std::string& error) {
     (void) error;
 
-    const std::string path = runCommand(
-            "osascript -e 'try' "
-            "-e 'POSIX path of (choose file with prompt \"Select a file\")' "
-            "-e 'on error number -128' "
-            "-e 'return \"\"' "
-            "-e 'end try'");
+    std::string command = "osascript -e 'try' ";
+    switch (options.mediaType) {
+        case LFFilePickerMediaType::Image:
+            command += "-e 'POSIX path of (choose file with prompt \"Select an image\" of type {\"public.image\"})' ";
+            break;
+        case LFFilePickerMediaType::Video:
+            command += "-e 'POSIX path of (choose file with prompt \"Select a video\" of type {\"public.movie\"})' ";
+            break;
+        case LFFilePickerMediaType::ImageOrVideo:
+            command += "-e 'POSIX path of (choose file with prompt \"Select a media\" of type {\"public.image\", \"public.movie\"})' ";
+            break;
+        case LFFilePickerMediaType::Any:
+        default:
+            command += "-e 'POSIX path of (choose file with prompt \"Select a file\")' ";
+            break;
+    }
+    command += "-e 'on error number -128' ";
+    command += "-e 'return \"\"' ";
+    command += "-e 'end try'";
+
+    const std::string path = runCommand(command);
 
     if (path.empty()) {
         lfFilePickerOnPlatformResult(requestId, 0, "", "canceled");

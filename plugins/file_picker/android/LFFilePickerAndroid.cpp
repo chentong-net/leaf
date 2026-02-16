@@ -55,14 +55,14 @@ extern "C" jint JNI_OnLoad(JavaVM* vm, void* reserved) {
             g_bridgeClass = static_cast<jclass>(env->NewGlobalRef(localClass));
             env->DeleteLocalRef(localClass);
             if (g_bridgeClass) {
-                g_openMethod = env->GetStaticMethodID(g_bridgeClass, "openFilePicker", "(I)V");
+                g_openMethod = env->GetStaticMethodID(g_bridgeClass, "openFilePicker", "(IIZ)V");
             }
         }
     }
     return JNI_VERSION_1_6;
 }
 
-bool lfFilePickerRequestFromPlatform(int requestId, std::string& error) {
+bool lfFilePickerRequestFromPlatform(int requestId, const LFFilePickerOptions& options, std::string& error) {
     bool needDetach = false;
     JNIEnv* env = getJNIEnv(&needDetach);
     if (!env) {
@@ -76,7 +76,7 @@ bool lfFilePickerRequestFromPlatform(int requestId, std::string& error) {
     if (!bridgeClass || !openMethod) {
         bridgeClass = env->FindClass("net/chentong/leaf/filepicker/LeafFilePickerBridge");
         if (bridgeClass) {
-            openMethod = env->GetStaticMethodID(bridgeClass, "openFilePicker", "(I)V");
+            openMethod = env->GetStaticMethodID(bridgeClass, "openFilePicker", "(IIZ)V");
         }
     }
 
@@ -96,7 +96,12 @@ bool lfFilePickerRequestFromPlatform(int requestId, std::string& error) {
         return false;
     }
 
-    env->CallStaticVoidMethod(bridgeClass, openMethod, static_cast<jint>(requestId));
+    env->CallStaticVoidMethod(
+            bridgeClass,
+            openMethod,
+            static_cast<jint>(requestId),
+            static_cast<jint>(options.mediaType),
+            options.copyToSandbox ? JNI_TRUE : JNI_FALSE);
     if (bridgeClass != g_bridgeClass) {
         env->DeleteLocalRef(bridgeClass);
     }

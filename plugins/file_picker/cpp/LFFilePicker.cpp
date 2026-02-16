@@ -1,16 +1,44 @@
 #include "LFFilePicker.h"
 #include "plugin/LFPlugin.h"
+#include <cstdlib>
 
 // Implemented by platform source:
 // - plugins/file_picker/desktop/LFFilePickerDesktop.cpp
 // - plugins/file_picker/android/LFFilePickerAndroid.cpp
-bool lfFilePickerRequestFromPlatform(int requestId, std::string& error);
+bool lfFilePickerRequestFromPlatform(int requestId, const LFFilePickerOptions& options, std::string& error);
 
 namespace {
 
 std::mutex g_pendingMutex;
 int g_nextRequestId = 1;
 std::unordered_map<int, LFPluginCallback> g_pendingCallbacks;
+
+std::string buildParams(const LFFilePickerOptions& options) {
+    return std::to_string(static_cast<int>(options.mediaType)) + "|" + (options.copyToSandbox ? "1" : "0");
+}
+
+LFFilePickerOptions parseParams(const std::string& params) {
+    LFFilePickerOptions options;
+    if (params.empty() || params == "{}") {
+        return options;
+    }
+
+    auto sep = params.find('|');
+    if (sep == std::string::npos) {
+        return options;
+    }
+
+    const std::string typePart = params.substr(0, sep);
+    const std::string copyPart = params.substr(sep + 1);
+
+    const int rawType = std::atoi(typePart.c_str());
+    if (rawType >= static_cast<int>(LFFilePickerMediaType::Any) &&
+        rawType <= static_cast<int>(LFFilePickerMediaType::ImageOrVideo)) {
+        options.mediaType = static_cast<LFFilePickerMediaType>(rawType);
+    }
+    options.copyToSandbox = std::atoi(copyPart.c_str()) != 0;
+    return options;
+}
 
 void resolveRequest(int requestId, const LFPluginResult& result) {
     LFPluginCallback callback;
@@ -33,8 +61,6 @@ void resolveRequest(int requestId, const LFPluginResult& result) {
 }
 
 void invokeFilePicker(const std::string& method, const std::string& params, LFPluginCallback callback) {
-    (void) params;
-
     if (method != "pick") {
         LFPluginResult result;
         result.ok = false;
@@ -57,8 +83,10 @@ void invokeFilePicker(const std::string& method, const std::string& params, LFPl
         g_pendingCallbacks[requestId] = std::move(callback);
     }
 
+    const LFFilePickerOptions options = parseParams(params);
+
     std::string error;
-    if (!lfFilePickerRequestFromPlatform(requestId, error)) {
+    if (!lfFilePickerRequestFromPlatform(requestId, options, error)) {
         LFPluginResult result;
         result.ok = false;
         result.error = error.empty() ? "platform_request_failed" : error;
@@ -84,9 +112,13 @@ struct LFFilePickerAutoRegister {
 }
 
 void LFFilePicker::pickFile(LFFilePickerCallback callback) {
+    pickFile(LFFilePickerOptions{}, std::move(callback));
+}
+
+void LFFilePicker::pickFile(const LFFilePickerOptions& options, LFFilePickerCallback callback) {
     ensureFilePickerRegistered();
 
-    LFPluginCenter::getInstance().invoke("file_picker", "pick", "{}", [callback](const LFPluginResult& result) {
+    LFPluginCenter::getInstance().invoke("file_picker", "pick", buildParams(options), [callback](const LFPluginResult& result) {
         if (!callback) {
             return;
         }
