@@ -2,11 +2,18 @@ package net.chentong.leaf.filepicker;
 
 import android.app.Activity;
 import android.content.ClipData;
+import android.content.ContentResolver;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,10 +81,10 @@ public final class LeafFilePickerProxyActivity extends Activity {
             return;
         }
 
-        List<String> paths = new ArrayList<>();
+        List<Uri> pickedUris = new ArrayList<>();
         Uri single = data.getData();
         if (single != null) {
-            paths.add(single.toString());
+            pickedUris.add(single);
         }
 
         ClipData clipData = data.getClipData();
@@ -86,15 +93,20 @@ public final class LeafFilePickerProxyActivity extends Activity {
                 ClipData.Item item = clipData.getItemAt(i);
                 Uri uri = item != null ? item.getUri() : null;
                 if (uri != null) {
-                    paths.add(uri.toString());
+                    pickedUris.add(uri);
                 }
             }
         }
 
+        if (pickedUris.isEmpty()) {
+            LeafFilePickerBridge.deliverResult(requestId, false, null, "empty_result");
+            finish();
+            return;
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            for (String path : paths) {
+            for (Uri uri : pickedUris) {
                 try {
-                    Uri uri = Uri.parse(path);
                     getContentResolver().takePersistableUriPermission(
                             uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 } catch (Throwable ignored) {
@@ -102,7 +114,85 @@ public final class LeafFilePickerProxyActivity extends Activity {
             }
         }
 
-        LeafFilePickerBridge.deliverResult(requestId, true, paths, "");
+        List<String> localPaths = new ArrayList<>();
+        for (Uri uri : pickedUris) {
+            String localPath = copyUriToLocalFile(uri);
+            if (localPath != null && !localPath.isEmpty()) {
+                localPaths.add(localPath);
+            }
+        }
+
+        if (localPaths.isEmpty()) {
+            LeafFilePickerBridge.deliverResult(requestId, false, null, "copy_to_local_failed");
+            finish();
+            return;
+        }
+
+        LeafFilePickerBridge.deliverResult(requestId, true, localPaths, "");
         finish();
+    }
+
+    private String copyUriToLocalFile(Uri uri) {
+        if (uri == null) {
+            return null;
+        }
+
+        File dir = new File(getCacheDir(), "leaf/file_picker");
+        if (!dir.exists() && !dir.mkdirs()) {
+            return null;
+        }
+
+        String displayName = resolveDisplayName(uri);
+        if (displayName == null || displayName.isEmpty()) {
+            displayName = "picked_file";
+        }
+
+        String safeName = displayName.replaceAll("[\\\\/:*?\"<>|]", "_");
+        String fileName = System.currentTimeMillis() + "_" + safeName;
+        File outFile = new File(dir, fileName);
+
+        ContentResolver resolver = getContentResolver();
+        try (InputStream input = resolver.openInputStream(uri);
+             OutputStream output = new FileOutputStream(outFile)) {
+            if (input == null) {
+                return null;
+            }
+            byte[] buffer = new byte[16 * 1024];
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                output.write(buffer, 0, read);
+            }
+            output.flush();
+            return outFile.getAbsolutePath();
+        } catch (Throwable t) {
+            if (outFile.exists()) {
+                // Best-effort cleanup on partial copy failure.
+                //noinspection ResultOfMethodCallIgnored
+                outFile.delete();
+            }
+            return null;
+        }
+    }
+
+    private String resolveDisplayName(Uri uri) {
+        Cursor cursor = null;
+        try {
+            cursor = getContentResolver().query(uri, null, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (index >= 0) {
+                    String name = cursor.getString(index);
+                    if (name != null && !name.isEmpty()) {
+                        return name;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return null;
     }
 }
