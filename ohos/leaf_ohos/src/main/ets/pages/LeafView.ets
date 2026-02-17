@@ -1,6 +1,7 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { display } from '@kit.ArkUI';
 import { initEngine } from 'libleaf_ohos.so';
+import { ensureLeafFileServiceInitialized } from '../file/LeafFileService';
 
 @Component
 export struct LeafView {
@@ -16,12 +17,14 @@ export struct LeafView {
       })
         .onLoad((context: object) => {
           if (!this.isEngineInitialized) {
-            const resMgr = getContext(this).resourceManager;
+            const appContext = getContext(this);
+            const resMgr = appContext.resourceManager;
             let displayClass = display.getDefaultDisplaySync();
             let density = displayClass.densityPixels;
 
             // 初始化引擎
             initEngine(resMgr, density);
+            ensureLeafFileServiceInitialized(appContext);
 
             this.isEngineInitialized = true;
             console.log('[Leaf]: Engine initialized, render thread should be running.');

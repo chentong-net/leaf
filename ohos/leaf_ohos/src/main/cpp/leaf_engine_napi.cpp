@@ -1,6 +1,7 @@
 #include "napi/native_api.h"
 #include <rawfile/raw_file_manager.h>
 #include "LFEngine.h"
+#include "leaf_file_service_napi.h"
 #include <thread>
 #include <atomic>
 #include <mutex>
@@ -213,6 +214,7 @@ static napi_value Export(napi_env env, napi_value exports) {
         {"initEngine", nullptr, InitEngine, nullptr, nullptr, nullptr, napi_default, nullptr}
     };
     napi_define_properties(env, exports, 1, desc);
+    leafRegisterFileServiceNapi(env, exports);
 
     napi_value exportInstance = nullptr;
     if (napi_get_named_property(env, exports, OH_NATIVE_XCOMPONENT_OBJ, &exportInstance) == napi_ok) {

@@ -30,6 +30,7 @@ include_directories(
 
 add_library(leaf_ohos SHARED
         leaf_engine_napi.cpp
+        leaf_file_service_napi.cpp
         engine_bridge.cpp
 )
 
