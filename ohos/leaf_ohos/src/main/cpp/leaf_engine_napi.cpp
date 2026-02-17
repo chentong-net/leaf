@@ -1,10 +1,8 @@
 #include "napi/native_api.h"
 #include <rawfile/raw_file_manager.h>
 #include "LFEngine.h"
-#include "leaf_file_service_napi.h"
 #include <thread>
 #include <atomic>
-#include <mutex>
 
 extern "C" {
 void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loader);
@@ -12,6 +10,10 @@ void leaf_update_size(float w, float h, float d);
 void leaf_render();
 void leaf_eval_js(const char* code);
 }
+
+napi_value InitFileServiceBridge(napi_env env, napi_callback_info info);
+napi_value NotifyPickResult(napi_env env, napi_callback_info info);
+napi_value NotifyReadResult(napi_env env, napi_callback_info info);
 
 NativeResourceManager* g_resMgr = nullptr;
 OHNativeWindow* g_window = nullptr;
@@ -211,10 +213,12 @@ static napi_value InitEngine(napi_env env, napi_callback_info info) {
 
 static napi_value Export(napi_env env, napi_value exports) {
     napi_property_descriptor desc[] = {
-        {"initEngine", nullptr, InitEngine, nullptr, nullptr, nullptr, napi_default, nullptr}
+        {"initEngine", nullptr, InitEngine, nullptr, nullptr, nullptr, napi_default, nullptr},
+        {"initFileServiceBridge", nullptr, InitFileServiceBridge, nullptr, nullptr, nullptr, napi_default, nullptr},
+        {"notifyPickResult", nullptr, NotifyPickResult, nullptr, nullptr, nullptr, napi_default, nullptr},
+        {"notifyReadResult", nullptr, NotifyReadResult, nullptr, nullptr, nullptr, napi_default, nullptr},
     };
-    napi_define_properties(env, exports, 1, desc);
-    leafRegisterFileServiceNapi(env, exports);
+    napi_define_properties(env, exports, 4, desc);
 
     napi_value exportInstance = nullptr;
     if (napi_get_named_property(env, exports, OH_NATIVE_XCOMPONENT_OBJ, &exportInstance) == napi_ok) {

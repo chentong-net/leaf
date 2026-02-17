@@ -38,20 +38,8 @@ struct LFFileReadResult {
     std::string error;
 };
 
-struct LFFileSaveOptions {
-    std::string fileName;
-};
-
-struct LFFileSaveResult {
-    bool ok = false;
-    bool canceled = false;
-    std::string path;
-    std::string error;
-};
-
 using LFFilePickCallback = std::function<void(const LFFilePickResult&)>;
 using LFFileReadCallback = std::function<void(const LFFileReadResult&)>;
-using LFFileSaveCallback = std::function<void(const LFFileSaveResult&)>;
 
 class LFFileService {
 public:
@@ -59,7 +47,6 @@ public:
 
     virtual void pickFile(const LFFilePickOptions& options, LFFilePickCallback callback) = 0;
     virtual void readFile(const std::string& fileId, LFFileReadCallback callback) = 0;
-    virtual void saveFile(const LFFileSaveOptions& options, const std::string& content, LFFileSaveCallback callback) = 0;
 };
 
 class LFFileSystem {
@@ -68,7 +55,6 @@ public:
 
     static void pickFile(const LFFilePickOptions& options, LFFilePickCallback callback);
     static void readFile(const std::string& fileId, LFFileReadCallback callback);
-    static void saveFile(const LFFileSaveOptions& options, const std::string& content, LFFileSaveCallback callback);
 };
 
 #endif // LEAF_LFFILESERVICE_H

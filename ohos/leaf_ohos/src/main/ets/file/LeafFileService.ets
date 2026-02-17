@@ -6,13 +6,11 @@ import fileUri from '@ohos.file.fileuri';
 import {
   initFileServiceBridge,
   notifyPickResult,
-  notifyReadResult,
-  notifySaveResult
+  notifyReadResult
 } from 'libleaf_ohos.so';
 
 const OP_PICK: number = 1;
 const OP_READ: number = 2;
-const OP_SAVE: number = 3;
 const FILE_SERVICE_DOMAIN: number = 0x0000;
 const FILE_SERVICE_TAG: string = 'LeafFileService';
 
@@ -44,18 +42,14 @@ class LeafFileServiceBridge {
       requestId: number,
       mediaType: number,
       copyToSandbox: boolean,
-      fileId: string,
-      fileName: string,
-      content: string
+      fileId: string
     ): void => {
       void LeafFileServiceBridge.handleRequest(
         op,
         requestId,
         mediaType,
         copyToSandbox,
-        fileId,
-        fileName,
-        content
+        fileId
       );
     });
 
@@ -69,9 +63,7 @@ class LeafFileServiceBridge {
     requestId: number,
     mediaType: number,
     copyToSandbox: boolean,
-    fileId: string,
-    fileName: string,
-    content: string
+    fileId: string
   ): Promise<void> {
     if (op === OP_PICK) {
       await LeafFileServiceBridge.handlePick(requestId, mediaType, copyToSandbox);
@@ -80,11 +72,6 @@ class LeafFileServiceBridge {
 
     if (op === OP_READ) {
       await LeafFileServiceBridge.handleRead(requestId, fileId);
-      return;
-    }
-
-    if (op === OP_SAVE) {
-      await LeafFileServiceBridge.handleSave(requestId, fileName, content);
       return;
     }
 
@@ -161,33 +148,6 @@ class LeafFileServiceBridge {
       notifyReadResult(requestId, true, false, content, '');
     } catch (_) {
       notifyReadResult(requestId, false, false, '', 'read_failed');
-    }
-  }
-
-  private static async handleSave(requestId: number, fileName: string, content: string): Promise<void> {
-    try {
-      const viewPicker: picker.DocumentViewPicker = LeafFileServiceBridge.createPicker();
-      const options: picker.DocumentSaveOptions = new picker.DocumentSaveOptions();
-      const resolvedName: string = fileName.length > 0 ? fileName : 'leaf_output.txt';
-      options.newFileNames = [resolvedName];
-
-      const uris: Array<string> = await viewPicker.save(options);
-      if (uris.length === 0) {
-        notifySaveResult(requestId, false, true, '', 'canceled');
-        return;
-      }
-
-      const targetUri: string = uris[0];
-      const tempPath: string = await LeafFileServiceBridge.writeTempFile(resolvedName, content);
-      if (tempPath.length === 0) {
-        notifySaveResult(requestId, false, false, '', 'save_prepare_failed');
-        return;
-      }
-
-      await fileIo.copyFile(tempPath, targetUri);
-      notifySaveResult(requestId, true, false, targetUri, '');
-    } catch (_) {
-      notifySaveResult(requestId, false, false, '', 'save_failed');
     }
   }
 
@@ -419,28 +379,6 @@ class LeafFileServiceBridge {
       } catch (_) {
       }
       return false;
-    }
-  }
-
-  private static async writeTempFile(fileName: string, content: string): Promise<string> {
-    const dir: string = LeafFileServiceBridge.ensureSandboxDir();
-    if (dir.length === 0) {
-      return '';
-    }
-
-    const safeName: string = LeafFileServiceBridge.sanitizeName(fileName);
-    const path: string = dir + '/save_' + Date.now().toString() + '_' + safeName;
-
-    try {
-      const raf = await fileIo.createRandomAccessFile(
-        path,
-        fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.CREATE | fileIo.OpenMode.TRUNC
-      );
-      await raf.write(content);
-      raf.close();
-      return path;
-    } catch (_) {
-      return '';
     }
   }
 

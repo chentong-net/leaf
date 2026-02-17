@@ -33,7 +33,7 @@ LFNode::Ptr createAppRoot() {
         title->setTextColor(0xFF111827);
 
         auto desc = std::make_shared<LFText>();
-        desc->setText("Pipeline: pick -> read -> save (platform adapter)");
+        desc->setText("Pipeline: pick -> read (platform adapter)");
         desc->setFontSize(13.0f);
         desc->setTextColor(0xFF6B7280);
 
@@ -156,40 +156,11 @@ LFNode::Ptr createAppRoot() {
         });
         styleButton(readButton);
 
-        auto saveButton = LFButton::create("Save Text To File", [state, status](LFButton* sender) {
-            (void) sender;
-            LFFileSaveOptions options;
-            if (!state->fileName.empty()) {
-                options.fileName = "copy_" + state->fileName;
-            } else {
-                options.fileName = "leaf_output.txt";
-            }
-
-            const std::string content = state->content.empty()
-                                        ? "Leaf OHOS file service demo."
-                                        : state->content;
-
-            status->setText("Status: opening save dialog...");
-            LFFileSystem::saveFile(options, content, [status](const LFFileSaveResult& result) {
-                if (!result.ok) {
-                    if (result.canceled) {
-                        status->setText("Status: save canceled");
-                    } else {
-                        status->setText("Status: save failed - " + result.error);
-                    }
-                    return;
-                }
-                status->setText("Status: save success -> " + (result.path.empty() ? "<empty>" : result.path));
-            });
-        });
-        styleButton(saveButton);
-
         root->addChild(title);
         root->addChild(desc);
         root->addChild(pickSandboxButton);
         root->addChild(pickNoSandboxButton);
         root->addChild(readButton);
-        root->addChild(saveButton);
         root->addChild(status);
         root->addChild(preview);
         page->addChild(root);

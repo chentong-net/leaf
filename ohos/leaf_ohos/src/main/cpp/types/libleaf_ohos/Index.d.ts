@@ -5,9 +5,7 @@ export const initFileServiceBridge: (
     requestId: number,
     mediaType: number,
     copyToSandbox: boolean,
-    fileId: string,
-    fileName: string,
-    content: string
+    fileId: string
   ) => void
 ) => boolean;
 export const notifyPickResult: (
@@ -26,12 +24,5 @@ export const notifyReadResult: (
   success: boolean,
   canceled: boolean,
   content: string,
-  error: string
-) => void;
-export const notifySaveResult: (
-  requestId: number,
-  success: boolean,
-  canceled: boolean,
-  path: string,
   error: string
 ) => void;

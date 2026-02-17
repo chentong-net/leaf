@@ -35,18 +35,6 @@ void dispatchUnsupportedRead(LFFileReadCallback callback) {
     });
 }
 
-void dispatchUnsupportedSave(LFFileSaveCallback callback) {
-    if (!callback) {
-        return;
-    }
-    LFFileSaveResult result;
-    result.ok = false;
-    result.error = "not_supported";
-    LFPluginCenter::dispatchToMain([callback, result]() {
-        callback(result);
-    });
-}
-
 } // namespace
 
 void LFFileSystem::setFileService(const std::shared_ptr<LFFileService>& service) {
@@ -70,13 +58,4 @@ void LFFileSystem::readFile(const std::string& fileId, LFFileReadCallback callba
         return;
     }
     service->readFile(fileId, std::move(callback));
-}
-
-void LFFileSystem::saveFile(const LFFileSaveOptions& options, const std::string& content, LFFileSaveCallback callback) {
-    auto service = getFileService();
-    if (!service) {
-        dispatchUnsupportedSave(std::move(callback));
-        return;
-    }
-    service->saveFile(options, content, std::move(callback));
 }

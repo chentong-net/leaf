@@ -1,16 +1,12 @@
-#include "leaf_file_service_napi.h"
-
+#include <napi/native_api.h>
 #include "LFFileService.h"
 #include "plugin/LFPlugin.h"
 
 #include <atomic>
 
-namespace {
-
 enum class LeafFileRequestOp {
     Pick = 1,
     Read = 2,
-    Save = 3,
 };
 
 struct FileServiceRequest {
@@ -19,8 +15,6 @@ struct FileServiceRequest {
     int mediaType = 0;
     int copyToSandbox = 0;
     std::string fileId;
-    std::string fileName;
-    std::string content;
 };
 
 std::mutex g_bridgeMutex;
@@ -29,7 +23,6 @@ std::atomic<int> g_nextRequestId{1};
 
 std::unordered_map<int, LFFilePickCallback> g_pickCallbacks;
 std::unordered_map<int, LFFileReadCallback> g_readCallbacks;
-std::unordered_map<int, LFFileSaveCallback> g_saveCallbacks;
 
 std::string getStringArg(napi_env env, napi_value value) {
     if (!value) {
@@ -92,16 +85,14 @@ void callJsRequest(napi_env env, napi_value jsCallback, void* context, void* dat
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
 
-    napi_value argv[7] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    napi_value argv[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
     napi_create_int32(env, request->op, &argv[0]);
     napi_create_int32(env, request->requestId, &argv[1]);
     napi_create_int32(env, request->mediaType, &argv[2]);
     napi_get_boolean(env, request->copyToSandbox != 0, &argv[3]);
     napi_create_string_utf8(env, request->fileId.c_str(), NAPI_AUTO_LENGTH, &argv[4]);
-    napi_create_string_utf8(env, request->fileName.c_str(), NAPI_AUTO_LENGTH, &argv[5]);
-    napi_create_string_utf8(env, request->content.c_str(), NAPI_AUTO_LENGTH, &argv[6]);
 
-    napi_call_function(env, undefined, jsCallback, 7, argv, nullptr);
+    napi_call_function(env, undefined, jsCallback, 5, argv, nullptr);
     delete request;
 }
 
@@ -203,44 +194,6 @@ public:
         }
     }
 
-    void saveFile(const LFFileSaveOptions& options, const std::string& content, LFFileSaveCallback callback) override {
-        if (!callback) {
-            return;
-        }
-
-        const int requestId = g_nextRequestId.fetch_add(1);
-        {
-            std::lock_guard<std::mutex> lock(g_bridgeMutex);
-            g_saveCallbacks[requestId] = std::move(callback);
-        }
-
-        auto* request = new FileServiceRequest();
-        request->op = static_cast<int>(LeafFileRequestOp::Save);
-        request->requestId = requestId;
-        request->fileName = options.fileName;
-        request->content = content;
-
-        if (!postJsRequest(request)) {
-            delete request;
-            LFFileSaveCallback failedCb;
-            {
-                std::lock_guard<std::mutex> lock(g_bridgeMutex);
-                auto it = g_saveCallbacks.find(requestId);
-                if (it != g_saveCallbacks.end()) {
-                    failedCb = std::move(it->second);
-                    g_saveCallbacks.erase(it);
-                }
-            }
-            if (failedCb) {
-                LFFileSaveResult result;
-                result.ok = false;
-                result.error = "ohos_bridge_unavailable";
-                LFPluginCenter::dispatchToMain([cb = std::move(failedCb), result]() mutable {
-                    cb(result);
-                });
-            }
-        }
-    }
 };
 
 napi_value InitFileServiceBridge(napi_env env, napi_callback_info info) {
@@ -395,58 +348,4 @@ napi_value NotifyReadResult(napi_env env, napi_callback_info info) {
         cb(result);
     });
     return nullptr;
-}
-
-napi_value NotifySaveResult(napi_env env, napi_callback_info info) {
-    size_t argc = 5;
-    napi_value argv[5] = {nullptr};
-    napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-
-    if (argc < 5) {
-        return nullptr;
-    }
-
-    const int requestId = getIntArg(env, argv[0]);
-    const bool success = getBoolArg(env, argv[1]);
-    const bool canceled = getBoolArg(env, argv[2]);
-    const std::string path = getStringArg(env, argv[3]);
-    const std::string error = getStringArg(env, argv[4]);
-
-    LFFileSaveCallback callback;
-    {
-        std::lock_guard<std::mutex> lock(g_bridgeMutex);
-        auto it = g_saveCallbacks.find(requestId);
-        if (it != g_saveCallbacks.end()) {
-            callback = std::move(it->second);
-            g_saveCallbacks.erase(it);
-        }
-    }
-
-    if (!callback) {
-        return nullptr;
-    }
-
-    LFFileSaveResult result;
-    result.ok = success;
-    result.canceled = canceled;
-    result.path = path;
-    result.error = error;
-
-    LFPluginCenter::dispatchToMain([cb = std::move(callback), result]() mutable {
-        cb(result);
-    });
-    return nullptr;
-}
-
-} // namespace
-
-void leafRegisterFileServiceNapi(napi_env env, napi_value exports) {
-    napi_property_descriptor descriptors[] = {
-            {"initFileServiceBridge", nullptr, InitFileServiceBridge, nullptr, nullptr, nullptr, napi_default, nullptr},
-            {"notifyPickResult", nullptr, NotifyPickResult, nullptr, nullptr, nullptr, napi_default, nullptr},
-            {"notifyReadResult", nullptr, NotifyReadResult, nullptr, nullptr, nullptr, napi_default, nullptr},
-            {"notifySaveResult", nullptr, NotifySaveResult, nullptr, nullptr, nullptr, napi_default, nullptr},
-    };
-
-    napi_define_properties(env, exports, 4, descriptors);
 }
