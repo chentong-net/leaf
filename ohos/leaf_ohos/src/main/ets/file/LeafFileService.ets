@@ -327,10 +327,11 @@ class LeafFileServiceBridge {
       return '';
     }
 
-    const targetDir: string = rootDir + '/leaf/file_service';
+    const targetDir: string = rootDir + '/leaf';
     try {
       fileIo.mkdirSync(targetDir);
-    } catch (_) {
+    } catch (e) {
+      console.log("mkdirSync err: ", targetDir, e)
     }
     return targetDir;
   }
@@ -344,81 +345,14 @@ class LeafFileServiceBridge {
 
     const safeName: string = LeafFileServiceBridge.sanitizeName(preferredName);
     const outPath: string = dir + '/' + Date.now().toString() + '_' + safeName;
-    const sources: Array<string> = LeafFileServiceBridge.buildUriSourceCandidates(uri);
 
-    for (let i: number = 0; i < sources.length; i++) {
-      const source: string = sources[i];
-      console.log("leaf source[i]: ", source)
-      if (LeafFileServiceBridge.copyByStream(source, outPath)) {
-        hilog.info(FILE_SERVICE_DOMAIN, FILE_SERVICE_TAG, 'copy success(stream): source=%{public}s', source);
-        return outPath;
-      } else {
-        console.log("leaf copy failed(stream) source[i]: ", source)
-      }
-    }
-
-    console.log("sources: ", sources);
-    const targets: Array<string> = [outPath, 'file://' + outPath];
-    for (let i: number = 0; i < sources.length; i++) {
-      const source: string = sources[i];
-      for (let j: number = 0; j < targets.length; j++) {
-        const target: string = targets[j];
-        try {
-          await fileIo.copyFile(source, target);
-          hilog.info(
-            FILE_SERVICE_DOMAIN,
-            FILE_SERVICE_TAG,
-            'copy success(copyFile): source=%{public}s, target=%{public}s',
-            source,
-            target
-          );
-          return outPath;
-        } catch (_) {
-          hilog.warn(
-            FILE_SERVICE_DOMAIN,
-            FILE_SERVICE_TAG,
-            'copy attempt failed(copyFile): source=%{public}s, target=%{public}s',
-            source,
-            target
-          );
-        }
-      }
+    if (LeafFileServiceBridge.copyByStream(uri, outPath)) {
+      hilog.info(FILE_SERVICE_DOMAIN, FILE_SERVICE_TAG, 'copy success(stream): source=%{public}s', uri);
+      return outPath;
     }
 
     hilog.error(FILE_SERVICE_DOMAIN, FILE_SERVICE_TAG, 'copy failed: uri=%{public}s, out=%{public}s', uri, outPath);
     return '';
-  }
-
-  private static buildUriSourceCandidates(uri: string): Array<string> {
-    const candidates: Array<string> = [];
-
-    const appendCandidate = (value: string): void => {
-      if (value.length === 0) {
-        return;
-      }
-      for (let i: number = 0; i < candidates.length; i++) {
-        if (candidates[i] === value) {
-          return;
-        }
-      }
-      candidates.push(value);
-    };
-
-    appendCandidate(uri);
-
-    if (uri.startsWith('file://')) {
-      const rawPath: string = uri.substring('file://'.length);
-      appendCandidate(rawPath);
-      appendCandidate('/' + rawPath);
-
-      if (rawPath.startsWith('docs/')) {
-        const strippedRawPath: string = rawPath.substring('docs/'.length);
-        appendCandidate(strippedRawPath);
-        appendCandidate('/' + strippedRawPath);
-      }
-    }
-
-    return candidates;
   }
 
   private static copyByStream(sourceUriOrPath: string, outPath: string): boolean {
@@ -429,14 +363,14 @@ class LeafFileServiceBridge {
       srcFd = srcFile.fd;
       const dstFile = fileIo.openSync(
         outPath,
-        fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.CREATE | fileIo.OpenMode.TRUNC
+        fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.CREATE
       );
       dstFd = dstFile.fd;
 
       const bufferSize: number = 64 * 1024;
       const buffer: ArrayBuffer = new ArrayBuffer(bufferSize);
       while (true) {
-        const readLen: number = fileIo.readSync(srcFd, buffer, { offset: 0, length: bufferSize });
+        const readLen: number = fileIo.readSync(srcFd, buffer);
         if (readLen <= 0) {
           break;
         }
