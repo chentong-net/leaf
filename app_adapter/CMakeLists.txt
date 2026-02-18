@@ -7,7 +7,7 @@ set(PLUGINS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../plugins)
 
 add_subdirectory(${EXAMPLES_DIR}/my_profile my_profile_build)
 add_subdirectory(${EXAMPLES_DIR}/reader_app reader_app_build)
-add_subdirectory(${PLUGINS_DIR}/file_picker_leaf_plugin file_picker_leaf_plugin_build)
+add_subdirectory(${PLUGINS_DIR}/file_picker file_picker_build)
 
 add_library(app-adapter STATIC
         AppLaunch.cpp
@@ -25,5 +25,5 @@ target_link_libraries(app-adapter
         leaf-core
         reader-app
         my-profile
-        leaf-plugin-file-picker
+        file-picker
 )

@@ -31,5 +31,5 @@ dependencies {
     implementation libs.material
     implementation project(':leaf-android')
     implementation project(':leaf-plugin')
-    implementation project(':file-picker-leaf-plugin')
+    implementation project(':file-picker')
 }
