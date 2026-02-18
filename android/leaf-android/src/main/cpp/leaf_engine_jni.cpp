@@ -2,8 +2,13 @@
 #include <android/asset_manager_jni.h>
 #include <android/log.h>
 #include "LFEngine.h"
+#include "plugin/LFNativeSender.h"
 
 static float g_density = 1.0f;
+static JavaVM* g_javaVm = nullptr;
+static jobject g_pluginDispatcherObj = nullptr;
+static jmethodID g_pluginDispatchMethod = nullptr;
+static std::mutex g_pluginBridgeMutex;
 
 namespace {
 
@@ -40,6 +45,127 @@ LFKeyEventType toLFKeyEventType(jint rawType) {
     return rawType == 1 ? LFKeyEventType::Up : LFKeyEventType::Down;
 }
 
+std::string toStdString(JNIEnv* env, jstring value) {
+    if (!value) return "";
+    const char* chars = env->GetStringUTFChars(value, nullptr);
+    if (!chars) return "";
+    std::string out(chars);
+    env->ReleaseStringUTFChars(value, chars);
+    return out;
+}
+
+JNIEnv* getJNIEnv(bool* didAttach) {
+    if (didAttach) *didAttach = false;
+    if (!g_javaVm) return nullptr;
+
+    JNIEnv* env = nullptr;
+    jint status = g_javaVm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    if (status == JNI_OK) {
+        return env;
+    }
+    if (status != JNI_EDETACHED) {
+        return nullptr;
+    }
+    if (g_javaVm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
+        return nullptr;
+    }
+    if (didAttach) *didAttach = true;
+    return env;
+}
+
+void resolveBridgeError(int32_t requestId, int32_t code, const char* error) {
+    LFMethodResult result;
+    result.requestId = requestId;
+    result.ok = false;
+    result.code = code;
+    result.error = error ? error : "bridge_error";
+    LFNativeSender::getInstance().resolve(result);
+}
+
+void dispatchMethodCallToJava(const LFMethodCall& call) {
+    bool didAttach = false;
+    JNIEnv* env = getJNIEnv(&didAttach);
+    if (!env) {
+        resolveBridgeError(call.requestId, -10, "jni_env_unavailable");
+        return;
+    }
+
+    jobject dispatcherObj = nullptr;
+    jmethodID dispatchMethod = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(g_pluginBridgeMutex);
+        dispatcherObj = g_pluginDispatcherObj;
+        dispatchMethod = g_pluginDispatchMethod;
+    }
+
+    if (!dispatcherObj || !dispatchMethod) {
+        resolveBridgeError(call.requestId, -11, "plugin_dispatcher_unavailable");
+        if (didAttach) {
+            g_javaVm->DetachCurrentThread();
+        }
+        return;
+    }
+
+    jstring method = env->NewStringUTF(call.method.c_str());
+    jstring args = env->NewStringUTF(call.args.c_str());
+    env->CallVoidMethod(dispatcherObj, dispatchMethod, method, static_cast<jint>(call.requestId), args);
+
+    if (env->ExceptionCheck()) {
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+        resolveBridgeError(call.requestId, -12, "plugin_dispatcher_throw");
+    }
+
+    if (method) env->DeleteLocalRef(method);
+    if (args) env->DeleteLocalRef(args);
+    if (didAttach) {
+        g_javaVm->DetachCurrentThread();
+    }
+}
+
+bool initPluginBridge(JNIEnv* env) {
+    if (!env) return false;
+
+    std::lock_guard<std::mutex> lock(g_pluginBridgeMutex);
+    if (g_pluginDispatcherObj && g_pluginDispatchMethod) {
+        return true;
+    }
+
+    jclass dispatcherCls = env->FindClass("net/chentong/leaf/android/PluginDispatcher");
+    if (!dispatcherCls) {
+        if (env->ExceptionCheck()) env->ExceptionClear();
+        return false;
+    }
+
+    jmethodID getInstance = env->GetStaticMethodID(
+        dispatcherCls,
+        "getInstance",
+        "()Lnet/chentong/leaf/android/PluginDispatcher;"
+    );
+    jmethodID dispatch = env->GetMethodID(dispatcherCls, "dispatch", "(Ljava/lang/String;ILjava/lang/String;)V");
+    if (!getInstance || !dispatch) {
+        if (env->ExceptionCheck()) env->ExceptionClear();
+        env->DeleteLocalRef(dispatcherCls);
+        return false;
+    }
+
+    jobject dispatcherObjLocal = env->CallStaticObjectMethod(dispatcherCls, getInstance);
+    if (!dispatcherObjLocal || env->ExceptionCheck()) {
+        if (env->ExceptionCheck()) env->ExceptionClear();
+        env->DeleteLocalRef(dispatcherCls);
+        return false;
+    }
+
+    g_pluginDispatcherObj = env->NewGlobalRef(dispatcherObjLocal);
+    g_pluginDispatchMethod = dispatch;
+
+    env->DeleteLocalRef(dispatcherObjLocal);
+    env->DeleteLocalRef(dispatcherCls);
+
+    LFNativeSender::getInstance().bindTarget(dispatchMethodCallToJava);
+    return true;
+}
+
 }
 
 // 声明 engine_bridge.cpp 中的外部函数
@@ -67,7 +193,29 @@ std::vector<unsigned char> read_asset(AAssetManager* mgr, const char* path) {
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_net_chentong_leaf_android_PluginDispatcher_nativeNotifyPluginResult(
+    JNIEnv* env,
+    jclass clazz,
+    jint requestId,
+    jboolean ok,
+    jint code,
+    jboolean canceled,
+    jstring data,
+    jstring error
+) {
+    LFMethodResult result;
+    result.requestId = static_cast<int32_t>(requestId);
+    result.ok = ok == JNI_TRUE;
+    result.canceled = canceled == JNI_TRUE;
+    result.code = static_cast<int32_t>(code);
+    result.data = toStdString(env, data);
+    result.error = toStdString(env, error);
+    LFNativeSender::getInstance().resolve(result);
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_net_chentong_leaf_android_LeafRenderer_nativeOnSurfaceCreated(JNIEnv* env, jobject thiz, jobject asset_mgr) {
+    initPluginBridge(env);
     AAssetManager* mgr = AAssetManager_fromJava(env, asset_mgr);
     auto asset_loader = [mgr](const char* path) -> std::vector<unsigned char>{
         return read_asset(mgr, path);
@@ -212,4 +360,30 @@ Java_net_chentong_leaf_android_LeafRenderer_nativeDispatchTouchEvent(
     env->ReleaseFloatArrayElements(x, xArr, 0);
     env->ReleaseFloatArrayElements(y, yArr, 0);
     env->ReleaseFloatArrayElements(pressure, pressureArr, 0);
+}
+
+extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
+    g_javaVm = vm;
+    JNIEnv* env = nullptr;
+    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
+        return JNI_ERR;
+    }
+    initPluginBridge(env);
+    return JNI_VERSION_1_6;
+}
+
+extern "C" JNIEXPORT void JNICALL JNI_OnUnload(JavaVM* vm, void* reserved) {
+    JNIEnv* env = nullptr;
+    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(g_pluginBridgeMutex);
+    if (g_pluginDispatcherObj) {
+        env->DeleteGlobalRef(g_pluginDispatcherObj);
+        g_pluginDispatcherObj = nullptr;
+    }
+    g_pluginDispatchMethod = nullptr;
+    LFNativeSender::getInstance().bindTarget(nullptr);
+    LFNativeSender::getInstance().clearPending();
 }

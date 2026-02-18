@@ -1,17 +1,15 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.library)
 }
 
 android {
-    namespace 'net.chentong.leaf.demo'
+    namespace 'net.chentong.leaf.android.plugin.filepicker'
     compileSdk 34
 
     defaultConfig {
-        applicationId "net.chentong.leaf.demo"
-        minSdk 29
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        minSdk 24
+
+        consumerProguardFiles "consumer-rules.pro"
     }
 
     buildTypes {
@@ -27,9 +25,6 @@ android {
 }
 
 dependencies {
-    implementation libs.activity
     implementation libs.material
-    implementation project(':leaf-android')
     implementation project(':leaf-plugin')
-    implementation project(':file-picker-leaf-plugin')
 }

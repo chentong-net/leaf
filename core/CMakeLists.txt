@@ -57,6 +57,7 @@ set(LEAF_CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/animation/LFSpring.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/animation/LFAnimator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/animation/LFAnimationSet.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/plugin/LFNativeSender.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/LFGlobalAnimationManager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/LFEngine.cpp
 )

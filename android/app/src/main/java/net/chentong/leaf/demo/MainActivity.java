@@ -1,10 +1,14 @@
 package net.chentong.leaf.demo;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import net.chentong.leaf.android.LeafView;
+import net.chentong.leaf.android.PluginRegistry;
+import net.chentong.leaf.android.plugin.filepicker.FilePickerPlugin;
 
 public class MainActivity extends Activity {
+    private FilePickerPlugin filePickerPlugin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -12,5 +16,15 @@ public class MainActivity extends Activity {
         // 直接创建并显示 Leaf 视图
         LeafView leafView = new LeafView(this);
         setContentView(leafView);
+        filePickerPlugin = new FilePickerPlugin(this);
+        PluginRegistry.getInstance().register(filePickerPlugin);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (filePickerPlugin != null && filePickerPlugin.onActivityResult(requestCode, resultCode, data)) {
+            return;
+        }
     }
 }
