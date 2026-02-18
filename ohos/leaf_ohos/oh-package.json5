@@ -6,6 +6,6 @@
   "author": "Chen Tong",
   "dependencies": {
     "libleaf_ohos.so": "file:./src/main/cpp/types/libleaf_ohos",
-    "leaf_plugin": "file:../leaf_plugin"
+    "leaf_plugin": "@module:leaf_plugin"
   }
 }
