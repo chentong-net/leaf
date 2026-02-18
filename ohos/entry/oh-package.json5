@@ -6,7 +6,8 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "leaf_ohos": 'file:../leaf_ohos'
+    "leaf_ohos": 'file:../leaf_ohos',
+    "file_picker": "@module:file_picker"
   }
 }
 

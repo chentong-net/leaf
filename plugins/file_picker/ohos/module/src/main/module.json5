@@ -1,0 +1,9 @@
+{
+  "module": {
+    "name": "file_picker",
+    "type": "har",
+    "deviceTypes": [
+      "default"
+    ]
+  }
+}

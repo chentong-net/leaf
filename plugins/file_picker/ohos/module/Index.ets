@@ -1,0 +1,1 @@
+export { FilePickerPlugin } from './src/main/ets/components/FilePickerPlugin';

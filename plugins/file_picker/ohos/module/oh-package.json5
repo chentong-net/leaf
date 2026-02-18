@@ -1,0 +1,11 @@
+{
+  "name": "file_picker",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "Index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "leaf_plugin": "file:../../../../ohos/leaf_plugin"
+  }
+}

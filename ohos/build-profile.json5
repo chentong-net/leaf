@@ -53,6 +53,10 @@
     {
       "name": "leaf_plugin",
       "srcPath": "./leaf_plugin",
+    },
+    {
+      "name": "file_picker",
+      "srcPath": "../plugins/file_picker/ohos/module"
     }
   ]
 }

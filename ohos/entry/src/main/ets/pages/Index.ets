@@ -1,8 +1,20 @@
-import { LeafView } from 'leaf_ohos'
+import { FilePickerPlugin } from 'file_picker'
+import { Context } from '@kit.AbilityKit'
+import { LeafView, PluginRegistry } from 'leaf_ohos'
 
 @Entry
 @Component
 struct Index {
+  private pluginRegistered: boolean = false;
+
+  aboutToAppear(): void {
+    if (this.pluginRegistered) {
+      return;
+    }
+    const context = getContext(this) as Context;
+    PluginRegistry.getInstance().register(new FilePickerPlugin(context));
+    this.pluginRegistered = true;
+  }
 
   build() {
     RelativeContainer() {
