@@ -1,9 +1,11 @@
 #include "napi/native_api.h"
 #include <rawfile/raw_file_manager.h>
 #include "LFEngine.h"
+#include "plugin/LFNativeSender.h"
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <memory>
 
 extern "C" {
 void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loader);
@@ -24,6 +26,107 @@ std::atomic<bool> g_isWindowChanged = true;
 std::atomic<int> g_width = 0; // dp
 std::atomic<int> g_height = 0; // dp
 std::atomic<float> g_density = 1.0f;
+
+std::mutex g_pluginBridgeMutex;
+napi_threadsafe_function g_pluginDispatchTsfn = nullptr;
+
+namespace {
+
+struct PendingMethodCall {
+    int32_t requestId = 0;
+    std::string method;
+    std::string args;
+};
+
+std::string ToStdString(napi_env env, napi_value value) {
+    if (!env || !value) {
+        return "";
+    }
+    size_t length = 0;
+    if (napi_get_value_string_utf8(env, value, nullptr, 0, &length) != napi_ok) {
+        return "";
+    }
+    std::string out(length + 1, '\0');
+    if (length == 0) {
+        return "";
+    }
+    size_t copied = 0;
+    if (napi_get_value_string_utf8(env, value, out.data(), out.size(), &copied) != napi_ok) {
+        return "";
+    }
+    out.resize(copied);
+    return out;
+}
+
+void ResolveBridgeError(int32_t requestId, int32_t code, const char* error) {
+    LFMethodResult result;
+    result.requestId = requestId;
+    result.ok = false;
+    result.code = code;
+    result.error = error ? error : "bridge_error";
+    LFNativeSender::getInstance().resolve(result);
+}
+
+void CallPluginDispatcher(napi_env env, napi_value jsCallback, void* context, void* data) {
+    std::unique_ptr<PendingMethodCall> call(static_cast<PendingMethodCall*>(data));
+    if (!call) {
+        return;
+    }
+    if (!env || !jsCallback) {
+        return;
+    }
+
+    napi_value global = nullptr;
+    napi_get_global(env, &global);
+
+    napi_value argv[3] = {nullptr, nullptr, nullptr};
+    napi_create_string_utf8(env, call->method.c_str(), NAPI_AUTO_LENGTH, &argv[0]);
+    napi_create_int32(env, call->requestId, &argv[1]);
+    napi_create_string_utf8(env, call->args.c_str(), NAPI_AUTO_LENGTH, &argv[2]);
+
+    napi_value ignored = nullptr;
+    napi_status status = napi_call_function(env, global, jsCallback, 3, argv, &ignored);
+    if (status != napi_ok) {
+        ResolveBridgeError(call->requestId, -12, "ohos_dispatcher_throw");
+        bool hasPendingException = false;
+        if (napi_is_exception_pending(env, &hasPendingException) == napi_ok && hasPendingException) {
+            napi_get_and_clear_last_exception(env, &ignored);
+        }
+    }
+}
+
+void TsfnFinalize(napi_env env, void* finalize_data, void* finalize_hint) {
+    {
+        std::lock_guard<std::mutex> lock(g_pluginBridgeMutex);
+        g_pluginDispatchTsfn = nullptr;
+    }
+    LFNativeSender::getInstance().bindTarget(nullptr);
+    LFNativeSender::getInstance().clearPending();
+}
+
+void DispatchMethodCallToArkTS(const LFMethodCall& call) {
+    napi_threadsafe_function tsfn = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(g_pluginBridgeMutex);
+        tsfn = g_pluginDispatchTsfn;
+    }
+    if (!tsfn) {
+        ResolveBridgeError(call.requestId, -11, "ohos_bridge_unavailable");
+        return;
+    }
+
+    PendingMethodCall* pending = new PendingMethodCall();
+    pending->requestId = call.requestId;
+    pending->method = call.method;
+    pending->args = call.args;
+    napi_status status = napi_call_threadsafe_function(tsfn, pending, napi_tsfn_nonblocking);
+    if (status != napi_ok) {
+        delete pending;
+        ResolveBridgeError(call.requestId, -13, "ohos_dispatch_enqueue_failed");
+    }
+}
+
+} // namespace
 
 // 资源读取
 std::vector<unsigned char> read_asset(const char* path) {
@@ -131,6 +234,16 @@ void OnSurfaceDestroyed(OH_NativeXComponent* component, void* window) {
         delete g_renderThread;
         g_renderThread = nullptr;
     }
+
+    {
+        std::lock_guard<std::mutex> lock(g_pluginBridgeMutex);
+        if (g_pluginDispatchTsfn != nullptr) {
+            napi_release_threadsafe_function(g_pluginDispatchTsfn, napi_tsfn_release);
+            g_pluginDispatchTsfn = nullptr;
+        }
+    }
+    LFNativeSender::getInstance().bindTarget(nullptr);
+    LFNativeSender::getInstance().clearPending();
 }
 
 void DispatchTouchEvent(OH_NativeXComponent* component, void* window) {
@@ -208,11 +321,89 @@ static napi_value InitEngine(napi_env env, napi_callback_info info) {
     return nullptr;
 }
 
+static napi_value RegisterPluginDispatcher(napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    if (argc < 1) {
+        return nullptr;
+    }
+
+    napi_valuetype type = napi_undefined;
+    if (napi_typeof(env, args[0], &type) != napi_ok || type != napi_function) {
+        return nullptr;
+    }
+
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "LeafPluginDispatcher", NAPI_AUTO_LENGTH, &resourceName);
+
+    {
+        std::lock_guard<std::mutex> lock(g_pluginBridgeMutex);
+        if (g_pluginDispatchTsfn != nullptr) {
+            napi_release_threadsafe_function(g_pluginDispatchTsfn, napi_tsfn_release);
+            g_pluginDispatchTsfn = nullptr;
+        }
+
+        napi_status status = napi_create_threadsafe_function(
+                env,
+                args[0],
+                nullptr,
+                resourceName,
+                0,
+                1,
+                nullptr,
+                TsfnFinalize,
+                nullptr,
+                CallPluginDispatcher,
+                &g_pluginDispatchTsfn
+        );
+        if (status != napi_ok || g_pluginDispatchTsfn == nullptr) {
+            LFNativeSender::getInstance().bindTarget(nullptr);
+            LFNativeSender::getInstance().clearPending();
+            return nullptr;
+        }
+    }
+
+    LFNativeSender::getInstance().bindTarget(DispatchMethodCallToArkTS);
+    return nullptr;
+}
+
+static napi_value NotifyPluginResult(napi_env env, napi_callback_info info) {
+    size_t argc = 6;
+    napi_value args[6] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    if (argc < 6) {
+        return nullptr;
+    }
+
+    int32_t requestId = 0;
+    bool ok = false;
+    int32_t code = 0;
+    bool canceled = false;
+
+    napi_get_value_int32(env, args[0], &requestId);
+    napi_get_value_bool(env, args[1], &ok);
+    napi_get_value_int32(env, args[2], &code);
+    napi_get_value_bool(env, args[3], &canceled);
+
+    LFMethodResult result;
+    result.requestId = requestId;
+    result.ok = ok;
+    result.code = code;
+    result.canceled = canceled;
+    result.data = ToStdString(env, args[4]);
+    result.error = ToStdString(env, args[5]);
+    LFNativeSender::getInstance().resolve(result);
+    return nullptr;
+}
+
 static napi_value Export(napi_env env, napi_value exports) {
     napi_property_descriptor desc[] = {
-        {"initEngine", nullptr, InitEngine, nullptr, nullptr, nullptr, napi_default, nullptr}
+        {"initEngine", nullptr, InitEngine, nullptr, nullptr, nullptr, napi_default, nullptr},
+        {"registerPluginDispatcher", nullptr, RegisterPluginDispatcher, nullptr, nullptr, nullptr, napi_default, nullptr},
+        {"notifyPluginResult", nullptr, NotifyPluginResult, nullptr, nullptr, nullptr, napi_default, nullptr}
     };
-    napi_define_properties(env, exports, 1, desc);
+    napi_define_properties(env, exports, 3, desc);
 
     napi_value exportInstance = nullptr;
     if (napi_get_named_property(env, exports, OH_NATIVE_XCOMPONENT_OBJ, &exportInstance) == napi_ok) {

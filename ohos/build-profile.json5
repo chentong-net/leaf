@@ -49,6 +49,10 @@
           ]
         }
       ]
+    },
+    {
+      "name": "leaf_plugin",
+      "srcPath": "./leaf_plugin",
     }
   ]
 }

@@ -1,11 +1,12 @@
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { display } from '@kit.ArkUI';
-import { initEngine } from 'libleaf_ohos.so';
+import { initEngine, registerPluginDispatcher } from 'libleaf_ohos.so';
+import { PluginDispatcher } from '../plugin/PluginDispatcher';
 
 @Component
 export struct LeafView {
   private xComponentId: string = 'leaf_xcomponent';
   private isEngineInitialized: boolean = false;
+  private isPluginBridgeInitialized: boolean = false;
 
   build() {
     Stack() {
@@ -22,6 +23,14 @@ export struct LeafView {
 
             // 初始化引擎
             initEngine(resMgr, density);
+
+            if (!this.isPluginBridgeInitialized) {
+              const dispatcher = PluginDispatcher.getInstance();
+              registerPluginDispatcher((method: string, requestId: number, args: string) => {
+                dispatcher.dispatch(method, requestId, args);
+              });
+              this.isPluginBridgeInitialized = true;
+            }
 
             this.isEngineInitialized = true;
             console.log('[Leaf]: Engine initialized, render thread should be running.');

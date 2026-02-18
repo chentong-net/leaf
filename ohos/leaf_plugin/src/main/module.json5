@@ -1,0 +1,9 @@
+{
+  "module": {
+    "name": "leaf_plugin",
+    "type": "har",
+    "deviceTypes": [
+      "default"
+    ]
+  }
+}
