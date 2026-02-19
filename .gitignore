@@ -11,3 +11,21 @@
 **/build_web
 **/cmake-build-debug
 **/cmake-build-wasm
+# CocoaPods
+**/Pods/
+**/Podfile.lock
+
+# User settings
+**/xcuserdata/
+**/*.xccheckout
+
+# Build
+**/DerivedData/
+
+# App specific
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+**/.claude
+**/.trae

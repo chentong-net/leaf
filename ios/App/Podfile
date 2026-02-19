@@ -1,0 +1,23 @@
+source 'https://cdn.cocoapods.org/'
+
+platform :ios, '13.0'
+project 'App.xcodeproj'
+
+install! 'cocoapods',
+         :deterministic_uuids => false
+
+target 'App' do
+  use_frameworks! :linkage => :static
+
+  pod 'Leaf_iOS', :path => '../Leaf_iOS'
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'gnu++17'
+      config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
+    end
+  end
+end
