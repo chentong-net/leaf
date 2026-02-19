@@ -4,16 +4,16 @@
 
 #include "LFFilePicker.h"
 
+#include <atomic>
 #include <cctype>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
+#include <filesystem>
 #include <fstream>
 #include <sys/stat.h>
 
 #if defined(__APPLE__)
-#include <mach-o/dyld.h>
-#include <limits.h>
 #include <unistd.h>
 #endif
 
@@ -23,21 +23,22 @@
 
 namespace {
 
-std::string trim(const std::string& input) {
-    size_t start = 0;
-    while (start < input.size() && std::isspace(static_cast<unsigned char>(input[start]))) {
-        ++start;
-    }
+std::atomic<uint64_t> g_fileIdCounter{1};
 
+std::string stripTrailingNewlines(const std::string& input) {
     size_t end = input.size();
-    while (end > start && std::isspace(static_cast<unsigned char>(input[end - 1]))) {
+    while (end > 0 && (input[end - 1] == '\n' || input[end - 1] == '\r')) {
         --end;
     }
-    return input.substr(start, end - start);
+    return input.substr(0, end);
 }
 
 std::string runCommand(const std::string& command) {
+#if defined(_WIN32)
+    FILE* pipe = _popen(command.c_str(), "r");
+#else
     FILE* pipe = popen(command.c_str(), "r");
+#endif
     if (!pipe) {
         return "";
     }
@@ -48,8 +49,12 @@ std::string runCommand(const std::string& command) {
         output += buffer;
     }
 
+#if defined(_WIN32)
+    _pclose(pipe);
+#else
     pclose(pipe);
-    return trim(output);
+#endif
+    return stripTrailingNewlines(output);
 }
 
 std::string getMimeType(const std::string& fileName) {
@@ -123,6 +128,58 @@ std::string sanitizeFileName(const std::string& name) {
         }
     }
     return result;
+}
+
+std::string buildUniqueIdSuffix() {
+    const auto now = std::chrono::high_resolution_clock::now().time_since_epoch();
+    const auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+    return std::to_string(nanos);
+}
+
+std::string createSandboxCopyPath(const std::string& selectedPath, bool* ok) {
+    if (ok) *ok = false;
+    namespace fs = std::filesystem;
+
+    fs::path tempRoot;
+#if defined(__APPLE__)
+    char tempDir[512];
+    if (confstr(_CS_DARWIN_USER_TEMP_DIR, tempDir, sizeof(tempDir)) > 0) {
+        tempRoot = fs::path(tempDir);
+    } else {
+        tempRoot = fs::temp_directory_path();
+    }
+#elif defined(_WIN32)
+    char tempDir[MAX_PATH];
+    DWORD len = GetTempPathA(MAX_PATH, tempDir);
+    if (len > 0) {
+        tempRoot = fs::path(tempDir);
+    } else {
+        tempRoot = fs::temp_directory_path();
+    }
+#else
+    tempRoot = fs::temp_directory_path();
+#endif
+
+    std::error_code ec;
+    fs::path sandboxDir = tempRoot / "leaf_file_picker";
+    fs::create_directories(sandboxDir, ec);
+    if (ec) {
+        return "";
+    }
+
+    std::string safeName = sanitizeFileName(getFileName(selectedPath));
+    if (safeName.empty()) {
+        safeName = "picked_file";
+    }
+
+    fs::path destPath = sandboxDir / (buildUniqueIdSuffix() + "_" + safeName);
+    fs::copy_file(fs::path(selectedPath), destPath, fs::copy_options::overwrite_existing, ec);
+    if (ec) {
+        return "";
+    }
+
+    if (ok) *ok = true;
+    return destPath.string();
 }
 
 } // namespace
@@ -200,51 +257,16 @@ void LFFilePicker::pickFile(const LFFilePickerOptions& options, LFFilePickCallba
 
     std::string finalPath = selectedPath;
     if (options.copyToSandbox) {
-        char tempDir[512];
-#if defined(__APPLE__)
-        if (confstr(_CS_DARWIN_USER_TEMP_DIR, tempDir, sizeof(tempDir)) <= 0) {
-            strcpy(tempDir, "/tmp");
+        bool copyOk = false;
+        std::string copiedPath = createSandboxCopyPath(selectedPath, &copyOk);
+        if (!copyOk || copiedPath.empty()) {
+            LFFilePickResult result;
+            result.ok = false;
+            result.error = "copy_to_sandbox_failed";
+            callback(result);
+            return;
         }
-#elif defined(_WIN32)
-        DWORD len = GetTempPathA(sizeof(tempDir), tempDir);
-        if (len == 0) {
-            strcpy(tempDir, "C:\\Temp");
-        }
-#else
-        strcpy(tempDir, "/tmp");
-#endif
-
-        std::string sandboxDir = std::string(tempDir) + "leaf_file_picker";
-        std::string mkdirCmd;
-#if defined(_WIN32)
-        mkdirCmd = "mkdir \"" + sandboxDir + "\" 2>nul";
-#else
-        mkdirCmd = "mkdir -p \"" + sandboxDir + "\"";
-#endif
-        system(mkdirCmd.c_str());
-
-        std::string fileName = getFileName(selectedPath);
-        std::string safeName = sanitizeFileName(fileName);
-        if (safeName.empty()) {
-            safeName = "picked_file";
-        }
-
-        char timestamp[64];
-        snprintf(timestamp, sizeof(timestamp), "%lld", (long long)time(nullptr));
-
-        std::string destPath = sandboxDir + "/" + timestamp + "_" + safeName;
-
-        std::string copyCmd;
-#if defined(_WIN32)
-        copyCmd = "copy \"" + selectedPath + "\" \"" + destPath + "\" >nul 2>&1";
-#else
-        copyCmd = "cp \"" + selectedPath + "\" \"" + destPath + "\"";
-#endif
-        int copyResult = system(copyCmd.c_str());
-
-        if (copyResult == 0) {
-            finalPath = destPath;
-        }
+        finalPath = copiedPath;
     }
 
     LFFileInfo fileInfo;
@@ -253,10 +275,8 @@ void LFFilePicker::pickFile(const LFFilePickerOptions& options, LFFilePickCallba
     fileInfo.mimeType = getMimeType(fileInfo.name);
     fileInfo.size = getFileSize(finalPath);
 
-    static int fileIdCounter = 1;
-    char fileId[64];
-    snprintf(fileId, sizeof(fileId), "fp_%d", fileIdCounter++);
-    fileInfo.fileId = fileId;
+    const uint64_t fileId = g_fileIdCounter.fetch_add(1);
+    fileInfo.fileId = "fp_" + std::to_string(fileId);
 
     LFFilePickResult result;
     result.ok = true;
