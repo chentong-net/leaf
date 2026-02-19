@@ -9,6 +9,7 @@ install! 'cocoapods',
 target 'App' do
   use_frameworks! :linkage => :static
 
+  pod 'Leaf_Plugin', :path => '../Leaf_Plugin'
   pod 'Leaf_iOS', :path => '../Leaf_iOS'
 end
 

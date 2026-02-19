@@ -30,10 +30,12 @@ Leaf iOS SDK module with LeafView/LeafRenderer and embedded core runtime.
   s.frameworks = 'Foundation', 'UIKit', 'CoreGraphics', 'QuartzCore', 'OpenGLES'
   s.libraries  = 'c++', 'z'
   s.compiler_flags = '-D_GNU_SOURCE -D__STDC_FORMAT_MACROS -DCONFIG_BIGNUM'
+  s.dependency 'Leaf_Plugin', s.version.to_s
 
   s.pod_target_xcconfig = {
     'CLANG_CXX_LANGUAGE_STANDARD' => 'gnu++17',
     'CLANG_CXX_LIBRARY' => 'libc++',
+    'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
     'HEADER_SEARCH_PATHS' => '$(inherited) "${PODS_TARGET_SRCROOT}/Vendor/core" "${PODS_TARGET_SRCROOT}/Vendor/third_party/quickjs" "${PODS_TARGET_SRCROOT}/Vendor/third_party/nanovg/src" "${PODS_TARGET_SRCROOT}/Vendor/third_party/yoga" "${PODS_TARGET_SRCROOT}/Vendor/app_adapter" "${PODS_TARGET_SRCROOT}/Vendor/examples/reader_app" "${PODS_TARGET_SRCROOT}/Vendor/examples/my_profile"',
     'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) __APPLE__=1'
   }
