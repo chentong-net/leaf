@@ -119,7 +119,9 @@ EM_JS(void, leafWebStartPick, (int requestId, int mediaType, int copyToSandbox),
                 picking: false,
                 nextHandle: 1,
                 filesByHandle: new Map(),
-                handleByFileId: new Map()
+                handleByFileId: new Map(),
+                readBufferPtr: 0,
+                readBufferCap: 0
             };
         }
         return Module.__leafFilePickerState;
@@ -321,13 +323,14 @@ EM_JS(void, leafWebReadChunk, (int requestId, int handle, double offset, double 
         const len = bytes.length;
         let ptr = 0;
         if (len > 0) {
-            ptr = Module._malloc(len);
+            if (!state.readBufferPtr || state.readBufferCap < len) {
+                state.readBufferPtr = _malloc(len);
+                state.readBufferCap = len;
+            }
+            ptr = state.readBufferPtr;
             HEAPU8.set(bytes, ptr);
         }
         Module._leafWebFilePickerOnReadResult(requestId, 1, end >= size ? 1 : 0, ptr, len, 0);
-        if (ptr) {
-            Module._free(ptr);
-        }
     }).catch(() => {
         Module._leafWebFilePickerOnReadResult(requestId, 0, 0, 0, 0, 2);
     });
@@ -403,7 +406,7 @@ void leafWebFilePickerOnReadResult(
     int requestId,
     int ok,
     int eof,
-    const unsigned char* data,
+    unsigned char* data,
     int dataLen,
     int errorCode
 ) {
