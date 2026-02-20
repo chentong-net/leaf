@@ -6,6 +6,6 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "leaf_plugin": "file:../../../../ohos/leaf_plugin"
+    "leaf_plugin": "@module:leaf_plugin"
   }
 }
