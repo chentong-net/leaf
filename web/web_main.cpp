@@ -6,12 +6,352 @@
 
 #include "LFEngine.h"
 #include <emscripten.h>
+#include <emscripten/em_js.h>
 #include <emscripten/html5.h>
 #include <emscripten/fetch.h>
 #include "LFAppLaunch.h"
 
 static const char* CANVAS_ID = "#canvas";
 double dpr = 1.0f;
+bool g_lastTextInputFocused = false;
+
+namespace {
+
+static const int KEY_EVENT_DOWN = 0;
+static const int KEY_EVENT_UP = 1;
+
+static const int LF_KEY_UNKNOWN = 0;
+static const int LF_KEY_ENTER = 13;
+static const int LF_KEY_TAB = 9;
+static const int LF_KEY_BACKSPACE = 8;
+static const int LF_KEY_ESCAPE = 27;
+static const int LF_KEY_DELETE = 127;
+static const int LF_KEY_LEFT = 1001;
+static const int LF_KEY_RIGHT = 1002;
+static const int LF_KEY_UP = 1003;
+static const int LF_KEY_DOWN = 1004;
+static const int LF_KEY_HOME = 1005;
+static const int LF_KEY_END = 1006;
+
+EM_JS(void, leaf_web_install_text_input_bridge, (), {
+    if (Module.__leafTextInputBridge) {
+        return;
+    }
+
+    const canvas = Module.canvas || document.getElementById('canvas');
+    if (!canvas) {
+        return;
+    }
+
+    const input = document.createElement('textarea');
+    input.id = 'leaf-ime-input';
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('autocapitalize', 'off');
+    input.setAttribute('spellcheck', 'false');
+    input.wrap = 'off';
+    input.rows = 1;
+    input.cols = 1;
+    input.style.position = 'fixed';
+    input.style.left = '0px';
+    input.style.top = '0px';
+    input.style.width = '2px';
+    input.style.height = '20px';
+    input.style.opacity = '0';
+    input.style.pointerEvents = 'none';
+    input.style.zIndex = '-1';
+    input.style.border = '0';
+    input.style.padding = '0';
+    input.style.margin = '0';
+    input.style.background = 'transparent';
+    input.style.color = 'transparent';
+    input.style.caretColor = 'transparent';
+    input.style.outline = 'none';
+    document.body.appendChild(input);
+
+    const state = {
+        input,
+        focused: false,
+        composing: false,
+        compositionCommitted: "",
+        hasCursor: false,
+        cursorX: 0,
+        cursorY: 0,
+        cursorHeight: 16,
+        lastPointerClientX: 0,
+        lastPointerClientY: 0
+    };
+
+    const applyInputRect = (clientX, clientY, lineHeight) => {
+        const height = Math.max(16, Number(lineHeight || 16));
+        input.style.left = `${clientX}px`;
+        input.style.top = `${clientY}px`;
+        input.style.height = `${height}px`;
+        input.style.fontSize = `${height}px`;
+    };
+
+    const toLFMods = (event) => {
+        let mods = 0;
+        if (event.shiftKey) mods |= (1 << 0);
+        if (event.ctrlKey) mods |= (1 << 1);
+        if (event.altKey) mods |= (1 << 2);
+        if (event.metaKey) mods |= (1 << 3);
+        return mods;
+    };
+
+    const mapLFKeyCode = (key) => {
+        switch (key) {
+            case 'Enter':
+                return 13;
+            case 'Tab':
+                return 9;
+            case 'Backspace':
+                return 8;
+            case 'Escape':
+                return 27;
+            case 'Delete':
+                return 127;
+            case 'ArrowLeft':
+                return 1001;
+            case 'ArrowRight':
+                return 1002;
+            case 'ArrowUp':
+                return 1003;
+            case 'ArrowDown':
+                return 1004;
+            case 'Home':
+                return 1005;
+            case 'End':
+                return 1006;
+            default:
+                return 0;
+        }
+    };
+
+    const emitKey = (isDown, event) => {
+        const keyCode = mapLFKeyCode(event.key || "");
+        if (!keyCode) {
+            return false;
+        }
+        // During IME composition, editing/navigation keys should be handled by IME only.
+        const isComposing = !!state.composing || !!event.isComposing;
+        if (isComposing) {
+            return false;
+        }
+        const repeat = isDown && !!event.repeat ? 1 : 0;
+        Module._leafWebOnKeyEvent(isDown ? 0 : 1, keyCode, toLFMods(event), repeat);
+        return true;
+    };
+
+    const emitChars = (text) => {
+        if (!text) {
+            return;
+        }
+        for (const ch of text) {
+            const cp = ch.codePointAt(0);
+            if (cp && cp > 0) {
+                Module._leafWebOnCharInput(cp);
+            }
+        }
+    };
+
+    const ensureFocus = () => {
+        if (!state.focused) {
+            return;
+        }
+        if (state.hasCursor) {
+            applyInputRect(state.cursorX, state.cursorY, state.cursorHeight);
+        } else {
+            applyInputRect(state.lastPointerClientX, state.lastPointerClientY, 16);
+        }
+        if (document.activeElement === input) {
+            return;
+        }
+        try {
+            input.focus({ preventScroll: true });
+        } catch (e) {
+            input.focus();
+        }
+    };
+
+    const resetInputBuffer = () => {
+        input.value = "";
+        if (input.setSelectionRange) {
+            input.setSelectionRange(0, 0);
+        }
+    };
+
+    input.addEventListener('keydown', (event) => {
+        if (!state.focused) {
+            return;
+        }
+        if (emitKey(true, event)) {
+            event.preventDefault();
+        }
+    });
+
+    input.addEventListener('keyup', (event) => {
+        if (!state.focused) {
+            return;
+        }
+        if (emitKey(false, event)) {
+            event.preventDefault();
+        }
+    });
+
+    input.addEventListener('compositionstart', () => {
+        state.composing = true;
+        state.compositionCommitted = "";
+    });
+
+    input.addEventListener('compositionend', (event) => {
+        state.composing = false;
+        const text = (typeof event.data === 'string') ? event.data : "";
+        if (text.length > 0) {
+            emitChars(text);
+            state.compositionCommitted = text;
+            resetInputBuffer();
+        }
+    });
+
+    input.addEventListener('input', (event) => {
+        if (!state.focused) {
+            return;
+        }
+
+        const inputType = event.inputType || "";
+        if (inputType === 'insertLineBreak' || inputType === 'insertParagraph') {
+            Module._leafWebOnKeyEvent(0, 13, 0, 0);
+            Module._leafWebOnKeyEvent(1, 13, 0, 0);
+            resetInputBuffer();
+            return;
+        }
+
+        if (state.composing) {
+            return;
+        }
+
+        const text = (typeof event.data === 'string' && event.data.length > 0)
+            ? event.data
+            : input.value;
+        if (text && text.length > 0) {
+            if (state.compositionCommitted.length > 0 && text === state.compositionCommitted) {
+                state.compositionCommitted = "";
+                resetInputBuffer();
+                return;
+            }
+            emitChars(text);
+        }
+        state.compositionCommitted = "";
+        resetInputBuffer();
+    });
+
+    input.addEventListener('blur', () => {
+        if (!state.focused) {
+            return;
+        }
+        setTimeout(() => {
+            ensureFocus();
+        }, 0);
+    });
+
+    canvas.addEventListener('mousedown', (event) => {
+        state.lastPointerClientX = event.clientX || 0;
+        state.lastPointerClientY = event.clientY || 0;
+        ensureFocus();
+    }, true);
+    canvas.addEventListener('touchstart', (event) => {
+        if (event.touches && event.touches.length > 0) {
+            state.lastPointerClientX = event.touches[0].clientX || 0;
+            state.lastPointerClientY = event.touches[0].clientY || 0;
+        }
+        ensureFocus();
+    }, true);
+
+    Module.__leafTextInputBridge = {
+        state,
+        ensureFocus,
+        resetInputBuffer
+    };
+});
+
+EM_JS(void, leaf_web_sync_text_input_focus, (int focused), {
+    const bridge = Module.__leafTextInputBridge;
+    if (!bridge) return;
+
+    const state = bridge.state;
+    state.focused = !!focused;
+    if (state.focused) {
+        bridge.resetInputBuffer();
+        bridge.ensureFocus();
+    } else {
+        state.composing = false;
+        bridge.resetInputBuffer();
+        if (document.activeElement === state.input) {
+            state.input.blur();
+        }
+    }
+});
+
+EM_JS(void, leaf_web_set_text_input_cursor, (float x, float y, float lineHeight), {
+    const bridge = Module.__leafTextInputBridge;
+    if (!bridge) return;
+
+    const canvas = Module.canvas || document.getElementById('canvas');
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const input = bridge.state.input;
+    const cssX = rect.left + x;
+    const cssY = rect.top + y;
+    const height = Math.max(16, lineHeight || 16);
+    bridge.state.hasCursor = true;
+    bridge.state.cursorX = cssX;
+    bridge.state.cursorY = cssY;
+    bridge.state.cursorHeight = height;
+
+    input.style.left = `${cssX}px`;
+    input.style.top = `${cssY}px`;
+    input.style.height = `${height}px`;
+    input.style.fontSize = `${height}px`;
+});
+
+void sync_text_input_focus() {
+    const bool focused = (LFEventDispatcher::getInstance().getFocusedNode() != nullptr);
+    if (focused == g_lastTextInputFocused) {
+        return;
+    }
+    g_lastTextInputFocused = focused;
+    leaf_web_sync_text_input_focus(focused ? 1 : 0);
+}
+
+} // namespace
+
+extern "C" {
+
+EMSCRIPTEN_KEEPALIVE
+void leafWebOnKeyEvent(int type, int keyCode, int modifiers, int repeat) {
+    if (keyCode == LF_KEY_UNKNOWN) {
+        return;
+    }
+    LFKeyEventType keyType = (type == KEY_EVENT_UP) ? LFKeyEventType::Up : LFKeyEventType::Down;
+    LFEventDispatcher::getInstance().dispatchKeyEvent(
+        keyType,
+        static_cast<LFKeyCode>(keyCode),
+        static_cast<uint32_t>(modifiers),
+        repeat != 0
+    );
+}
+
+EMSCRIPTEN_KEEPALIVE
+void leafWebOnCharInput(int codepoint) {
+    if (codepoint <= 0) {
+        return;
+    }
+    LFEventDispatcher::getInstance().dispatchCharInput(static_cast<uint32_t>(codepoint));
+}
+
+} // extern "C"
 
 // 获取当前时间戳
 double get_engine_time() {
@@ -152,6 +492,7 @@ EM_BOOL on_resize(int eventType, const EmscriptenUiEvent *uiEvent, void *userDat
 void loop_callback() {
     LFEngine::getInstance().update(0.016f);
     LFEngine::getInstance().render();
+    sync_text_input_focus();
 }
 
 int main() {
@@ -171,6 +512,11 @@ int main() {
     if (!vg) return 0;
 
     LFEngine::getInstance().init(vg);
+    leaf_web_install_text_input_bridge();
+    LFEngine::getInstance().setTextInputCursorCallback([](float x, float y, float lineHeight) {
+        leaf_web_set_text_input_cursor(x, y, lineHeight);
+    });
+    leaf_web_sync_text_input_focus(0);
 
     nvgCreateFont(vg, "sans", "fonts/Alibaba-PuHuiTi-Regular.ttf");
 
