@@ -5,7 +5,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface LeafView : UIView
+@interface LeafView : UIView <UITextInput>
 
 @property (nonatomic, copy, nullable) dispatch_block_t onEngineReady;
 

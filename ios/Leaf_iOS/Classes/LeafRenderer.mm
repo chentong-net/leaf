@@ -12,6 +12,8 @@
 #include "LFResourceProvider.h"
 #include "LFAppLaunch.h"
 #include <cstring>
+#include <deque>
+#include <mutex>
 #include <unordered_map>
 
 namespace {
@@ -61,6 +63,35 @@ static std::shared_ptr<LFData> leafLoadDataFromFile(NSString* filePath) {
     return out;
 }
 
+static const int KEY_EVENT_DOWN = 0;
+static const int KEY_EVENT_UP = 1;
+
+static const int LF_KEY_UNKNOWN = 0;
+static const int LF_KEY_ENTER = 13;
+static const int LF_KEY_TAB = 9;
+static const int LF_KEY_BACKSPACE = 8;
+static const int LF_KEY_ESCAPE = 27;
+static const int LF_KEY_DELETE = 127;
+static const int LF_KEY_LEFT = 1001;
+static const int LF_KEY_RIGHT = 1002;
+static const int LF_KEY_UP = 1003;
+static const int LF_KEY_DOWN = 1004;
+static const int LF_KEY_HOME = 1005;
+static const int LF_KEY_END = 1006;
+
+static const uint32_t LF_MOD_NONE = 0;
+static const uint32_t LF_MOD_SHIFT = 1 << 0;
+static const uint32_t LF_MOD_CTRL = 1 << 1;
+static const uint32_t LF_MOD_ALT = 1 << 2;
+static const uint32_t LF_MOD_SUPER = 1 << 3;
+
+struct NativeKeyEvent {
+    int type = KEY_EVENT_DOWN;
+    int keyCode = LF_KEY_UNKNOWN;
+    uint32_t modifiers = LF_MOD_NONE;
+    bool repeat = false;
+};
+
 } // namespace
 
 @interface LeafRenderer ()
@@ -70,6 +101,8 @@ static std::shared_ptr<LFData> leafLoadDataFromFile(NSString* filePath) {
 - (void)destroyRenderBuffers;
 - (void)initializeEngineIfNeeded;
 - (void)drawFrame;
+- (void)processKeyInputEvents;
+- (void)syncTextInputFocusState;
 - (void)dispatchTouches:(NSSet<UITouch *> *)touches withEvent:(UIEvent *_Nullable)event type:(LFTouchEventType)type;
 - (int32_t)touchIdForTouch:(UITouch *)touch createIfMissing:(BOOL)createIfMissing;
 - (void)removeTouchIdForTouch:(UITouch *)touch;
@@ -92,6 +125,10 @@ static std::shared_ptr<LFData> leafLoadDataFromFile(NSString* filePath) {
 
     std::unordered_map<uintptr_t, int32_t> _touchIdMap;
     int32_t _nextTouchId;
+    std::mutex _inputQueueMutex;
+    std::deque<NativeKeyEvent> _keyEventQueue;
+    std::deque<uint32_t> _charInputQueue;
+    BOOL _lastTextInputFocused;
 }
 
 - (instancetype)initWithView:(UIView *)view {
@@ -108,6 +145,7 @@ static std::shared_ptr<LFData> leafLoadDataFromFile(NSString* filePath) {
     _engineInitialized = NO;
     _lastFrameTimestamp = 0;
     _nextTouchId = 1;
+    _lastTextInputFocused = NO;
 
     [self setupOpenGLESContext];
     [self setupRenderBuffers];
@@ -276,11 +314,56 @@ static std::shared_ptr<LFData> leafLoadDataFromFile(NSString* filePath) {
     float dt = _lastFrameTimestamp > 0 ? static_cast<float>(now - _lastFrameTimestamp) : (1.0f / 60.0f);
     _lastFrameTimestamp = now;
 
+    [self processKeyInputEvents];
     LFEngine::getInstance().update(dt);
     LFEngine::getInstance().render();
+    [self syncTextInputFocusState];
 
     glBindRenderbuffer(GL_RENDERBUFFER, _colorBuffer);
     [_glContext presentRenderbuffer:GL_RENDERBUFFER];
+}
+
+- (void)processKeyInputEvents {
+    std::deque<NativeKeyEvent> keyEvents;
+    std::deque<uint32_t> charInputs;
+    {
+        std::lock_guard<std::mutex> lock(_inputQueueMutex);
+        keyEvents.swap(_keyEventQueue);
+        charInputs.swap(_charInputQueue);
+    }
+
+    for (const NativeKeyEvent& event : keyEvents) {
+        LFKeyEventType type = (event.type == KEY_EVENT_UP) ? LFKeyEventType::Up : LFKeyEventType::Down;
+        LFEventDispatcher::getInstance().dispatchKeyEvent(
+            type,
+            static_cast<LFKeyCode>(event.keyCode),
+            event.modifiers,
+            event.repeat
+        );
+    }
+
+    for (uint32_t codepoint : charInputs) {
+        if (codepoint > 0) {
+            LFEventDispatcher::getInstance().dispatchCharInput(codepoint);
+        }
+    }
+}
+
+- (void)syncTextInputFocusState {
+    BOOL focused = (LFEventDispatcher::getInstance().getFocusedNode() != nullptr) ? YES : NO;
+    if (focused == _lastTextInputFocused) {
+        return;
+    }
+    _lastTextInputFocused = focused;
+
+    LeafTextInputFocusChangedHandler callback = self.onTextInputFocusChanged;
+    if (!callback) {
+        return;
+    }
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        callback(focused);
+    });
 }
 
 - (void)handleTouchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
@@ -357,6 +440,86 @@ static std::shared_ptr<LFData> leafLoadDataFromFile(NSString* filePath) {
 - (void)removeTouchIdForTouch:(UITouch *)touch {
     uintptr_t key = reinterpret_cast<uintptr_t>((__bridge void*)touch);
     _touchIdMap.erase(key);
+}
+
+- (void)queueKeyEventWithType:(int)type keyCode:(int)keyCode modifiers:(uint32_t)modifiers repeat:(BOOL)repeat {
+    NativeKeyEvent event;
+    event.type = type;
+    event.keyCode = keyCode;
+    event.modifiers = modifiers;
+    event.repeat = repeat;
+    std::lock_guard<std::mutex> lock(_inputQueueMutex);
+    _keyEventQueue.push_back(event);
+}
+
+- (void)queueCharInput:(uint32_t)codepoint {
+    std::lock_guard<std::mutex> lock(_inputQueueMutex);
+    _charInputQueue.push_back(codepoint);
+}
+
+- (int)keyEventTypeDown {
+    return KEY_EVENT_DOWN;
+}
+
+- (int)keyEventTypeUp {
+    return KEY_EVENT_UP;
+}
+
+- (int)mapIOSHidKeyCode:(NSInteger)hidUsage {
+    // USB HID usage values for keyboard keys.
+    switch (hidUsage) {
+        case 0x28:
+            return LF_KEY_ENTER;
+        case 0x2B:
+            return LF_KEY_TAB;
+        case 0x2A:
+            return LF_KEY_BACKSPACE;
+        case 0x29:
+            return LF_KEY_ESCAPE;
+        case 0x4C:
+            return LF_KEY_DELETE;
+        case 0x50:
+            return LF_KEY_LEFT;
+        case 0x4F:
+            return LF_KEY_RIGHT;
+        case 0x52:
+            return LF_KEY_UP;
+        case 0x51:
+            return LF_KEY_DOWN;
+        case 0x4A:
+            return LF_KEY_HOME;
+        case 0x4D:
+            return LF_KEY_END;
+        default:
+            return LF_KEY_UNKNOWN;
+    }
+}
+
+- (int)mapIOSInputKey:(NSString *)input {
+    if (!input || input.length == 0) {
+        return LF_KEY_UNKNOWN;
+    }
+    if ([input isEqualToString:@"\r"] || [input isEqualToString:@"\n"]) return LF_KEY_ENTER;
+    if ([input isEqualToString:@"\t"]) return LF_KEY_TAB;
+    if ([input isEqualToString:@"\b"]) return LF_KEY_BACKSPACE;
+    if ([input isEqualToString:@"\x7F"]) return LF_KEY_DELETE;
+    if ([input isEqualToString:UIKeyInputUpArrow]) return LF_KEY_UP;
+    if ([input isEqualToString:UIKeyInputDownArrow]) return LF_KEY_DOWN;
+    if ([input isEqualToString:UIKeyInputLeftArrow]) return LF_KEY_LEFT;
+    if ([input isEqualToString:UIKeyInputRightArrow]) return LF_KEY_RIGHT;
+    if (@available(iOS 13.4, *)) {
+        if ([input isEqualToString:UIKeyInputEscape]) return LF_KEY_ESCAPE;
+    }
+    return LF_KEY_UNKNOWN;
+}
+
+- (uint32_t)mapIOSModifierFlags:(UIKeyModifierFlags)modifierFlags {
+    uint32_t mods = LF_MOD_NONE;
+    if ((modifierFlags & UIKeyModifierShift) != 0) mods |= LF_MOD_SHIFT;
+    if ((modifierFlags & UIKeyModifierControl) != 0) mods |= LF_MOD_CTRL;
+    if ((modifierFlags & UIKeyModifierAlternate) != 0) mods |= LF_MOD_ALT;
+    if ((modifierFlags & UIKeyModifierCommand) != 0) mods |= LF_MOD_SUPER;
+    return mods;
 }
 
 @end
