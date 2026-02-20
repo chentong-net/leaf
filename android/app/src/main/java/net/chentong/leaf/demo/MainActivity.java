@@ -3,12 +3,15 @@ package net.chentong.leaf.demo;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+
 import net.chentong.leaf.android.LeafView;
 import net.chentong.leaf.android.PluginRegistry;
 import net.chentong.leaf.android.plugin.filepicker.FilePickerPlugin;
+import net.chentong.leaf.android.plugin.pathprovider.PathProviderPlugin;
 
 public class MainActivity extends Activity {
     private FilePickerPlugin filePickerPlugin;
+    private PathProviderPlugin pathProviderPlugin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -17,7 +20,9 @@ public class MainActivity extends Activity {
         LeafView leafView = new LeafView(this);
         setContentView(leafView);
         filePickerPlugin = new FilePickerPlugin(this);
+        pathProviderPlugin = new PathProviderPlugin(this);
         PluginRegistry.getInstance().register(filePickerPlugin);
+        PluginRegistry.getInstance().register(pathProviderPlugin);
     }
 
     @Override
