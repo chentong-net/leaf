@@ -36,7 +36,7 @@ Leaf iOS SDK module with LeafView/LeafRenderer and embedded core runtime.
     'CLANG_CXX_LANGUAGE_STANDARD' => 'gnu++17',
     'CLANG_CXX_LIBRARY' => 'libc++',
     'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
-    'HEADER_SEARCH_PATHS' => '$(inherited) "${PODS_TARGET_SRCROOT}/Vendor/core" "${PODS_TARGET_SRCROOT}/Vendor/third_party/quickjs" "${PODS_TARGET_SRCROOT}/Vendor/third_party/nanovg/src" "${PODS_TARGET_SRCROOT}/Vendor/third_party/yoga" "${PODS_TARGET_SRCROOT}/Vendor/app_adapter" "${PODS_TARGET_SRCROOT}/Vendor/examples/reader_app" "${PODS_TARGET_SRCROOT}/Vendor/examples/my_profile" "${PODS_TARGET_SRCROOT}/../../plugins/file_picker"',
+    'HEADER_SEARCH_PATHS' => '$(inherited) "${PODS_TARGET_SRCROOT}/Vendor/core" "${PODS_TARGET_SRCROOT}/Vendor/third_party/quickjs" "${PODS_TARGET_SRCROOT}/Vendor/third_party/nanovg/src" "${PODS_TARGET_SRCROOT}/Vendor/third_party/yoga" "${PODS_TARGET_SRCROOT}/Vendor/app_adapter" "${PODS_TARGET_SRCROOT}/Vendor/examples/reader_app" "${PODS_TARGET_SRCROOT}/Vendor/examples/my_profile" "${PODS_TARGET_SRCROOT}/../../plugins/file_picker" "${PODS_TARGET_SRCROOT}/../../plugins/path_provider"',
     'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) __APPLE__=1'
   }
 end

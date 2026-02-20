@@ -1,0 +1,15 @@
+#ifndef PATH_PROVIDER_LEAF_PLUGIN_PATHPROVIDERPLUGIN_H
+#define PATH_PROVIDER_LEAF_PLUGIN_PATHPROVIDERPLUGIN_H
+
+#import <Foundation/Foundation.h>
+#import <Leaf_Plugin/LeafPlugin.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface PathProviderPlugin : NSObject <LeafPlugin>
+
+@end
+
+NS_ASSUME_NONNULL_END
+
+#endif // PATH_PROVIDER_LEAF_PLUGIN_PATHPROVIDERPLUGIN_H
