@@ -1,0 +1,9 @@
+{
+  "module": {
+    "name": "path_provider",
+    "type": "har",
+    "deviceTypes": [
+      "default"
+    ]
+  }
+}

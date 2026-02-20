@@ -7,7 +7,7 @@
   "license": "",
   "dependencies": {
     "leaf_ohos": 'file:../leaf_ohos',
-    "file_picker": "@module:file_picker"
+    "file_picker": "@module:file_picker",
+    "path_provider": "@module:path_provider"
   }
 }
-

@@ -57,6 +57,10 @@
     {
       "name": "file_picker",
       "srcPath": "../plugins/file_picker/ohos/module"
+    },
+    {
+      "name": "path_provider",
+      "srcPath": "../plugins/path_provider/ohos/module"
     }
   ]
 }
