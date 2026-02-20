@@ -1,6 +1,7 @@
 #define NANOVG_GLES3_IMPLEMENTATION
 
 #import "LeafRenderer.h"
+#import "LFNativePluginBridge.h"
 
 #import <OpenGLES/EAGL.h>
 #import <OpenGLES/ES3/gl.h>
@@ -131,6 +132,8 @@ static std::shared_ptr<LFData> leafLoadDataFromFile(NSString* filePath) {
     if ([EAGLContext currentContext] == _glContext) {
         [EAGLContext setCurrentContext:nil];
     }
+
+    [LFNativePluginBridge uninstall];
 }
 
 - (void)setupOpenGLESContext {
@@ -207,6 +210,7 @@ static std::shared_ptr<LFData> leafLoadDataFromFile(NSString* filePath) {
     }
 
     LFEngine::getInstance().init(_vg);
+    [LFNativePluginBridge install];
     LFResourceProvider::getInstance().setAssetLoader(
         [](const std::string& path, std::function<void(std::shared_ptr<LFData>)> callback) {
             @autoreleasepool {
