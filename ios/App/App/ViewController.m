@@ -7,9 +7,12 @@
 
 #import "ViewController.h"
 #import <Leaf_iOS/LeafView.h>
+#import <Leaf_iOS/LFPluginRegistry.h>
+#import <File_Picker/FilePickerPlugin.h>
 
 @interface ViewController ()
 @property (nonatomic, strong) LeafView *leafView;
+@property (nonatomic, strong) FilePickerPlugin *filePickerPlugin;
 
 @end
 
@@ -17,6 +20,9 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+
+    self.filePickerPlugin = [[FilePickerPlugin alloc] initWithPresentingViewController:self];
+    [[LFPluginRegistry sharedInstance] registerPlugin:self.filePickerPlugin];
 
     self.leafView = [[LeafView alloc] initWithFrame:CGRectZero];
     self.leafView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -33,6 +39,10 @@
         [self.leafView.trailingAnchor constraintEqualToAnchor:safe.trailingAnchor],
         [self.leafView.bottomAnchor constraintEqualToAnchor:safe.bottomAnchor]
     ]];
+}
+
+- (void)dealloc {
+    [[LFPluginRegistry sharedInstance] unregisterPlugin:@"FilePickerPlugin"];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
