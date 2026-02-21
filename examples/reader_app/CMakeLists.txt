@@ -23,5 +23,7 @@ target_include_directories(reader-app
 target_link_libraries(reader-app
         PUBLIC
         leaf-core
+        file-picker
+        path-provider
         my-profile
 )
