@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-NATIVE_DIR="${ROOT_DIR}/ios/native"
+CMAKE_DIR="${ROOT_DIR}/ios/cmake"
 BUILD_ROOT="${ROOT_DIR}/build/ios-native"
 OUTPUT_DIR="${ROOT_DIR}/ios/Leaf_iOS/Frameworks"
 XCFRAMEWORK_PATH="${OUTPUT_DIR}/LeafNative.xcframework"
@@ -31,7 +31,7 @@ build_variant() {
 
   rm -rf "${build_dir}"
 
-  cmake -S "${NATIVE_DIR}" -B "${build_dir}" \
+  cmake -S "${CMAKE_DIR}" -B "${build_dir}" \
     -G Xcode \
     -DCMAKE_SYSTEM_NAME=iOS \
     -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
@@ -100,10 +100,6 @@ prepare_headers() {
   # Plugin C++ facade headers
   cp "${ROOT_DIR}/plugins/file_picker/LFFilePicker.h" "${HEADERS_DIR}/"
   cp "${ROOT_DIR}/plugins/path_provider/LFPathProvider.h" "${HEADERS_DIR}/"
-
-  # Demo/business headers
-  copy_headers_tree "${ROOT_DIR}/examples/my_profile"
-  copy_headers_tree "${ROOT_DIR}/examples/reader_app"
 
   cat > "${HEADERS_DIR}/leaf_native.h" <<'EOF'
 #pragma once

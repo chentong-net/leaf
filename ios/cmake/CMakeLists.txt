@@ -19,18 +19,8 @@ set(LEAF_PLATFORM_DEF "IOS")
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
 add_subdirectory(${APP_ADAPTER_DIR} app_adapter_build)
 
-# Anchor target to make top-level builds explicit.
-add_library(leaf-native-anchor STATIC leaf_native_anchor.cpp)
-set_target_properties(leaf-native-anchor PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(leaf-native-anchor PRIVATE leaf-core app-adapter)
-
 add_custom_target(leaf-native-all
         DEPENDS
         leaf-core
-        file-picker
-        path-provider
-        my-profile
-        reader-app
         app-adapter
-        leaf-native-anchor
 )
