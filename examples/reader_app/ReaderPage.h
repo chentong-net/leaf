@@ -16,10 +16,11 @@ public:
 
     /**
      * 创建阅读页
+     * @param bookId 书籍唯一 id
      * @param bookTitle 书名
      * @param content 书籍内容
      */
-    static Ptr create(const std::string& bookTitle, const std::string& content);
+    static Ptr create(const std::string& bookId, const std::string& bookTitle, const std::string& content);
 
     ReaderPage();
     virtual ~ReaderPage() = default;
@@ -27,7 +28,7 @@ public:
     void onExit() override;
 
 private:
-    void initLayout(const std::string& title, const std::string& content);
+    void initLayout(const std::string& bookId, const std::string& title, const std::string& content);
     void setupTopBar(const std::string& title);
 
     // 核心逻辑：切分文本并初始化 Pager

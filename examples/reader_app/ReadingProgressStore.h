@@ -5,9 +5,11 @@
 #ifndef READING_PROGRESS_STORE_H
 #define READING_PROGRESS_STORE_H
 
+#include <map>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
-#include <mutex>
 
 /**
  * 阅读进度记录
@@ -63,6 +65,29 @@ private:
     InMemoryReadingProgressStore() = default;
     std::unordered_map<std::string, ReadingProgress> m_data;
     std::mutex m_mutex;
+};
+
+class FileReadingProgressStore : public IReadingProgressStore {
+public:
+    static FileReadingProgressStore& getInstance();
+
+    bool initialize(const std::string& filePath);
+    bool isInitialized() const;
+
+    bool get(const std::string& bookId, ReadingProgress& out) override;
+    void put(const std::string& bookId, const ReadingProgress& progress) override;
+    void clear(const std::string& bookId) override;
+
+private:
+    FileReadingProgressStore() = default;
+
+    bool loadFromDiskLocked();
+    bool persistToDiskLocked() const;
+
+    mutable std::mutex m_mutex;
+    bool m_initialized = false;
+    std::string m_filePath;
+    std::map<std::string, ReadingProgress> m_data;
 };
 
 #endif // READING_PROGRESS_STORE_H

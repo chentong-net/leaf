@@ -7,9 +7,13 @@ if (NOT TARGET my-profile)
 endif()
 
 add_library(reader-app STATIC
+        BookRepository.cpp
+        BookImportService.cpp
+        BookContentLoader.cpp
         ReaderApp.cpp
         BookshelfPage.cpp
         ReaderPage.cpp
+        ReadingProgressStore.cpp
         TextSplitter.cpp
 )
 

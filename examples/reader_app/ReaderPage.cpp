@@ -122,15 +122,15 @@ private:
     float m_fontSize = 18.0f;
 };
 
-ReaderPage::Ptr ReaderPage::create(const std::string& bookTitle, const std::string& content) {
+ReaderPage::Ptr ReaderPage::create(const std::string& bookId, const std::string& bookTitle, const std::string& content) {
     auto page = std::make_shared<ReaderPage>();
-    page->initLayout(bookTitle, content);
+    page->initLayout(bookId, bookTitle, content);
     return page;
 }
 
 ReaderPage::ReaderPage() {
     setBackgroundColor(0xFFF6F1E1);
-    m_progressStore = &InMemoryReadingProgressStore::getInstance();
+    m_progressStore = &FileReadingProgressStore::getInstance();
 }
 
 void ReaderPage::onDisappear() {
@@ -143,8 +143,8 @@ void ReaderPage::onExit() {
     LFPage::onExit();
 }
 
-void ReaderPage::initLayout(const std::string& title, const std::string& content) {
-    m_bookId = title;
+void ReaderPage::initLayout(const std::string& bookId, const std::string& title, const std::string& content) {
+    m_bookId = bookId.empty() ? title : bookId;
 
     auto root = LFBox::create();
     root->matchParentWidth();
@@ -356,11 +356,12 @@ void ReaderPage::setupTopBar(const std::string& title) {
     backBtn->setWidth(44);
     backBtn->setHeight(44);
 
-    auto backText = std::make_shared<LFText>();
-    backText->setText("<");
-    backText->setFontSize(24);
-    backText->setTextColor(0xFF333333);
-    backBtn->addChild(backText, LFBoxAlign::Center);
+    auto backIcon = std::make_shared<LFImage>();
+    backIcon->setSrc("arrow-left.png");
+    backIcon->setWidth(18);
+    backIcon->setHeight(18);
+    backIcon->setFit(LFImageFit::Fill);
+    backBtn->addChild(backIcon, LFBoxAlign::Center);
 
     backBtn->setOnClick([weakSelf](LFButton*) {
         if (auto self = weakSelf.lock()) {
