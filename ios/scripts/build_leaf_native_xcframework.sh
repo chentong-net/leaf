@@ -44,50 +44,28 @@ build_variant() {
   cmake --build "${build_dir}" --config "${CONFIGURATION}" --target leaf-native-all
 }
 
-find_archive() {
+collect_archives() {
   local build_dir="$1"
-  local archive_name="$2"
-  local matches=()
-  local match
-  while IFS= read -r match; do
-    matches+=("${match}")
-  done < <(find "${build_dir}" -type f -name "${archive_name}" | sort)
-
-  if [[ ${#matches[@]} -eq 0 ]]; then
-    echo "error: missing archive '${archive_name}' in ${build_dir}" >&2
-    exit 1
-  fi
-
-  for match in "${matches[@]}"; do
-    if [[ "${match}" != *"/Objects-normal/"* && "${match}" != *"/Binary/"* ]]; then
-      echo "${match}"
-      return
-    fi
-  done
-
-  echo "${matches[0]}"
+  find "${build_dir}" -type f -name '*.a' \
+    ! -path '*/Objects-normal/*' \
+    ! -path '*/Binary/*' \
+    ! -name 'libleaf-native.a' \
+    | sort
 }
 
 merge_archives() {
   local build_dir="$1"
   local output="$2"
-
-  local archive_names=(
-    "libleaf-core.a"
-    "libfile-picker.a"
-    "libpath-provider.a"
-    "libmy-profile.a"
-    "libreader-app.a"
-    "libapp-adapter.a"
-    "libleaf-native-anchor.a"
-  )
-
   local archives=()
   local archive
-  for archive_name in "${archive_names[@]}"; do
-    archive="$(find_archive "${build_dir}" "${archive_name}")"
+  while IFS= read -r archive; do
     archives+=("${archive}")
-  done
+  done < <(collect_archives "${build_dir}")
+
+  if [[ ${#archives[@]} -eq 0 ]]; then
+    echo "error: no static archives found in ${build_dir}" >&2
+    exit 1
+  fi
 
   rm -f "${output}"
   libtool -static "${archives[@]}" -o "${output}"
@@ -119,21 +97,17 @@ prepare_headers() {
     cp "${header_file}" "${HEADERS_DIR}/"
   done < <(find "${ROOT_DIR}/third_party/nanovg/src" -maxdepth 1 -type f -name '*.h' -print0)
 
-  # Plugin and demo headers (for SDK-side and host-side extensions)
-  copy_headers_tree "${ROOT_DIR}/plugins/file_picker"
-  copy_headers_tree "${ROOT_DIR}/plugins/path_provider"
+  # Plugin C++ facade headers
+  cp "${ROOT_DIR}/plugins/file_picker/LFFilePicker.h" "${HEADERS_DIR}/"
+  cp "${ROOT_DIR}/plugins/path_provider/LFPathProvider.h" "${HEADERS_DIR}/"
+
+  # Demo/business headers
   copy_headers_tree "${ROOT_DIR}/examples/my_profile"
   copy_headers_tree "${ROOT_DIR}/examples/reader_app"
 
   cat > "${HEADERS_DIR}/leaf_native.h" <<'EOF'
 #pragma once
-#ifdef __cplusplus
-extern "C" {
-#endif
-int leaf_native_anchor_symbol(void);
-#ifdef __cplusplus
-}
-#endif
+/* LeafNative umbrella marker header. */
 EOF
 }
 
@@ -146,7 +120,7 @@ build_variant "simulator" "iphonesimulator" "arm64;x86_64"
 DEVICE_LIB="${BUILD_ROOT}/device/libleaf-native.a"
 SIM_LIB="${BUILD_ROOT}/simulator/libleaf-native.a"
 
-echo "==> Merging module archives"
+echo "==> Merging static archives"
 merge_archives "${BUILD_ROOT}/device" "${DEVICE_LIB}"
 merge_archives "${BUILD_ROOT}/simulator" "${SIM_LIB}"
 
