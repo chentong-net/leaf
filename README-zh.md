@@ -4,7 +4,7 @@
 
 **作者:** Chen Tong
 
-[[English](README.md)|中文]
+[English](README.md) | 中文
 
 ### 设计目标
 
