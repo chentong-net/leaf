@@ -8,6 +8,7 @@
 #include "LFDef.h"
 #include "view/base/LFNode.h"
 #include "view/base/LFImage.h"
+#include "view/base/LFTexture.h"
 #include "view/base/LFText.h"
 #include "view/base/LFInput.h"
 #include "view/base/LFNavigator.h"

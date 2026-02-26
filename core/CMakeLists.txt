@@ -36,6 +36,7 @@ set(LEAF_CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFNode.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFText.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFImage.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFTexture.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFInput.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFNavigator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFPage.cpp
