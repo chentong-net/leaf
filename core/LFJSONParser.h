@@ -6,6 +6,7 @@
 #include <map>
 #include <variant>
 #include <stdexcept>
+#include <memory>
 
 class LFJSONValue;
 class LFJSONObject;
