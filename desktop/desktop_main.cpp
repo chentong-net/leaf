@@ -151,7 +151,7 @@ int main() {
 #endif
 
     // 创建窗口
-    GLFWwindow *window = glfwCreateWindow(360, 640, "Leaf", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(960, 720, "Leaf", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         return -1;
