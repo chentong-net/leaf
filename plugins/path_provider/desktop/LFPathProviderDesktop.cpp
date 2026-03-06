@@ -9,7 +9,47 @@
 #include <string>
 #include <system_error>
 
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
 namespace {
+
+#if defined(_WIN32)
+std::string wideToUtf8(const std::wstring& wide) {
+    if (wide.empty()) return "";
+
+    const int utf8Count = WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        wide.c_str(),
+        static_cast<int>(wide.size()),
+        nullptr,
+        0,
+        nullptr,
+        nullptr
+    );
+    if (utf8Count <= 0) {
+        return "";
+    }
+
+    std::string utf8(static_cast<size_t>(utf8Count), '\0');
+    const int converted = WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        wide.c_str(),
+        static_cast<int>(wide.size()),
+        utf8.data(),
+        utf8Count,
+        nullptr,
+        nullptr
+    );
+    if (converted <= 0) {
+        return "";
+    }
+    return utf8;
+}
+#endif
 
 std::string getenvOrEmpty(const char* name) {
     if (!name) return "";
@@ -36,7 +76,11 @@ std::filesystem::path homeDirectory() {
 
 std::string asString(const std::filesystem::path& path) {
     if (path.empty()) return "";
+#if defined(_WIN32)
+    return wideToUtf8(path.lexically_normal().wstring());
+#else
     return path.lexically_normal().string();
+#endif
 }
 
 void ensureDirectory(const std::filesystem::path& path) {
