@@ -27,3 +27,12 @@ target_link_libraries(file-picker
         PRIVATE
         leaf-core
 )
+
+if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP" AND WIN32)
+    target_link_libraries(file-picker
+            PRIVATE
+            ole32
+            shell32
+            uuid
+    )
+endif()

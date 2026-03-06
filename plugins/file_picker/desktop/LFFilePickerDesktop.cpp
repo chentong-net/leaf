@@ -19,11 +19,182 @@
 
 #if defined(_WIN32)
 #include <windows.h>
+#include <shobjidl.h>
 #endif
 
 namespace {
 
 std::atomic<uint64_t> g_fileIdCounter{1};
+
+#if defined(_WIN32)
+std::wstring utf8ToWide(const std::string& utf8) {
+    if (utf8.empty()) return L"";
+
+    const int wideCount = MultiByteToWideChar(
+        CP_UTF8,
+        MB_ERR_INVALID_CHARS,
+        utf8.c_str(),
+        static_cast<int>(utf8.size()),
+        nullptr,
+        0
+    );
+    if (wideCount <= 0) {
+        return L"";
+    }
+
+    std::wstring wide(static_cast<size_t>(wideCount), L'\0');
+    const int converted = MultiByteToWideChar(
+        CP_UTF8,
+        MB_ERR_INVALID_CHARS,
+        utf8.c_str(),
+        static_cast<int>(utf8.size()),
+        wide.data(),
+        wideCount
+    );
+    if (converted <= 0) {
+        return L"";
+    }
+    return wide;
+}
+
+std::string wideToUtf8(const std::wstring& wide) {
+    if (wide.empty()) return "";
+
+    const int utf8Count = WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        wide.c_str(),
+        static_cast<int>(wide.size()),
+        nullptr,
+        0,
+        nullptr,
+        nullptr
+    );
+    if (utf8Count <= 0) {
+        return "";
+    }
+
+    std::string utf8(static_cast<size_t>(utf8Count), '\0');
+    const int converted = WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        wide.c_str(),
+        static_cast<int>(wide.size()),
+        utf8.data(),
+        utf8Count,
+        nullptr,
+        nullptr
+    );
+    if (converted <= 0) {
+        return "";
+    }
+    return utf8;
+}
+
+bool pickWindowsFilePath(LFFilePickerMediaType mediaType, std::string* outPath, bool* canceled, std::string* error) {
+    if (outPath) outPath->clear();
+    if (canceled) *canceled = false;
+    if (error) error->clear();
+
+    const HRESULT initHr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    const bool shouldUninit = SUCCEEDED(initHr);
+    if (FAILED(initHr) && initHr != RPC_E_CHANGED_MODE) {
+        if (error) *error = "com_initialize_failed";
+        return false;
+    }
+
+    IFileOpenDialog* dialog = nullptr;
+    HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog));
+    if (FAILED(hr) || dialog == nullptr) {
+        if (shouldUninit) CoUninitialize();
+        if (error) *error = "create_file_dialog_failed";
+        return false;
+    }
+
+    DWORD dialogOptions = 0;
+    if (SUCCEEDED(dialog->GetOptions(&dialogOptions))) {
+        dialog->SetOptions(dialogOptions | FOS_FILEMUSTEXIST | FOS_PATHMUSTEXIST);
+    }
+    dialog->SetTitle(L"Select a File");
+
+    COMDLG_FILTERSPEC filters[2];
+    UINT filterCount = 0;
+    switch (mediaType) {
+        case LFFilePickerMediaType::Image:
+            filters[0] = {L"Images", L"*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.heif"};
+            filters[1] = {L"All Files", L"*.*"};
+            filterCount = 2;
+            break;
+        case LFFilePickerMediaType::Video:
+            filters[0] = {L"Videos", L"*.mp4;*.mov;*.mkv;*.avi;*.m4v;*.3gp;*.webm"};
+            filters[1] = {L"All Files", L"*.*"};
+            filterCount = 2;
+            break;
+        case LFFilePickerMediaType::ImageOrVideo:
+            filters[0] = {L"Media", L"*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.heif;*.mp4;*.mov;*.mkv;*.avi;*.m4v;*.3gp;*.webm"};
+            filters[1] = {L"All Files", L"*.*"};
+            filterCount = 2;
+            break;
+        case LFFilePickerMediaType::Any:
+        default:
+            filters[0] = {L"All Files", L"*.*"};
+            filterCount = 1;
+            break;
+    }
+    if (filterCount > 0) {
+        dialog->SetFileTypes(filterCount, filters);
+        dialog->SetFileTypeIndex(1);
+    }
+
+    hr = dialog->Show(nullptr);
+    if (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED)) {
+        dialog->Release();
+        if (shouldUninit) CoUninitialize();
+        if (canceled) *canceled = true;
+        return true;
+    }
+    if (FAILED(hr)) {
+        dialog->Release();
+        if (shouldUninit) CoUninitialize();
+        if (error) *error = "show_file_dialog_failed";
+        return false;
+    }
+
+    IShellItem* item = nullptr;
+    hr = dialog->GetResult(&item);
+    if (FAILED(hr) || item == nullptr) {
+        dialog->Release();
+        if (shouldUninit) CoUninitialize();
+        if (error) *error = "get_dialog_result_failed";
+        return false;
+    }
+
+    PWSTR widePath = nullptr;
+    hr = item->GetDisplayName(SIGDN_FILESYSPATH, &widePath);
+    if (FAILED(hr) || widePath == nullptr) {
+        item->Release();
+        dialog->Release();
+        if (shouldUninit) CoUninitialize();
+        if (error) *error = "get_selected_path_failed";
+        return false;
+    }
+
+    const std::wstring pathWide(widePath);
+    CoTaskMemFree(widePath);
+    item->Release();
+    dialog->Release();
+    if (shouldUninit) CoUninitialize();
+
+    const std::string pathUtf8 = wideToUtf8(pathWide);
+    if (pathUtf8.empty()) {
+        if (error) *error = "path_convert_failed";
+        return false;
+    }
+
+    if (outPath) *outPath = pathUtf8;
+    return true;
+}
+#endif
 
 std::string stripTrailingNewlines(const std::string& input) {
     size_t end = input.size();
@@ -108,11 +279,24 @@ std::string getFileName(const std::string& path) {
 }
 
 int64_t getFileSize(const std::string& path) {
+#if defined(_WIN32)
+    const std::wstring widePath = utf8ToWide(path);
+    if (widePath.empty()) {
+        return 0;
+    }
+
+    struct _stat64 st;
+    if (_wstat64(widePath.c_str(), &st) == 0) {
+        return st.st_size;
+    }
+    return 0;
+#else
     struct stat st;
     if (stat(path.c_str(), &st) == 0) {
         return st.st_size;
     }
     return 0;
+#endif
 }
 
 std::string sanitizeFileName(const std::string& name) {
@@ -149,8 +333,8 @@ std::string createSandboxCopyPath(const std::string& selectedPath, bool* ok) {
         tempRoot = fs::temp_directory_path();
     }
 #elif defined(_WIN32)
-    char tempDir[MAX_PATH];
-    DWORD len = GetTempPathA(MAX_PATH, tempDir);
+    wchar_t tempDir[MAX_PATH];
+    DWORD len = GetTempPathW(MAX_PATH, tempDir);
     if (len > 0) {
         tempRoot = fs::path(tempDir);
     } else {
@@ -172,6 +356,23 @@ std::string createSandboxCopyPath(const std::string& selectedPath, bool* ok) {
         safeName = "picked_file";
     }
 
+#if defined(_WIN32)
+    const std::wstring sourceWide = utf8ToWide(selectedPath);
+    const std::wstring destNameWide = utf8ToWide(buildUniqueIdSuffix() + "_" + safeName);
+    if (sourceWide.empty() || destNameWide.empty()) {
+        return "";
+    }
+
+    fs::path sourcePath(sourceWide);
+    fs::path destPath = sandboxDir / fs::path(destNameWide);
+    fs::copy_file(sourcePath, destPath, fs::copy_options::overwrite_existing, ec);
+    if (ec) {
+        return "";
+    }
+
+    if (ok) *ok = true;
+    return wideToUtf8(destPath.wstring());
+#else
     fs::path destPath = sandboxDir / (buildUniqueIdSuffix() + "_" + safeName);
     fs::copy_file(fs::path(selectedPath), destPath, fs::copy_options::overwrite_existing, ec);
     if (ec) {
@@ -180,6 +381,7 @@ std::string createSandboxCopyPath(const std::string& selectedPath, bool* ok) {
 
     if (ok) *ok = true;
     return destPath.string();
+#endif
 }
 
 } // namespace
@@ -191,9 +393,10 @@ void LFFilePicker::pickFile(LFFilePickCallback callback) {
 void LFFilePicker::pickFile(const LFFilePickerOptions& options, LFFilePickCallback callback) {
     if (!callback) return;
 
-    std::string command;
+    std::string selectedPath;
 
 #if defined(__APPLE__)
+    std::string command;
     command = "osascript -e 'try' ";
     switch (options.mediaType) {
         case LFFilePickerMediaType::Image:
@@ -213,40 +416,8 @@ void LFFilePicker::pickFile(const LFFilePickerOptions& options, LFFilePickCallba
     command += "-e 'on error number -128' ";
     command += "-e 'return \"\"' ";
     command += "-e 'end try'";
-#elif defined(_WIN32)
-    command = "powershell -Command \"";
-    command += "Add-Type -AssemblyName System.Windows.Forms; ";
-    command += "$dialog = New-Object System.Windows.Forms.OpenFileDialog; ";
 
-    switch (options.mediaType) {
-        case LFFilePickerMediaType::Image:
-            command += "$dialog.Filter = 'Images|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.heif|All Files|*.*'; ";
-            break;
-        case LFFilePickerMediaType::Video:
-            command += "$dialog.Filter = 'Videos|*.mp4;*.mov;*.mkv;*.avi;*.m4v;*.3gp;*.webm|All Files|*.*'; ";
-            break;
-        case LFFilePickerMediaType::ImageOrVideo:
-            command += "$dialog.Filter = 'Media|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.heif;*.mp4;*.mov;*.mkv;*.avi;*.m4v;*.3gp;*.webm|All Files|*.*'; ";
-            break;
-        case LFFilePickerMediaType::Any:
-        default:
-            command += "$dialog.Filter = 'All Files|*.*'; ";
-            break;
-    }
-
-    command += "$dialog.Title = 'Select a File'; ";
-    command += "if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $dialog.FileName } else { '' }";
-    command += "\"";
-#else
-    LFFilePickResult result;
-    result.ok = false;
-    result.error = "platform_not_supported";
-    callback(result);
-    return;
-#endif
-
-    std::string selectedPath = runCommand(command);
-
+    selectedPath = runCommand(command);
     if (selectedPath.empty()) {
         LFFilePickResult result;
         result.ok = true;
@@ -254,6 +425,31 @@ void LFFilePicker::pickFile(const LFFilePickerOptions& options, LFFilePickCallba
         callback(result);
         return;
     }
+#elif defined(_WIN32)
+    bool canceled = false;
+    std::string pickError;
+    if (!pickWindowsFilePath(options.mediaType, &selectedPath, &canceled, &pickError)) {
+        LFFilePickResult result;
+        result.ok = false;
+        result.error = pickError.empty() ? "pick_failed" : pickError;
+        callback(result);
+        return;
+    }
+
+    if (canceled || selectedPath.empty()) {
+        LFFilePickResult result;
+        result.ok = true;
+        result.canceled = true;
+        callback(result);
+        return;
+    }
+#else
+    LFFilePickResult result;
+    result.ok = false;
+    result.error = "platform_not_supported";
+    callback(result);
+    return;
+#endif
 
     std::string finalPath = selectedPath;
     if (options.copyToSandbox) {
@@ -271,7 +467,7 @@ void LFFilePicker::pickFile(const LFFilePickerOptions& options, LFFilePickCallba
 
     LFFileInfo fileInfo;
     fileInfo.path = finalPath;
-    fileInfo.name = getFileName(finalPath);
+    fileInfo.name = getFileName(selectedPath);
     fileInfo.mimeType = getMimeType(fileInfo.name);
     fileInfo.size = getFileSize(finalPath);
 
@@ -285,7 +481,11 @@ void LFFilePicker::pickFile(const LFFilePickerOptions& options, LFFilePickCallba
 }
 
 LFFileReadResult readChunkFromPath(const std::string& path, const LFFileReadOptions& options) {
+#if defined(_WIN32)
+    std::ifstream file(std::filesystem::path(utf8ToWide(path)), std::ios::binary);
+#else
     std::ifstream file(path, std::ios::binary);
+#endif
     if (!file.is_open()) {
         LFFileReadResult result;
         result.ok = false;
