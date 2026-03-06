@@ -7,17 +7,129 @@
 #include "LFJSONParser.h"
 
 #include <algorithm>
-#include <cerrno>
 #include <cctype>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <sys/stat.h>
 
 #if defined(_WIN32)
-#include <direct.h>
+#include <windows.h>
 #endif
 
 namespace {
+
+bool isValidUtf8(const std::string& text) {
+    size_t i = 0;
+    const size_t n = text.size();
+    while (i < n) {
+        const unsigned char c = static_cast<unsigned char>(text[i]);
+        size_t need = 0;
+        if ((c & 0x80) == 0x00) {
+            ++i;
+            continue;
+        } else if ((c & 0xE0) == 0xC0) {
+            need = 1;
+            if (c < 0xC2) return false;
+        } else if ((c & 0xF0) == 0xE0) {
+            need = 2;
+        } else if ((c & 0xF8) == 0xF0) {
+            need = 3;
+            if (c > 0xF4) return false;
+        } else {
+            return false;
+        }
+
+        if (i + need >= n) return false;
+        for (size_t j = 1; j <= need; ++j) {
+            const unsigned char cc = static_cast<unsigned char>(text[i + j]);
+            if ((cc & 0xC0) != 0x80) return false;
+        }
+
+        if (need == 2) {
+            const unsigned char c1 = static_cast<unsigned char>(text[i + 1]);
+            if (c == 0xE0 && c1 < 0xA0) return false;
+            if (c == 0xED && c1 >= 0xA0) return false;
+        } else if (need == 3) {
+            const unsigned char c1 = static_cast<unsigned char>(text[i + 1]);
+            if (c == 0xF0 && c1 < 0x90) return false;
+            if (c == 0xF4 && c1 >= 0x90) return false;
+        }
+
+        i += need + 1;
+    }
+    return true;
+}
+
+#if defined(_WIN32)
+std::string convertAcpToUtf8(const std::string& text) {
+    if (text.empty()) return "";
+
+    const int wideCount = MultiByteToWideChar(
+        CP_ACP,
+        MB_ERR_INVALID_CHARS,
+        text.c_str(),
+        static_cast<int>(text.size()),
+        nullptr,
+        0
+    );
+    if (wideCount <= 0) {
+        return text;
+    }
+
+    std::wstring wide(static_cast<size_t>(wideCount), L'\0');
+    const int wideConverted = MultiByteToWideChar(
+        CP_ACP,
+        MB_ERR_INVALID_CHARS,
+        text.c_str(),
+        static_cast<int>(text.size()),
+        wide.data(),
+        wideCount
+    );
+    if (wideConverted <= 0) {
+        return text;
+    }
+
+    const int utf8Count = WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        wide.c_str(),
+        static_cast<int>(wide.size()),
+        nullptr,
+        0,
+        nullptr,
+        nullptr
+    );
+    if (utf8Count <= 0) {
+        return text;
+    }
+
+    std::string utf8(static_cast<size_t>(utf8Count), '\0');
+    const int utf8Converted = WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        wide.c_str(),
+        static_cast<int>(wide.size()),
+        utf8.data(),
+        utf8Count,
+        nullptr,
+        nullptr
+    );
+    if (utf8Converted <= 0) {
+        return text;
+    }
+    return utf8;
+}
+#endif
+
+std::string normalizeUtf8(const std::string& text) {
+    if (text.empty()) return text;
+    if (isValidUtf8(text)) return text;
+#if defined(_WIN32)
+    return convertAcpToUtf8(text);
+#else
+    return text;
+#endif
+}
 
 bool isAbsolutePath(const std::string& path) {
     if (path.empty()) return false;
@@ -40,62 +152,21 @@ std::string joinPath(const std::string& base, const std::string& child) {
 bool ensureDirectory(const std::string& path) {
     if (path.empty()) return false;
 
-    std::string normalized = path;
-    for (char& c : normalized) {
-        if (c == '\\') c = '/';
-    }
-
-    std::string current;
-    size_t index = 0;
-
-    if (normalized.size() > 1 && std::isalpha(static_cast<unsigned char>(normalized[0])) && normalized[1] == ':') {
-        current = normalized.substr(0, 2);
-        index = 2;
-    } else if (!normalized.empty() && normalized[0] == '/') {
-        current = "/";
-        index = 1;
-    }
-
-    while (index < normalized.size()) {
-        while (index < normalized.size() && normalized[index] == '/') {
-            ++index;
-        }
-        if (index >= normalized.size()) break;
-
-        const size_t nextSlash = normalized.find('/', index);
-        const std::string part = normalized.substr(index, nextSlash == std::string::npos ? std::string::npos : (nextSlash - index));
-        if (part.empty()) {
-            index = nextSlash == std::string::npos ? normalized.size() : nextSlash + 1;
-            continue;
-        }
-
-        if (!current.empty() && current.back() != '/') current += '/';
-        current += part;
-
-#if defined(_WIN32)
-        const int rc = _mkdir(current.c_str());
-#else
-        const int rc = mkdir(current.c_str(), 0755);
-#endif
-        if (rc != 0 && errno != EEXIST) {
-            return false;
-        }
-
-        if (nextSlash == std::string::npos) break;
-        index = nextSlash + 1;
-    }
-
-    return true;
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::u8path(path), ec);
+    return !ec;
 }
 
 bool ensureParentDirectory(const std::string& filePath) {
-    const size_t pos = filePath.find_last_of("/\\");
-    if (pos == std::string::npos) return true;
-    return ensureDirectory(filePath.substr(0, pos));
+    std::error_code ec;
+    const auto parent = std::filesystem::u8path(filePath).parent_path();
+    if (parent.empty()) return true;
+    std::filesystem::create_directories(parent, ec);
+    return !ec;
 }
 
 bool readTextFile(const std::string& path, std::string& out) {
-    std::ifstream input(path, std::ios::binary);
+    std::ifstream input(std::filesystem::u8path(path), std::ios::binary);
     if (!input.is_open()) {
         out.clear();
         return false;
@@ -112,7 +183,7 @@ bool writeTextFile(const std::string& path, const std::string& content) {
         return false;
     }
 
-    std::ofstream output(path, std::ios::binary | std::ios::trunc);
+    std::ofstream output(std::filesystem::u8path(path), std::ios::binary | std::ios::trunc);
     if (!output.is_open()) {
         return false;
     }
@@ -188,6 +259,10 @@ bool BookRepository::upsertBook(const BookRecord& incoming) {
     }
 
     BookRecord book = incoming;
+    book.id = normalizeUtf8(book.id);
+    book.title = normalizeUtf8(book.title);
+    book.filePath = normalizeUtf8(book.filePath);
+    book.mimeType = normalizeUtf8(book.mimeType);
     if (book.title.empty()) {
         const size_t slash = book.filePath.find_last_of("/\\");
         const std::string fileName = slash == std::string::npos ? book.filePath : book.filePath.substr(slash + 1);
@@ -286,6 +361,15 @@ bool BookRepository::loadFromDiskLocked() {
         return true;
     }
 
+    bool migratedEncoding = false;
+    if (!isValidUtf8(raw)) {
+        const std::string converted = normalizeUtf8(raw);
+        if (converted != raw) {
+            raw = converted;
+            migratedEncoding = true;
+        }
+    }
+
     try {
         auto root = LFJSONParser::parse(raw);
         if (!root || !root->contains("books")) {
@@ -303,10 +387,10 @@ bool BookRepository::loadFromDiskLocked() {
             }
             auto item = itemValue.asObject();
             BookRecord book;
-            if (item->contains("id")) book.id = item->at("id").asString();
-            if (item->contains("title")) book.title = item->at("title").asString();
-            if (item->contains("filePath")) book.filePath = item->at("filePath").asString();
-            if (item->contains("mimeType")) book.mimeType = item->at("mimeType").asString();
+            if (item->contains("id")) book.id = normalizeUtf8(item->at("id").asString());
+            if (item->contains("title")) book.title = normalizeUtf8(item->at("title").asString());
+            if (item->contains("filePath")) book.filePath = normalizeUtf8(item->at("filePath").asString());
+            if (item->contains("mimeType")) book.mimeType = normalizeUtf8(item->at("mimeType").asString());
             if (item->contains("size")) book.size = static_cast<int64_t>(item->at("size").asDouble());
             if (item->contains("createdAt")) book.createdAt = item->at("createdAt").asDouble();
             if (item->contains("lastReadAt")) book.lastReadAt = item->at("lastReadAt").asDouble();
@@ -316,6 +400,9 @@ bool BookRepository::loadFromDiskLocked() {
             }
         }
 
+        if (migratedEncoding) {
+            return persistToDiskLocked();
+        }
         return true;
     } catch (...) {
         m_books.clear();

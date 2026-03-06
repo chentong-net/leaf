@@ -4,6 +4,7 @@
 
 #include "BookContentLoader.h"
 
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
@@ -14,7 +15,7 @@ BookContentLoadResult BookContentLoader::loadTextFile(const std::string& filePat
         return result;
     }
 
-    std::ifstream file(filePath, std::ios::binary);
+    std::ifstream file(std::filesystem::u8path(filePath), std::ios::binary);
     if (!file.is_open()) {
         result.error = "open_file_failed";
         return result;

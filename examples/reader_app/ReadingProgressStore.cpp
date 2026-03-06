@@ -6,75 +6,30 @@
 
 #include "LFJSONParser.h"
 
-#include <cerrno>
-#include <cctype>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <sys/stat.h>
-
-#if defined(_WIN32)
-#include <direct.h>
-#endif
 
 namespace {
 
 bool ensureDirectory(const std::string& path) {
     if (path.empty()) return false;
 
-    std::string normalized = path;
-    for (char& c : normalized) {
-        if (c == '\\') c = '/';
-    }
-
-    std::string current;
-    size_t index = 0;
-    if (normalized.size() > 1 && std::isalpha(static_cast<unsigned char>(normalized[0])) && normalized[1] == ':') {
-        current = normalized.substr(0, 2);
-        index = 2;
-    } else if (!normalized.empty() && normalized[0] == '/') {
-        current = "/";
-        index = 1;
-    }
-
-    while (index < normalized.size()) {
-        while (index < normalized.size() && normalized[index] == '/') {
-            ++index;
-        }
-        if (index >= normalized.size()) break;
-
-        const size_t nextSlash = normalized.find('/', index);
-        const std::string part = normalized.substr(index, nextSlash == std::string::npos ? std::string::npos : (nextSlash - index));
-        if (part.empty()) {
-            index = nextSlash == std::string::npos ? normalized.size() : nextSlash + 1;
-            continue;
-        }
-
-        if (!current.empty() && current.back() != '/') current += '/';
-        current += part;
-
-#if defined(_WIN32)
-        const int rc = _mkdir(current.c_str());
-#else
-        const int rc = mkdir(current.c_str(), 0755);
-#endif
-        if (rc != 0 && errno != EEXIST) {
-            return false;
-        }
-
-        if (nextSlash == std::string::npos) break;
-        index = nextSlash + 1;
-    }
-    return true;
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::u8path(path), ec);
+    return !ec;
 }
 
 bool ensureParentDirectory(const std::string& filePath) {
-    const size_t pos = filePath.find_last_of("/\\");
-    if (pos == std::string::npos) return true;
-    return ensureDirectory(filePath.substr(0, pos));
+    std::error_code ec;
+    const auto parent = std::filesystem::u8path(filePath).parent_path();
+    if (parent.empty()) return true;
+    std::filesystem::create_directories(parent, ec);
+    return !ec;
 }
 
 bool readTextFile(const std::string& path, std::string& out) {
-    std::ifstream input(path, std::ios::binary);
+    std::ifstream input(std::filesystem::u8path(path), std::ios::binary);
     if (!input.is_open()) {
         out.clear();
         return false;
@@ -90,7 +45,7 @@ bool writeTextFile(const std::string& path, const std::string& content) {
     if (!ensureParentDirectory(path)) {
         return false;
     }
-    std::ofstream output(path, std::ios::binary | std::ios::trunc);
+    std::ofstream output(std::filesystem::u8path(path), std::ios::binary | std::ios::trunc);
     if (!output.is_open()) {
         return false;
     }

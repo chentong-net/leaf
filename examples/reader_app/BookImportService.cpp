@@ -8,18 +8,13 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cerrno>
 #include <chrono>
 #include <cctype>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <sstream>
-#include <sys/stat.h>
 #include <vector>
-
-#if defined(_WIN32)
-#include <direct.h>
-#endif
 
 namespace {
 
@@ -54,52 +49,9 @@ std::string joinPath(const std::string& base, const std::string& child) {
 bool ensureDirectory(const std::string& path) {
     if (path.empty()) return false;
 
-    std::string normalized = path;
-    for (char& c : normalized) {
-        if (c == '\\') c = '/';
-    }
-
-    std::string current;
-    size_t index = 0;
-
-    if (normalized.size() > 1 && std::isalpha(static_cast<unsigned char>(normalized[0])) && normalized[1] == ':') {
-        current = normalized.substr(0, 2);
-        index = 2;
-    } else if (!normalized.empty() && normalized[0] == '/') {
-        current = "/";
-        index = 1;
-    }
-
-    while (index < normalized.size()) {
-        while (index < normalized.size() && normalized[index] == '/') {
-            ++index;
-        }
-        if (index >= normalized.size()) break;
-
-        const size_t nextSlash = normalized.find('/', index);
-        const std::string part = normalized.substr(index, nextSlash == std::string::npos ? std::string::npos : (nextSlash - index));
-        if (part.empty()) {
-            index = nextSlash == std::string::npos ? normalized.size() : nextSlash + 1;
-            continue;
-        }
-
-        if (!current.empty() && current.back() != '/') current += '/';
-        current += part;
-
-#if defined(_WIN32)
-        const int rc = _mkdir(current.c_str());
-#else
-        const int rc = mkdir(current.c_str(), 0755);
-#endif
-        if (rc != 0 && errno != EEXIST) {
-            return false;
-        }
-
-        if (nextSlash == std::string::npos) break;
-        index = nextSlash + 1;
-    }
-
-    return true;
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::u8path(path), ec);
+    return !ec;
 }
 
 std::string fileNameFromPath(const std::string& path) {
@@ -114,6 +66,25 @@ std::string trimExtension(const std::string& fileName) {
         return fileName;
     }
     return fileName.substr(0, dot);
+}
+
+void splitFileNameAndExtension(const std::string& fileName, std::string* baseName, std::string* extension) {
+    if (!baseName || !extension) return;
+
+    const size_t dot = fileName.find_last_of('.');
+    if (dot == std::string::npos || dot == 0) {
+        *baseName = fileName;
+        extension->clear();
+        return;
+    }
+
+    *baseName = fileName.substr(0, dot);
+    *extension = fileName.substr(dot);
+}
+
+bool fileExists(const std::string& path) {
+    std::error_code ec;
+    return std::filesystem::exists(std::filesystem::u8path(path), ec) && !ec;
 }
 
 std::string sanitizeFileName(const std::string& fileName) {
@@ -146,7 +117,7 @@ double nowSeconds() {
 
 bool copyFromPath(const std::string& sourcePath, std::ofstream& outFile, int64_t& bytesCopied) {
     bytesCopied = 0;
-    std::ifstream inFile(sourcePath, std::ios::binary);
+    std::ifstream inFile(std::filesystem::u8path(sourcePath), std::ios::binary);
     if (!inFile.is_open()) {
         return false;
     }
@@ -183,6 +154,10 @@ struct FdCopyContext {
 void finishFdCopyWithError(const std::shared_ptr<FdCopyContext>& context, const std::string& error) {
     if (context->outFile && context->outFile->is_open()) {
         context->outFile->close();
+    }
+    if (!context->destPath.empty()) {
+        std::error_code ec;
+        std::filesystem::remove(std::filesystem::u8path(context->destPath), ec);
     }
     if (context->callback) {
         context->callback(makeError(error));
@@ -291,9 +266,21 @@ void BookImportService::importPickedFile(const LFFileInfo& sourceFile,
     const std::string sourceName = !sourceFile.name.empty() ? sourceFile.name : fileNameFromPath(sourceFile.path);
     const std::string safeName = sanitizeFileName(sourceName);
     const std::string title = trimExtension(safeName);
-    const std::string destPath = joinPath(booksDirectory, makeUniquePrefix() + "_" + safeName);
+    std::string destPath = joinPath(booksDirectory, safeName);
+    if (fileExists(destPath)) {
+        std::string baseName;
+        std::string extension;
+        splitFileNameAndExtension(safeName, &baseName, &extension);
+        if (baseName.empty()) {
+            baseName = "book";
+        }
 
-    auto outFile = std::make_shared<std::ofstream>(destPath, std::ios::binary | std::ios::trunc);
+        do {
+            destPath = joinPath(booksDirectory, baseName + "_" + makeUniquePrefix() + extension);
+        } while (fileExists(destPath));
+    }
+
+    auto outFile = std::make_shared<std::ofstream>(std::filesystem::u8path(destPath), std::ios::binary | std::ios::trunc);
     if (!outFile->is_open()) {
         callback(makeError("open_target_failed"));
         return;
@@ -303,6 +290,8 @@ void BookImportService::importPickedFile(const LFFileInfo& sourceFile,
         int64_t copiedBytes = 0;
         if (!copyFromPath(sourceFile.path, *outFile, copiedBytes)) {
             outFile->close();
+            std::error_code ec;
+            std::filesystem::remove(std::filesystem::u8path(destPath), ec);
             callback(makeError("copy_from_path_failed"));
             return;
         }
