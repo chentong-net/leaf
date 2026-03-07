@@ -1,0 +1,57 @@
+import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.tasks.Sync
+
+project.plugins.withId("com.android.application") {
+    def leafAssetsRoot = new File(project.rootDir, "../application/assets").canonicalFile
+    def generatedAssetsDir = project.layout.buildDirectory.dir("generated/leaf/assets/main")
+
+    def prepareLeafAssets = project.tasks.register("prepareLeafAssets", Sync) {
+        group = "leaf"
+        description = "Sync Leaf assets from application/assets into Android generated assets directory."
+
+        into(generatedAssetsDir)
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+        // Keep flat layout support: application/assets/*.
+        from(leafAssetsRoot) {
+            exclude("common/**")
+            exclude("android/**")
+        }
+        // Layered layout support: common base + android override.
+        from(new File(leafAssetsRoot, "common"))
+        from(new File(leafAssetsRoot, "android"))
+
+        doFirst {
+            if (!leafAssetsRoot.exists()) {
+                throw new GradleException("Leaf assets directory does not exist: ${leafAssetsRoot}")
+            }
+
+            def sourceFiles = project.fileTree(leafAssetsRoot) {
+                include("**/*")
+                exclude("**/.DS_Store")
+                exclude("**/.gitkeep")
+            }.files.findAll { it.isFile() }
+
+            if (sourceFiles.isEmpty()) {
+                throw new GradleException("No asset files found under: ${leafAssetsRoot}")
+            }
+
+            project.logger.lifecycle("Leaf assets: syncing ${sourceFiles.size()} files from ${leafAssetsRoot}")
+        }
+    }
+
+    project.android {
+        sourceSets {
+            main {
+                assets.setSrcDirs([generatedAssetsDir.get().asFile])
+            }
+        }
+    }
+
+    project.tasks.matching { task ->
+        task.name.startsWith("merge") && task.name.endsWith("Assets")
+    }.configureEach { task ->
+        task.dependsOn(prepareLeafAssets)
+    }
+}
