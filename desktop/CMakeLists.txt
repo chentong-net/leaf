@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(LEAF_CORE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../core)
-set(APP_ADAPTER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../app_adapter)
+set(APPLICATION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../application)
 set(DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 set(GLFW_DIR ${DEPS_DIR}/glfw)
 
@@ -20,7 +20,7 @@ add_subdirectory(${GLFW_DIR} glfw_build)
 
 set(LEAF_PLATFORM_DEF "DESKTOP")
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
-add_subdirectory(${APP_ADAPTER_DIR} app_adapter_build)
+add_subdirectory(${APPLICATION_DIR} application_build)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}

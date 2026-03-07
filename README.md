@@ -38,7 +38,7 @@ English | [中文](README-zh.md)
 ├── web # Web
 │   ├── web_main.cpp # platform adapter layer and entrypoint
 │   └── shell.html # HTML template
-├── app_adapter
+├── application
 │   ├── AppLaunch.cpp # app startup entrypoint
 │   └── CMakeLists.txt # third-party libs/plugins used by demos
 ├── examples # demo app code

@@ -9,11 +9,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(LEAF_CORE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../core)
-set(APP_ADAPTER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../app_adapter)
+set(APPLICATION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../application)
 
 set(LEAF_PLATFORM_DEF "WEB")
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
-add_subdirectory(${APP_ADAPTER_DIR} app_adapter_build)
+add_subdirectory(${APPLICATION_DIR} application_build)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}

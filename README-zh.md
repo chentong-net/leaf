@@ -38,7 +38,7 @@
 ├── web # Web端
 │   ├── web_main.cpp # 平台适配层及入口函数
 │   └── shell.html # HTML模版
-├── app_adapter
+├── application
 │   ├── AppLaunch.cpp # App启动入口
 │   └── CMakeLists.txt # 配置Demo用到的第三方库、插件
 ├── examples # Demo工程代码

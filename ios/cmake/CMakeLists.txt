@@ -12,12 +12,12 @@ endif()
 
 set(LEAF_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 set(LEAF_CORE_DIR ${LEAF_ROOT_DIR}/core)
-set(APP_ADAPTER_DIR ${LEAF_ROOT_DIR}/app_adapter)
+set(APPLICATION_DIR ${LEAF_ROOT_DIR}/application)
 
 # Reuse the same C++ module graph as other platforms.
 set(LEAF_PLATFORM_DEF "IOS")
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
-add_subdirectory(${APP_ADAPTER_DIR} app_adapter_build)
+add_subdirectory(${APPLICATION_DIR} application_build)
 
 add_custom_target(leaf-native-all
         DEPENDS
