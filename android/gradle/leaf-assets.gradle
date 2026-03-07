@@ -12,15 +12,7 @@ project.plugins.withId("com.android.application") {
         into(generatedAssetsDir)
         includeEmptyDirs = false
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
-
-        // Keep flat layout support: application/assets/*.
-        from(leafAssetsRoot) {
-            exclude("common/**")
-            exclude("android/**")
-        }
-        // Layered layout support: common base + android override.
-        from(new File(leafAssetsRoot, "common"))
-        from(new File(leafAssetsRoot, "android"))
+        from(leafAssetsRoot)
 
         doFirst {
             if (!leafAssetsRoot.exists()) {
