@@ -4,10 +4,74 @@
 
 #define NANOVG_GL3_IMPLEMENTATION
 
+#include <array>
 #include <filesystem>
 #include "LFEngine.h"
 #include "LFAppLaunch.h"
 #include <GLFW/glfw3.h>
+
+#if defined(_WIN32)
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#include <limits.h>
+#else
+#include <unistd.h>
+#endif
+
+std::filesystem::path g_assetsRootDir;
+
+std::filesystem::path getExecutableDir() {
+#if defined(_WIN32)
+    std::wstring buffer(MAX_PATH, L'\0');
+    const DWORD len = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+    if (len == 0) {
+        return std::filesystem::current_path();
+    }
+    buffer.resize(static_cast<size_t>(len));
+    return std::filesystem::path(buffer).parent_path();
+#elif defined(__APPLE__)
+    uint32_t size = 0;
+    _NSGetExecutablePath(nullptr, &size);
+    std::string buffer(size, '\0');
+    if (_NSGetExecutablePath(buffer.data(), &size) != 0) {
+        return std::filesystem::current_path();
+    }
+    return std::filesystem::path(buffer.c_str()).parent_path();
+#else
+    std::array<char, 4096> buffer{};
+    const ssize_t len = readlink("/proc/self/exe", buffer.data(), buffer.size() - 1);
+    if (len <= 0) {
+        return std::filesystem::current_path();
+    }
+    buffer[static_cast<size_t>(len)] = '\0';
+    return std::filesystem::path(buffer.data()).parent_path();
+#endif
+}
+
+std::filesystem::path resolveAssetPath(const std::string& assetPath) {
+    const std::filesystem::path relative = std::filesystem::u8path(assetPath);
+    if (relative.is_absolute()) {
+        return relative;
+    }
+
+    if (!g_assetsRootDir.empty()) {
+        const std::filesystem::path resolved = g_assetsRootDir / relative;
+        if (std::filesystem::exists(resolved)) {
+            return resolved;
+        }
+    }
+
+    return relative;
+}
+
+std::string pathToUtf8(const std::filesystem::path& path) {
+#if defined(_WIN32)
+    return path.u8string();
+#else
+    return path.string();
+#endif
+}
 
 // 窗口大小改变的回调
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
@@ -139,6 +203,11 @@ void char_callback(GLFWwindow* window, unsigned int codepoint) {
 }
 
 int main() {
+    g_assetsRootDir = getExecutableDir() / "assets";
+    if (!std::filesystem::exists(g_assetsRootDir)) {
+        const std::string assetsRootUtf8 = pathToUtf8(g_assetsRootDir);
+        LF_LOGI("Assets directory does not exist: %s", assetsRootUtf8.c_str());
+    }
     // 初始化 GLFW
     if (!glfwInit()) return -1;
 
@@ -182,16 +251,21 @@ int main() {
     });
 
     // 加载字体
-    nvgCreateFont(vg, "sans", "fonts/Alibaba-PuHuiTi-Regular.ttf");
+    const std::filesystem::path fontPath = resolveAssetPath("fonts/Alibaba-PuHuiTi-Regular.ttf");
+    const std::string fontPathUtf8 = pathToUtf8(fontPath);
+    if (nvgCreateFont(vg, "sans", fontPathUtf8.c_str()) < 0) {
+        LF_LOGI("Failed to load font: %s", fontPathUtf8.c_str());
+    }
 
     LFResourceProvider::getInstance().setAssetLoader(
-        [](const std::string &path, std::function<void(std::shared_ptr<LFData>)> callback) {
-            std::filesystem::path fsPath = std::filesystem::u8path(path);
+        [](const std::string &assetPath, std::function<void(std::shared_ptr<LFData>)> callback) {
+            std::filesystem::path fsPath = resolveAssetPath(assetPath);
             std::ifstream file(fsPath, std::ios::binary | std::ios::ate);
 
             if (!file.is_open()) {
                 std::filesystem::path absPath = std::filesystem::absolute(fsPath);
-                LF_LOGI("Failed to open file: %s (Resolved: %s)", path.c_str(), absPath.string().c_str());
+                const std::string resolvedPathUtf8 = pathToUtf8(absPath);
+                LF_LOGI("Failed to open file: %s (Resolved: %s)", assetPath.c_str(), resolvedPathUtf8.c_str());
                 callback(nullptr);
                 return;
             }
@@ -199,7 +273,7 @@ int main() {
             // 获取文件大小
             std::streamsize size = file.tellg();
             if (size <= 0) {
-                LF_LOGI("File is empty: %s", path.c_str());
+                LF_LOGI("File is empty: %s", assetPath.c_str());
                 callback(nullptr);
                 return;
             }
@@ -215,7 +289,7 @@ int main() {
                 // 读取成功，执行回调
                 callback(data);
             } else {
-                LF_LOGI("Failed to read file content: %s", path.c_str());
+                LF_LOGI("Failed to read file content: %s", assetPath.c_str());
                 free(data->data);
                 callback(nullptr);
             }

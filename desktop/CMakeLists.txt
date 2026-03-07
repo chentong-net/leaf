@@ -41,3 +41,6 @@ target_link_libraries(leaf-desktop PRIVATE
 #if(APPLE)
 #    target_link_libraries(leaf-desktop PRIVATE "-framework OpenGL" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
 #endif()
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/leaf-assets.cmake)
+leaf_configure_desktop_assets(leaf-desktop ${APPLICATION_DIR}/assets)
