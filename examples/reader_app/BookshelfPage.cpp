@@ -94,6 +94,11 @@ double nowSeconds() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(now).count() / 1000.0;
 }
 
+constexpr float kBookshelfItemWidth = 72.0f;
+constexpr float kBookshelfCoverAspectRatio = 0.75f; // 3:4
+constexpr float kBookshelfGridSpacing = 15.0f;
+constexpr float kBookshelfGridPadding = 15.0f;
+
 } // namespace
 
 std::shared_ptr<BookshelfPage> BookshelfPage::create(std::weak_ptr<LFNavigator> nav) {
@@ -134,9 +139,9 @@ void BookshelfPage::initUI() {
     scrollView->setBounces(false);
     scrollView->setScrollBarEnabled(false);
 
-    m_grid = LFGrid::create(3, 15.0f);
+    m_grid = LFGrid::create(1, kBookshelfGridSpacing);
     m_grid->matchParentWidth();
-    m_grid->setPadding(YGEdgeAll, 15.0f);
+    m_grid->setPadding(YGEdgeAll, kBookshelfGridPadding);
     scrollView->addChild(m_grid);
     addChild(scrollView);
 }
@@ -185,18 +190,21 @@ void BookshelfPage::refreshGrid() {
     for (int i = 0; i < static_cast<int>(m_books.size()); ++i) {
         addBookEntry(m_books[i], i);
     }
+
+    updateGridColumnsForLayoutWidth(m_grid->getLayoutWidth());
 }
 
 void BookshelfPage::addImportEntry() {
     auto itemLayout = LFLinear::createVertical();
-    itemLayout->matchParentWidth();
+    itemLayout->setWidth(kBookshelfItemWidth);
     itemLayout->wrapContentHeight();
     itemLayout->setGravity(LFAlignment::Center, LFAlignment::Center);
     itemLayout->setSpacing(12.0f);
+    itemLayout->setAlignSelf(YGAlignCenter);
 
     auto cover = DashedBorderBox::create();
     cover->matchParentWidth();
-    cover->setAspectRatio(0.75f);
+    cover->setAspectRatio(kBookshelfCoverAspectRatio);
     cover->setRadius(8.0f);
     cover->setDashStyle(8.0f, 5.0f, 1.5f, 0xFFB7B7B7);
     cover->setBackgroundColor(0xFFFDFDFD);
@@ -227,14 +235,15 @@ void BookshelfPage::addImportEntry() {
 
 void BookshelfPage::addBookEntry(const BookRecord& book, int index) {
     auto itemLayout = LFLinear::createVertical();
-    itemLayout->matchParentWidth();
+    itemLayout->setWidth(kBookshelfItemWidth);
     itemLayout->wrapContentHeight();
     itemLayout->setGravity(LFAlignment::Center, LFAlignment::Center);
     itemLayout->setSpacing(12.0f);
+    itemLayout->setAlignSelf(YGAlignCenter);
 
     auto cover = LFBox::create();
     cover->matchParentWidth();
-    cover->setAspectRatio(0.75f);
+    cover->setAspectRatio(kBookshelfCoverAspectRatio);
     cover->setBackgroundColor(coverColorByIndex(index));
     cover->setRadius(8.0f);
     cover->setShadow(0, 2, 6, 0, 0x22000000);
@@ -329,4 +338,20 @@ void BookshelfPage::setStatusText(const std::string& text, uint32_t color) {
     if (!m_statusText) return;
     m_statusText->setText(text);
     m_statusText->setTextColor(color);
+}
+
+void BookshelfPage::onAfterCalculateLayout() {
+    LFPage::onAfterCalculateLayout();
+    if (!m_grid) return;
+    updateGridColumnsForLayoutWidth(m_grid->getLayoutWidth());
+}
+
+void BookshelfPage::updateGridColumnsForLayoutWidth(float gridLayoutWidth) {
+    if (!m_grid || gridLayoutWidth <= 0.0f) return;
+
+    const float contentWidth = std::max(0.0f, gridLayoutWidth - kBookshelfGridPadding * 2.0f);
+    int columns = static_cast<int>(std::floor((contentWidth + kBookshelfGridSpacing)
+                                              / (kBookshelfItemWidth + kBookshelfGridSpacing)));
+    columns = std::max(1, columns);
+    m_grid->setColumnCount(columns);
 }

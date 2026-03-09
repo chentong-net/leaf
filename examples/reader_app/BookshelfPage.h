@@ -15,9 +15,13 @@ class BookshelfPage : public LFPage {
 public:
     static std::shared_ptr<BookshelfPage> create(std::weak_ptr<LFNavigator> nav);
 
+protected:
+    void onAfterCalculateLayout() override;
+
 private:
     void initUI();
     void setupStorage();
+    void updateGridColumnsForLayoutWidth(float gridLayoutWidth);
     void refreshGrid();
     void addImportEntry();
     void addBookEntry(const BookRecord& book, int index);
