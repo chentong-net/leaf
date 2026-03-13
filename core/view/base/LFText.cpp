@@ -163,19 +163,17 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
 
     if (widthMode == YGMeasureModeExactly) {
-        const float wrapWidth = std::max(0.0f, width - extraW);
-        const std::string& wrapped = textNode->getWrappedText(vg, wrapWidth);
-        nvgTextBoxBounds(vg, 0, 0, wrapWidth, wrapped.c_str(), nullptr, bounds);
+        // 宽度固定：计算在该宽度下的高度 (自动换行)
+        nvgTextBoxBounds(vg, 0, 0, width, textNode->m_text.c_str(), nullptr, bounds);
         result.width = width;
         result.height = (float) ceil(bounds[3] - bounds[1]);
     } else if (widthMode == YGMeasureModeAtMost) {
-        const float wrapWidth = std::max(0.0f, width - extraW);
-        const std::string& wrapped = textNode->getWrappedText(vg, wrapWidth);
-        nvgTextBoxBounds(vg, 0, 0, wrapWidth, wrapped.c_str(), nullptr, bounds);
+        // 宽度受限 (最大不能超过 width)：尝试在该宽度下测量
+        nvgTextBoxBounds(vg, 0, 0, width, textNode->m_text.c_str(), nullptr, bounds);
         result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
         result.height = (float) ceil(bounds[3] - bounds[1]);
     } else {
-        // 宽度无限：保留原始文本自然宽度测量。
+        // 宽度无限：保留原始文本自然宽度测量
         nvgTextBounds(vg, 0, 0, textNode->m_text.c_str(), nullptr, bounds);
         result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
         result.height = (float) ceil(bounds[3] - bounds[1]);
