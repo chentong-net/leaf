@@ -12,6 +12,9 @@
 **/build_web
 **/cmake-build-debug
 **/cmake-build-wasm
+**/BuildProfile.ets
+**/build-desktop
+**/cmake-build-debug-llvm
 # CocoaPods
 **/Pods/
 **/Podfile.lock
