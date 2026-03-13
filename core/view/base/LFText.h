@@ -45,6 +45,8 @@ private:
     // Yoga 测量回调函数
     static YGSize measure(YGNodeRef node, float width, YGMeasureMode widthMode,
                           float height, YGMeasureMode heightMode);
+    void invalidateWrapCache();
+    const std::string& getWrappedText(NVGcontext* vg, float wrapWidth);
 
     // 成员变量
     std::string m_text;
@@ -54,6 +56,9 @@ private:
     std::string m_fontFamily = "sans";
     LFTextHAlign m_textHAlign = LFTextHAlign::Left;
     LFTextVAlign m_textVAlign = LFTextVAlign::Top;
+    std::string m_wrappedTextCache;
+    float m_wrappedWidthCache = -1.0f;
+    bool m_wrapCacheValid = false;
 
     // 静态测量上下文
     static NVGcontext* s_measureContext;

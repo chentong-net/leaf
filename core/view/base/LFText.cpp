@@ -3,6 +3,7 @@
 //
 
 #include "view/base/LFText.h"
+#include <cmath>
 
 // 初始化静态成员
 NVGcontext *LFText::s_measureContext = nullptr;
@@ -13,9 +14,60 @@ LFText::LFText() {
     YGNodeSetMeasureFunc(getYGNode(), LFText::measure);
 }
 
+void LFText::invalidateWrapCache() {
+    m_wrapCacheValid = false;
+    m_wrappedWidthCache = -1.0f;
+    m_wrappedTextCache.clear();
+}
+
+const std::string& LFText::getWrappedText(NVGcontext* vg, float wrapWidth) {
+    if (m_text.empty() || !vg || wrapWidth <= 0.0f) {
+        return m_text;
+    }
+
+    if (m_wrapCacheValid && std::fabs(m_wrappedWidthCache - wrapWidth) < 0.5f) {
+        return m_wrappedTextCache;
+    }
+
+    m_wrappedTextCache.clear();
+    m_wrappedTextCache.reserve(m_text.size() + 16);
+
+    constexpr int kBatchRows = 16;
+    NVGtextRow rows[kBatchRows];
+    const char* cursor = m_text.c_str();
+
+    while (cursor && *cursor != '\0') {
+        int nrows = nvgTextBreakLines(vg, cursor, nullptr, wrapWidth, rows, kBatchRows);
+        if (nrows <= 0) break;
+
+        for (int i = 0; i < nrows; ++i) {
+            const NVGtextRow& row = rows[i];
+            if (row.end > row.start) {
+                m_wrappedTextCache.append(row.start, static_cast<size_t>(row.end - row.start));
+            }
+            if (row.next && *row.next != '\0') {
+                m_wrappedTextCache.push_back('\n');
+            }
+        }
+
+        const char* next = rows[nrows - 1].next;
+        if (!next || next == cursor) break;
+        cursor = next;
+    }
+
+    if (m_wrappedTextCache.empty()) {
+        m_wrappedTextCache = m_text;
+    }
+
+    m_wrapCacheValid = true;
+    m_wrappedWidthCache = wrapWidth;
+    return m_wrappedTextCache;
+}
+
 void LFText::setText(const std::string &text) {
     if (m_text == text) return;
     m_text = text;
+    invalidateWrapCache();
     // 内容改变，必须标记 Yoga 节点为脏，触发重新测量 (Measure)
     YGNodeMarkDirty(getYGNode());
     // 同时也标记自身为脏，触发重绘
@@ -26,6 +78,7 @@ void LFText::setFontSize(float size) {
     float safeSize = std::max(1.0f, size);
     if (m_fontSize == safeSize) return;
     m_fontSize = safeSize;
+    invalidateWrapCache();
     YGNodeMarkDirty(getYGNode());
     markDirty();
 }
@@ -40,6 +93,7 @@ void LFText::setTextColor(uint32_t color) {
 void LFText::setLineHeight(float lineHeight) {
     if (m_lineHeight == lineHeight) return;
     m_lineHeight = lineHeight;
+    invalidateWrapCache();
     YGNodeMarkDirty(getYGNode());
     markDirty();
 }
@@ -47,6 +101,7 @@ void LFText::setLineHeight(float lineHeight) {
 void LFText::setFontFamily(const std::string &family) {
     if (m_fontFamily == family) return;
     m_fontFamily = family;
+    invalidateWrapCache();
     YGNodeMarkDirty(getYGNode());
     markDirty();
 }
@@ -102,25 +157,25 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
 
     float bounds[4];
     YGSize result = {0, 0};
-    // TODO: 这里应该在后期一劳永逸的解决
-    const float WRAP_BUFFER = std::max(8.0f, textNode->m_fontSize * 0.1f); // 安全像素，避免计算得到浮点数后导致精度丢失，导致错误换行
+    const float WRAP_BUFFER = std::max(8.0f, textNode->m_fontSize * 0.1f); // 安全像素，避免浮点误差导致边界误判
 
-    // 3. 根据 Yoga 的约束模式进行测量
-    // nvgTextBoxBounds 用于多行文本测量 (支持自动换行)
-    // nvgTextBounds 用于单行文本测量
+    // 统一以 LEFT|TOP 测量，再由外部逻辑处理对齐。
+    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+
     if (widthMode == YGMeasureModeExactly) {
-        // 宽度固定：计算在该宽度下的高度 (自动换行)
-        nvgTextBoxBounds(vg, 0, 0, width, textNode->m_text.c_str(), nullptr, bounds);
+        const float wrapWidth = std::max(0.0f, width - extraW);
+        const std::string& wrapped = textNode->getWrappedText(vg, wrapWidth);
+        nvgTextBoxBounds(vg, 0, 0, wrapWidth, wrapped.c_str(), nullptr, bounds);
         result.width = width;
         result.height = (float) ceil(bounds[3] - bounds[1]);
     } else if (widthMode == YGMeasureModeAtMost) {
-        // 宽度受限 (最大不能超过 width)：尝试在该宽度下测量
-        nvgTextBoxBounds(vg, 0, 0, width, textNode->m_text.c_str(), nullptr, bounds);
+        const float wrapWidth = std::max(0.0f, width - extraW);
+        const std::string& wrapped = textNode->getWrappedText(vg, wrapWidth);
+        nvgTextBoxBounds(vg, 0, 0, wrapWidth, wrapped.c_str(), nullptr, bounds);
         result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
         result.height = (float) ceil(bounds[3] - bounds[1]);
     } else {
-        // 宽度无限 (undefined)：通常用单行测量，或者给予一个极大值
-        // 这里使用 nvgTextBounds 测量单行自然宽度
+        // 宽度无限：保留原始文本自然宽度测量。
         nvgTextBounds(vg, 0, 0, textNode->m_text.c_str(), nullptr, bounds);
         result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
         result.height = (float) ceil(bounds[3] - bounds[1]);
@@ -136,7 +191,7 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
 void LFText::onDrawContent(NVGcontext *vg) {
     if (m_text.empty()) return;
 
-    // 1. 设置文本样式
+    // 设置文本样式
     nvgFontSize(vg, m_fontSize);
     nvgFontFace(vg, m_fontFamily.c_str());
     nvgFillColor(vg, LFNode::colorToNVG(m_textColor)); // 使用 LFNode 的静态工具需要加作用域，或者直接在 LFNode 里暴露 helper
@@ -160,7 +215,13 @@ void LFText::onDrawContent(NVGcontext *vg) {
 
     if (contentW <= 0) return;
 
-    // 3. 根据对齐方式计算绘制锚点
+    // 分行前固定使用 LEFT|TOP，避免受外部对齐状态影响。
+    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+
+    // 生成内部换行缓存文本（不修改 m_text 原始内容）
+    const std::string& wrappedText = getWrappedText(vg, contentW);
+
+    // 根据对齐方式计算绘制锚点
     int alignFlag;
     switch (m_textHAlign) {
         case LFTextHAlign::Left:
@@ -174,10 +235,10 @@ void LFText::onDrawContent(NVGcontext *vg) {
             break;
     }
 
-    // TODO: 发现 NanoVG 有 Bug，竖直方向 textAlign 设置会出问题，故这里做补充逻辑
+    // 先测量文本总高度，再计算 Y 偏移
     float bounds[4];
     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP); // 测量时总是用 Top
-    nvgTextBoxBounds(vg, 0, 0, contentW, m_text.c_str(), nullptr, bounds);
+    nvgTextBoxBounds(vg, 0, 0, contentW, wrappedText.c_str(), nullptr, bounds);
     float textHeight = bounds[3] - bounds[1];
     // 根据对齐方式计算 Y 轴偏移量
     float drawY = contentY;
@@ -195,12 +256,10 @@ void LFText::onDrawContent(NVGcontext *vg) {
             break;
     }
 
-    // 4. 应用对齐并绘制
+    // 应用对齐并绘制
     // 均以 Top 为基准
     nvgTextAlign(vg, alignFlag | NVG_ALIGN_TOP);
 
-    // 3. 绘制文本
-    // 使用 nvgTextBox 可以保证文字在 layoutW 范围内自动换行
-    // 坐标 (0,0) 即可，因为 LFNode::render 已经帮我们 translate 到了正确位置
-    nvgTextBox(vg, contentX, drawY, contentW, m_text.c_str(), nullptr);
+    // 使用缓存文本绘制，换行点已提前固定为 '\n'，规避自动换行偏差。
+    nvgTextBox(vg, contentX, drawY, contentW, wrappedText.c_str(), nullptr);
 }
