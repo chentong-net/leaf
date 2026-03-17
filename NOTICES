@@ -1,0 +1,41 @@
+Leaf
+Copyright 2026 Chen Tong
+
+This project is licensed under the Apache License, Version 2.0.
+See the LICENSE file at the project root for details.
+
+This project includes third-party software with separate licenses.
+The following notices are provided for attribution and compliance.
+
+1) GLFW
+   Path: third_party/glfw
+   Upstream: https://github.com/glfw/glfw
+   License: zlib/libpng license
+   License file: third_party/glfw/LICENSE.md
+   Local modifications in this project:
+   - third_party/glfw/include/GLFW/glfw3.h
+   - third_party/glfw/src/CMakeLists.txt
+   - third_party/glfw/src/cocoa_window.m
+   - third_party/glfw/src/input.c
+   - third_party/glfw/src/internal.h
+   Modified files are marked with "Modified by Leaf project".
+
+2) NanoVG
+   Path: third_party/nanovg
+   Upstream: https://github.com/memononen/nanovg
+   License: zlib license
+   License file: third_party/nanovg/LICENSE.txt
+   Local modifications:
+   - None in current distributed snapshot.
+
+3) glad
+   Path: third_party/glad
+   Upstream: https://github.com/Dav1dde/glad
+   License: MIT (glad source) + Khronos component licenses
+   License file: third_party/glad/LICENSE.txt
+
+4) Yoga
+   Path: third_party/yoga
+   Upstream: https://github.com/facebook/yoga
+   License: MIT
+   License file: third_party/yoga/LICENSE.txt
