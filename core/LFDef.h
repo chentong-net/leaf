@@ -37,9 +37,6 @@
 #define LF_LOGI(...) ((void)OH_LOG_Print(LOG_APP, LOG_INFO, 0x0000, "Leaf", __VA_ARGS__))
 #endif
 
-extern "C" {
-#include "quickjs.h"
-}
 #include "nanovg.h"
 #include "nanovg_gl.h"
 #include "Yoga.h"

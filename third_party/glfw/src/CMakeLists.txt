@@ -1,3 +1,4 @@
+# Modified by Leaf project
 
 add_library(glfw ${GLFW_LIBRARY_TYPE}
                  "${GLFW_SOURCE_DIR}/include/GLFW/glfw3.h"

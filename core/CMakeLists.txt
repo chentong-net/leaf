@@ -7,18 +7,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
-set(QUICKJS_DIR ${DEPS_DIR}/quickjs)
 set(NANOVG_DIR ${DEPS_DIR}/nanovg/src)
 set(YOGA_DIR ${DEPS_DIR}/yoga)
 set(GLAD_DIR ${DEPS_DIR}/glad)
 
 set(LEAF_CORE_SOURCES
-        ${QUICKJS_DIR}/quickjs.c
-        ${QUICKJS_DIR}/libregexp.c
-        ${QUICKJS_DIR}/libunicode.c
-        ${QUICKJS_DIR}/cutils.c
-        ${QUICKJS_DIR}/dtoa.c
-
         ${NANOVG_DIR}/nanovg.c
 
         ${YOGA_DIR}/Yoga.cpp
@@ -75,7 +68,6 @@ set_target_properties(leaf-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(leaf-core
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${QUICKJS_DIR}
         ${NANOVG_DIR}
         ${YOGA_DIR}
 )
@@ -85,10 +77,3 @@ if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP")
             ${GLAD_DIR}
     )
 endif()
-
-target_compile_definitions(leaf-core PRIVATE
-        _GNU_SOURCE
-        CONFIG_VERSION="2025-09-13"
-        __STDC_FORMAT_MACROS # 关键：解决 PRId64 报错
-        CONFIG_BIGNUM
-)
