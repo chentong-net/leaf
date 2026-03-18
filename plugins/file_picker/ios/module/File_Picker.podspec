@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'File_Picker'
-  s.version          = '0.1.0'
+  s.version          = '1.0.0'
   s.summary          = 'Leaf file picker plugin for iOS.'
   s.description      = <<-DESC
 Leaf file picker plugin for iOS. Implements file_picker.pick and file_picker.open_fd.

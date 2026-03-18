@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Path_Provider'
-  s.version          = '0.1.0'
+  s.version          = '1.0.0'
   s.summary          = 'Leaf path provider plugin for iOS.'
   s.description      = <<-DESC
 Leaf path provider plugin for iOS. Implements path_provider path query methods.

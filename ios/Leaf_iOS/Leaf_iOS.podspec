@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Leaf_iOS'
-  s.version          = '0.1.0'
+  s.version          = '1.0.0'
   s.summary          = 'Leaf iOS SDK with OpenGL ES renderer.'
   s.description      = <<-DESC
 Leaf iOS SDK module with LeafView/LeafRenderer, plugin dispatcher, and prebuilt native runtime.
