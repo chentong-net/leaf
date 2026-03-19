@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -7,6 +7,7 @@ BUILD_ROOT="${ROOT_DIR}/build/ios-native"
 OUTPUT_DIR="${ROOT_DIR}/ios/Leaf_iOS/Frameworks"
 XCFRAMEWORK_PATH="${OUTPUT_DIR}/LeafNative.xcframework"
 HEADERS_DIR="${BUILD_ROOT}/headers"
+ASSET_SYNC_SCRIPT="${ROOT_DIR}/ios/scripts/leaf_assets.sh"
 CONFIGURATION="${CONFIGURATION:-Release}"
 DEPLOYMENT_TARGET="${IOS_DEPLOYMENT_TARGET:-13.0}"
 
@@ -17,6 +18,15 @@ for tool in "${required_tools[@]}"; do
     exit 1
   fi
 done
+
+if [[ "${LEAF_SKIP_ASSET_SYNC:-0}" != "1" ]]; then
+  if [[ ! -f "${ASSET_SYNC_SCRIPT}" ]]; then
+    echo "error: asset sync script not found: ${ASSET_SYNC_SCRIPT}" >&2
+    exit 1
+  fi
+  echo "==> Syncing iOS assets"
+  bash "${ASSET_SYNC_SCRIPT}"
+fi
 
 build_variant() {
   local name="$1"
@@ -131,3 +141,4 @@ xcodebuild -create-xcframework \
   -output "${XCFRAMEWORK_PATH}"
 
 echo "==> Done: ${XCFRAMEWORK_PATH}"
+

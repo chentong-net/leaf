@@ -26,6 +26,7 @@
 # Build
 **/DerivedData/
 ios/Leaf_iOS/Frameworks/LeafNative.xcframework/
+ios/Leaf_iOS/Assets
 
 # App specific
 *.ipa
