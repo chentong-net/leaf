@@ -42,6 +42,7 @@ set(LEAF_CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/view/wrapped/LFPageView.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/wrapped/LFListView.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/wrapped/LFDropdown.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/view/wrapped/LFToggle.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/event/LFHitTest.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/event/LFEventDispatcher.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/event/LFGestureArena.cpp
