@@ -149,6 +149,9 @@ void LFButton::setBackgroundColor(LFButtonState state, uint32_t color) {
     m_stateColors[state] = color;
     // 如果设置的是当前状态的颜色，立即刷新
     if (state == m_state) {
+        if (m_colorAnimator && m_colorAnimator->isRunning()) {
+            m_colorAnimator->stop();
+        }
         LFBox::setBackgroundColor(color);
     }
 }
