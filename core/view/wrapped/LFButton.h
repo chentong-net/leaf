@@ -58,7 +58,7 @@ public:
     void setOnClick(ClickCallback callback);
 
     // 设置点击效果类型
-    void setClickEffect(LFClickEffect effect) { m_clickEffect = effect; }
+    void setClickEffect(LFClickEffect effect);
 
     // =========================
     // 样式配置

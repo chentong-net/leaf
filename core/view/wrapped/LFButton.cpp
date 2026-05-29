@@ -145,6 +145,19 @@ void LFButton::setOnClick(ClickCallback callback) {
     m_onClick = callback;
 }
 
+void LFButton::setClickEffect(LFClickEffect effect) {
+    if (m_clickEffect == effect) return;
+
+    m_clickEffect = effect;
+
+    if (m_clickEffect != LFClickEffect::Scale) {
+        if (m_scaleAnimator && m_scaleAnimator->isRunning()) {
+            m_scaleAnimator->stop();
+        }
+        setScale(1.0f, 1.0f);
+    }
+}
+
 void LFButton::setBackgroundColor(LFButtonState state, uint32_t color) {
     m_stateColors[state] = color;
     // 如果设置的是当前状态的颜色，立即刷新
@@ -210,14 +223,24 @@ void LFButton::updateState(LFButtonState newState, bool animate) {
         if (m_clickEffect == LFClickEffect::Scale) {
             runScaleAnimation(targetScale);
         } else {
-            setScale(targetScale, targetScale);
+            if (m_scaleAnimator && m_scaleAnimator->isRunning()) {
+                m_scaleAnimator->stop();
+            }
+            setScale(1.0f, 1.0f);
         }
 
         // 颜色动画 (始终开启)
         runColorAnimation(targetColor);
     } else {
         // 无动画，直接设置
-        setScale(targetScale, targetScale);
+        if (m_clickEffect == LFClickEffect::Scale) {
+            setScale(targetScale, targetScale);
+        } else {
+            if (m_scaleAnimator && m_scaleAnimator->isRunning()) {
+                m_scaleAnimator->stop();
+            }
+            setScale(1.0f, 1.0f);
+        }
         LFBox::setBackgroundColor(targetColor);
     }
 }
