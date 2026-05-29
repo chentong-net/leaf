@@ -51,6 +51,8 @@ public:
     void setOptionHeight(float height);
     void setMaxPanelHeight(float height);
     void setFontSize(float size);
+    void enableScale(bool enabled);
+    bool isScaleEnabled() const { return m_scaleEnabled; }
     void setTextColor(uint32_t color);
     void setSelectedTextColor(uint32_t color);
     void setPlaceholderColor(uint32_t color);
@@ -69,6 +71,7 @@ private:
     void updateTriggerText();
     void updateExpandedState();
     void updateOptionStyles();
+    void updateClickEffects();
     LFButton::Ptr createOptionButton(int index);
     float resolvePanelHeight() const;
 
@@ -86,6 +89,7 @@ private:
     int m_selectedIndex = -1;
     bool m_expanded = false;
     bool m_enabled = true;
+    bool m_scaleEnabled = false;
 
     float m_optionHeight = 44.0f;
     float m_maxPanelHeight = 220.0f;

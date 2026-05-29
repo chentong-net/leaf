@@ -31,7 +31,6 @@ void LFDropdown::initLayout() {
     m_triggerButton = LFButton::create();
     m_triggerButton->matchParentWidth();
     m_triggerButton->setHeight(44.0f);
-    m_triggerButton->setClickEffect(LFClickEffect::None);
     m_triggerButton->setBackgroundColor(LFButtonState::Normal, m_triggerNormalColor);
     m_triggerButton->setBackgroundColor(LFButtonState::Pressed, m_triggerPressedColor);
     m_triggerButton->setBorder(1.0f, m_borderColor);
@@ -46,6 +45,7 @@ void LFDropdown::initLayout() {
     });
 
     addChild(m_triggerButton);
+    updateClickEffects();
 
     m_panelContainer = LFBox::create();
     m_panelContainer->matchParentWidth();
@@ -195,6 +195,12 @@ void LFDropdown::setFontSize(float size) {
     updateOptionStyles();
 }
 
+void LFDropdown::enableScale(bool enabled) {
+    if (m_scaleEnabled == enabled) return;
+    m_scaleEnabled = enabled;
+    updateClickEffects();
+}
+
 void LFDropdown::setTextColor(uint32_t color) {
     m_textColor = color;
     updateTriggerText();
@@ -278,11 +284,11 @@ LFButton::Ptr LFDropdown::createOptionButton(int index) {
     auto button = LFButton::create(m_options[index]);
     button->matchParentWidth();
     button->setHeight(m_optionHeight);
-    button->setClickEffect(LFClickEffect::None);
     button->setFontSize(m_fontSize);
     button->setTextColor(m_textColor);
     button->setBackgroundColor(LFButtonState::Normal, m_optionNormalColor);
     button->setBackgroundColor(LFButtonState::Pressed, m_optionPressedColor);
+    button->setClickEffect(m_scaleEnabled ? LFClickEffect::Scale : LFClickEffect::None);
 
     std::weak_ptr<LFDropdown> weakSelf = std::static_pointer_cast<LFDropdown>(shared_from_this());
     button->setOnClick([weakSelf, index](LFButton*) {
@@ -318,6 +324,20 @@ void LFDropdown::updateExpandedState() {
         m_panelContainer->setDisplay(YGDisplayNone);
     }
     updateTriggerText();
+}
+
+void LFDropdown::updateClickEffects() {
+    LFClickEffect effect = m_scaleEnabled ? LFClickEffect::Scale : LFClickEffect::None;
+
+    if (m_triggerButton) {
+        m_triggerButton->setClickEffect(effect);
+    }
+
+    for (auto& button : m_optionButtons) {
+        if (button) {
+            button->setClickEffect(effect);
+        }
+    }
 }
 
 void LFDropdown::updateOptionStyles() {
