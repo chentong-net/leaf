@@ -17,8 +17,7 @@
  * 3. 提供内容插入与关闭能力
  *
  * 使用方式：
- * - 将 LFOverlay 作为 root 的最后一个子节点
- * - 通过 show() 显示弹出内容
+ * - 通过 show() 显示弹出内容，内部会自动挂到 root
  * - 通过 dismiss() 关闭
  */
 class LFOverlay : public LFBox {
@@ -40,6 +39,10 @@ public:
     void setBarrierColor(uint32_t color);
     uint32_t getBarrierColor() const { return m_barrierColor; }
 
+    void setContentMargin(float margin);
+    void setContentMargin(YGEdge edge, float margin);
+    void setContentOffset(float offsetX, float offsetY);
+
     void setOnDismiss(DismissCallback callback);
 
     void show(const LFNode::Ptr& content,
@@ -55,6 +58,7 @@ private:
     void initLayout();
     void clearActiveContent();
     void updateBarrierState();
+    void ensureAttachedToRoot();
 
     LFBox::Ptr m_barrier;
     LFBox::Ptr m_contentLayer;

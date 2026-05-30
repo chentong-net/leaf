@@ -5,6 +5,7 @@
 
 #include "LFOverlay.h"
 
+#include "LFEngine.h"
 #include "event/LFEvent.h"
 
 LFOverlay::Ptr LFOverlay::create() {
@@ -43,6 +44,24 @@ void LFOverlay::setBarrierColor(uint32_t color) {
     }
 }
 
+void LFOverlay::setContentMargin(float margin) {
+    setContentMargin(YGEdgeAll, margin);
+}
+
+void LFOverlay::setContentMargin(YGEdge edge, float margin) {
+    if (!m_contentLayer) return;
+    if (edge == YGEdgeAll) {
+        m_contentLayer->setPadding(YGEdgeAll, margin);
+        return;
+    }
+    m_contentLayer->setPadding(edge, margin);
+}
+
+void LFOverlay::setContentOffset(float offsetX, float offsetY) {
+    if (!m_contentLayer) return;
+    m_contentLayer->setTranslate(offsetX, offsetY);
+}
+
 void LFOverlay::setOnDismiss(DismissCallback callback) {
     m_onDismiss = std::move(callback);
 }
@@ -53,16 +72,13 @@ void LFOverlay::show(const LFNode::Ptr& content, LFBoxAlign align, float offsetX
         return;
     }
 
-    if (m_activeContent) {
-        m_activeContent->removeFromParent();
-        m_activeContent.reset();
-    }
-
     content->removeFromParent();
+    clearActiveContent();
     m_contentLayer->addChild(content, align, offsetX, offsetY);
     m_activeContent = content;
 
     m_isShowing = true;
+    ensureAttachedToRoot();
     updateBarrierState();
     setVisible(true);
 }
@@ -107,6 +123,16 @@ void LFOverlay::clearActiveContent() {
     if (m_activeContent) {
         m_activeContent->removeFromParent();
         m_activeContent.reset();
+    }
+}
+
+void LFOverlay::ensureAttachedToRoot() {
+    auto root = LFEngine::getInstance().getRoot();
+    if (!root) return;
+
+    if (getParent() != root.get()) {
+        removeFromParent();
+        root->addChild(shared_from_this());
     }
 }
 
