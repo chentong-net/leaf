@@ -13,6 +13,7 @@
 #include "view/base/LFInput.h"
 #include "view/base/LFNavigator.h"
 #include "view/base/LFPage.h"
+#include "view/base/LFOverlay.h"
 #include "view/layout/LFLinear.h"
 #include "view/layout/LFBox.h"
 #include "view/layout/LFGrid.h"

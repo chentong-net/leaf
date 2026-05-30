@@ -33,6 +33,7 @@ set(LEAF_CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFInput.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFNavigator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFPage.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFOverlay.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/layout/LFLinear.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/layout/LFBox.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/layout/LFGrid.cpp
