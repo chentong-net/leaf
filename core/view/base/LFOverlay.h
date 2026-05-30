@@ -39,8 +39,6 @@ public:
     void setBarrierColor(uint32_t color);
     uint32_t getBarrierColor() const { return m_barrierColor; }
 
-    void setContentMargin(float margin);
-    void setContentMargin(YGEdge edge, float margin);
     void setContentOffset(float offsetX, float offsetY);
 
     void setOnDismiss(DismissCallback callback);

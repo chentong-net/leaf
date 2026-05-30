@@ -44,19 +44,6 @@ void LFOverlay::setBarrierColor(uint32_t color) {
     }
 }
 
-void LFOverlay::setContentMargin(float margin) {
-    setContentMargin(YGEdgeAll, margin);
-}
-
-void LFOverlay::setContentMargin(YGEdge edge, float margin) {
-    if (!m_contentLayer) return;
-    if (edge == YGEdgeAll) {
-        m_contentLayer->setPadding(YGEdgeAll, margin);
-        return;
-    }
-    m_contentLayer->setPadding(edge, margin);
-}
-
 void LFOverlay::setContentOffset(float offsetX, float offsetY) {
     if (!m_contentLayer) return;
     m_contentLayer->setTranslate(offsetX, offsetY);
