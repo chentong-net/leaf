@@ -10,6 +10,8 @@
 #include "LFButton.h"
 #include "LFEngine.h"
 
+#include <cmath>
+
 LFButton::Ptr LFButton::create(const std::string& text, ClickCallback onClick) {
     auto btn = std::make_shared<LFButton>();
     if (!text.empty()) {
@@ -56,6 +58,10 @@ void LFButton::initEvents() {
 
         m_isTouching = true;
         m_isInside = true;
+        if (const LFTouchPoint* touch = e.getPrimaryTouch()) {
+            m_touchDownX = touch->x;
+            m_touchDownY = touch->y;
+        }
 
         // 进入按下状态
         updateState(LFButtonState::Pressed);
@@ -67,35 +73,16 @@ void LFButton::initEvents() {
 
         const LFTouchPoint* touch = e.getPrimaryTouch();
         if (!touch) return;
+        float dx = touch->x - m_touchDownX;
+        float dy = touch->y - m_touchDownY;
+        float distance = std::sqrt(dx * dx + dy * dy);
 
-        // 检查手指是否还在按钮范围内 (增加 10px 的容错缓冲区)
-        float tolerance = 10.0f;
-        // 将屏幕坐标转换为本地坐标比较麻烦，这里我们简化逻辑：
-        // 假设 HitTest 已经保证了 Down 在这里。
-        // 我们利用 HitTestEngine 的逻辑或者简单的 AABB 检测
-        // 由于 event 里的坐标是屏幕坐标，我们需要这一帧的节点全局位置。
-        // 但 LFNode 目前没有缓存全局位置。
-        // **完美方案**：使用 LFHitTestEngine 的逆矩阵逻辑转换。
-        // 这里为了性能，我们假设 touchMove 持续发生。
-
-        // 简化实现：利用 EventDispatcher 传来的 target。
-        // 实际上，现代 UI 框架通常捕获了 Touch，所以 Move 事件总是发给这个 Button，
-        // 我们需要判断坐标是否出界。
-
-        // 我们需要一个 helper: isScreenPointInside(x, y)
-        // 暂时 hack: 假设我们无法简单获取 Global Rect。
-        // 我们可以只判断“逻辑上的移出”
-
-        // [更正] 实际上 LFHitTest 提供了逆变换。但为了代码独立性，
-        // 我们暂时认为：只要 Move 事件还在分发给我们，且 target 是我们，
-        // 我们就需要自己算。
-        // 由于缺乏 GlobalToLocal API，我们暂时略过精细的 Bounds Check，
-        // 或者后续在 LFNode 补充 mapToLocal(point).
-
-        // 这里先假定一直 Inside，直到实现 mapToLocal。
-        // TODO: Implement mapToLocal for perfect "slide out to cancel"
-
-        // 逻辑：如果支持 TouchCapture，手指滑出屏幕外，Button 依然收到事件。
+        if (distance > m_touchSlop) {
+            m_isInside = false;
+            if (m_state == LFButtonState::Pressed) {
+                updateState(LFButtonState::Normal);
+            }
+        }
     });
 
     // 3. 抬起 (TouchUp)
@@ -104,12 +91,8 @@ void LFButton::initEvents() {
 
         m_isTouching = false;
 
-        const LFTouchPoint* touch = e.getPrimaryTouch();
         bool validClick = false;
 
-        // 如果手指在范围内抬起 (这里需要严格的 Bounds Check)
-        // 暂时假设只要收到了 Up 且之前没 Cancel 就算点击
-        // (完善的系统需要配合 mapToLocal)
         if (m_isInside) {
             validClick = true;
         }

@@ -105,6 +105,9 @@ private:
     // 交互状态追踪
     bool m_isTouching = false;      // 物理上是否按着
     bool m_isInside = false;        // 手指是否在范围内
+    float m_touchDownX = 0.0f;
+    float m_touchDownY = 0.0f;
+    float m_touchSlop = 10.0f;      // 超过这个移动距离就认为在拖动
 
     // 为了简单，我们持有 shared_ptr，并在析构或 stop 时从引擎移除
     // 动画实例
