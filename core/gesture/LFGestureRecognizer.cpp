@@ -273,6 +273,12 @@ void LFPanGestureRecognizer::handleEvent(const LFTouchEvent& event) {
                 return;
             }
 
+            if (m_eventFilter && !m_eventFilter(event)) {
+                setState(LFGestureState::Failed);
+                resolve(touch->id, LFGestureDisposition::Rejected);
+                return;
+            }
+
             startTrackingPointer(touch->id);
             m_startPosition = LFPoint(touch->x, touch->y);
             m_lastPosition = m_startPosition;

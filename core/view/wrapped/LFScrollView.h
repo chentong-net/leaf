@@ -46,6 +46,9 @@ public:
     void setBounces(bool bounces);
     bool getBounces() const { return m_bounces; }
 
+    void setPreventAncestorScroll(bool enabled);
+    bool getPreventAncestorScroll() const { return m_preventAncestorScroll; }
+
 protected:
     // 绘制滚动条
     void onDrawOverlay(NVGcontext* vg) override;
@@ -54,6 +57,12 @@ private:
     void initLayout(const LFNode::Ptr& child);
     void initGestures();
     void initAnimator();
+
+    bool shouldParticipateInPan(const LFTouchEvent& event) const;
+    LFScrollView* findNestedPriorityScrollView(float x, float y) const;
+    bool containsGlobalPoint(float x, float y) const;
+    void getGlobalOffset(float& x, float& y) const;
+    static bool isAncestorOf(const LFScrollView* ancestor, const LFScrollView* node);
 
     // 核心物理引擎 Tick
     void updatePhysics(float dt);
@@ -104,6 +113,7 @@ private:
     bool m_scrollBarEnabled = true;
 
     bool m_bounces = true;
+    bool m_preventAncestorScroll = false;
 };
 
 #endif // LEAF_LFSCROLLVIEW_H

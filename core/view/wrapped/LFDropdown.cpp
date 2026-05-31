@@ -61,6 +61,7 @@ void LFDropdown::initLayout() {
     m_scrollView->matchParentWidth();
     m_scrollView->matchParentHeight();
     m_scrollView->setBounces(false);
+    m_scrollView->setPreventAncestorScroll(true);
 
     m_optionsContainer = LFLinear::createVertical();
     m_optionsContainer->matchParentWidth();

@@ -173,6 +173,11 @@ void LFScrollView::initGestures() {
     // 这样如果子 View 有水平滑动手势（如 Banner），可以共存
     if (auto pan = std::dynamic_pointer_cast<LFPanGestureRecognizer>(getGestureRecognizers()[0])) {
         pan->setDirection(LFPanGestureRecognizer::PanDirection::Vertical);
+        std::weak_ptr<LFScrollView> filterWeakSelf = std::static_pointer_cast<LFScrollView>(shared_from_this());
+        pan->setEventFilter([filterWeakSelf](const LFTouchEvent& event) {
+            auto self = filterWeakSelf.lock();
+            return self ? self->shouldParticipateInPan(event) : false;
+        });
     }
 }
 
@@ -313,6 +318,90 @@ void LFScrollView::setScrollBarEnabled(bool enabled) {
 
 void LFScrollView::setBounces(bool bounces) {
     m_bounces = bounces;
+}
+
+void LFScrollView::setPreventAncestorScroll(bool enabled) {
+    m_preventAncestorScroll = enabled;
+}
+
+bool LFScrollView::shouldParticipateInPan(const LFTouchEvent& event) const {
+    const auto* touch = event.getPrimaryTouch();
+    if (!touch) return true;
+
+    auto* blocker = findNestedPriorityScrollView(touch->x, touch->y);
+    if (!blocker || blocker == this) return true;
+
+    return !isAncestorOf(this, blocker);
+}
+
+LFScrollView* LFScrollView::findNestedPriorityScrollView(float x, float y) const {
+    auto walk = [&](const LFNode* node, auto&& selfRef) -> LFScrollView* {
+        if (!node) return nullptr;
+
+        for (const auto& child : node->getChildren()) {
+            if (!child) continue;
+
+            if (auto scroll = dynamic_cast<LFScrollView*>(child.get())) {
+                if (scroll != this &&
+                    scroll->getPreventAncestorScroll() &&
+                    scroll->containsGlobalPoint(x, y)) {
+                    return scroll;
+                }
+            }
+
+            if (auto nested = selfRef(child.get(), selfRef)) {
+                return nested;
+            }
+        }
+
+        return nullptr;
+    };
+
+    return walk(this, walk);
+}
+
+bool LFScrollView::containsGlobalPoint(float x, float y) const {
+    float globalX = 0.0f;
+    float globalY = 0.0f;
+    getGlobalOffset(globalX, globalY);
+
+    float width = getLayoutWidth();
+    float height = getLayoutHeight();
+
+    return x >= globalX && x <= globalX + width &&
+           y >= globalY && y <= globalY + height;
+}
+
+void LFScrollView::getGlobalOffset(float& x, float& y) const {
+    x = 0.0f;
+    y = 0.0f;
+
+    const LFNode* current = this;
+    while (current) {
+        x += current->getLayoutX();
+        y += current->getLayoutY();
+
+        const auto& transform = current->getTransform();
+        x += transform.translateX;
+        y += transform.translateY;
+        x += current->getLayoutWidth() * (transform.translatePercentX / 100.0f);
+        y += current->getLayoutHeight() * (transform.translatePercentY / 100.0f);
+
+        current = current->getParent();
+    }
+}
+
+bool LFScrollView::isAncestorOf(const LFScrollView* ancestor, const LFScrollView* node) {
+    if (!ancestor || !node) return false;
+
+    const LFNode* current = node;
+    while (current) {
+        if (current == ancestor) {
+            return true;
+        }
+        current = current->getParent();
+    }
+    return false;
 }
 
 void LFScrollView::onDrawOverlay(NVGcontext* vg) {

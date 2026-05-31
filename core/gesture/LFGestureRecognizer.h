@@ -12,6 +12,7 @@
 #include <memory>
 #include <set>
 #include <map>
+#include <utility>
 
 // Gesture recognizer state
 enum class LFGestureState {
@@ -147,10 +148,12 @@ private:
 class LFPanGestureRecognizer : public LFGestureRecognizer {
 public:
     using PanCallback = std::function<void(const LFPoint& delta, const LFPoint& velocity)>;
+    using EventFilter = std::function<bool(const LFTouchEvent& event)>;
 
     void setOnPanStart(PanCallback callback) { m_onPanStart = callback; }
     void setOnPanUpdate(PanCallback callback) { m_onPanUpdate = callback; }
     void setOnPanEnd(PanCallback callback) { m_onPanEnd = callback; }
+    void setEventFilter(EventFilter filter) { m_eventFilter = std::move(filter); }
 
     void setMinDistance(float pixels) { m_minDistance = pixels; }
 
@@ -165,6 +168,7 @@ private:
     PanCallback m_onPanStart;
     PanCallback m_onPanUpdate;
     PanCallback m_onPanEnd;
+    EventFilter m_eventFilter;
 
     float m_minDistance = 10.0f;
     PanDirection m_direction = PanDirection::Any;
