@@ -23,6 +23,7 @@
 #include "view/wrapped/LFButton.h"
 #include "view/wrapped/LFDropdown.h"
 #include "view/wrapped/LFToggle.h"
+#include "view/wrapped/LFSlider.h"
 #include "view/wrapped/LFTab.h"
 #include "event/LFEvent.h"
 #include "event/LFEventDispatcher.h"
