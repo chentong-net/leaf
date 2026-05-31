@@ -11,12 +11,18 @@
 #include "LFScrollView.h"
 #include "view/layout/LFLinear.h"
 
+class LFOverlay;
+
+enum class LFDropdownDisplayMode {
+    Inline,
+    Popup
+};
+
 /**
- * Inline dropdown component.
+ * Dropdown component with inline and popup display modes.
  *
- * The first version expands in normal layout flow because Leaf does not have a
- * global overlay layer yet. Once Popup/Overlay is available, the option panel
- * can be moved out without changing the public selection API.
+ * Inline mode keeps the option panel inside normal layout flow.
+ * Popup mode attaches the panel to a root-level overlay.
  */
 class LFDropdown : public LFLinear {
 public:
@@ -31,6 +37,9 @@ public:
 
     void setOptions(const std::vector<std::string>& options);
     const std::vector<std::string>& getOptions() const { return m_options; }
+
+    void setDisplayMode(LFDropdownDisplayMode mode);
+    LFDropdownDisplayMode getDisplayMode() const { return m_displayMode; }
 
     void setSelectedIndex(int index, bool notify = true);
     int getSelectedIndex() const { return m_selectedIndex; }
@@ -72,8 +81,18 @@ private:
     void updateExpandedState();
     void updateOptionStyles();
     void updateClickEffects();
+    void ensureInlinePanelAttached();
+    void ensurePopupOverlay();
+    void showPopupPanel();
+    void hidePopupPanel();
+    void handlePopupDismissed();
     LFButton::Ptr createOptionButton(int index);
     float resolvePanelHeight() const;
+    float resolvePopupPanelWidth() const;
+    void resolvePopupGeometry(float& x, float& y, float& width, float& height) const;
+    float getAbsoluteX(const LFNode* node) const;
+    float getAbsoluteY(const LFNode* node) const;
+    static bool almostEqual(float a, float b);
 
     std::vector<std::string> m_options;
     std::vector<LFButton::Ptr> m_optionButtons;
@@ -82,6 +101,7 @@ private:
     LFBox::Ptr m_panelContainer;
     LFScrollView::Ptr m_scrollView;
     std::shared_ptr<LFLinear> m_optionsContainer;
+    std::shared_ptr<LFOverlay> m_popupOverlay;
 
     SelectionChangedCallback m_onSelectionChanged;
 
@@ -90,11 +110,18 @@ private:
     bool m_expanded = false;
     bool m_enabled = true;
     bool m_scaleEnabled = false;
+    LFDropdownDisplayMode m_displayMode = LFDropdownDisplayMode::Inline;
 
     float m_optionHeight = 44.0f;
     float m_maxPanelHeight = 220.0f;
     float m_fontSize = 15.0f;
     float m_cornerRadius = 8.0f;
+    float m_popupGap = 6.0f;
+
+    float m_popupResolvedX = -1.0f;
+    float m_popupResolvedY = -1.0f;
+    float m_popupResolvedWidth = -1.0f;
+    float m_popupResolvedHeight = -1.0f;
 
     uint32_t m_textColor = 0xFF222222;
     uint32_t m_selectedTextColor = 0xFF0F5B99;

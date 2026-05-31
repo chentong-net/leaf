@@ -6,7 +6,10 @@
 #include "LFDropdown.h"
 
 #include <algorithm>
+#include <cmath>
+#include "LFEngine.h"
 #include "event/LFEvent.h"
+#include "view/base/LFOverlay.h"
 
 LFDropdown::Ptr LFDropdown::create() {
     auto dropdown = std::make_shared<LFDropdown>();
@@ -77,6 +80,22 @@ void LFDropdown::setOptions(const std::vector<std::string>& options) {
     }
     rebuildOptions();
     updateTriggerText();
+    updateExpandedState();
+}
+
+void LFDropdown::setDisplayMode(LFDropdownDisplayMode mode) {
+    if (m_displayMode == mode) return;
+
+    if (m_displayMode == LFDropdownDisplayMode::Popup) {
+        hidePopupPanel();
+    }
+
+    m_displayMode = mode;
+
+    if (m_displayMode == LFDropdownDisplayMode::Inline) {
+        ensureInlinePanelAttached();
+    }
+
     updateExpandedState();
 }
 
@@ -287,6 +306,17 @@ void LFDropdown::updateTriggerText() {
 void LFDropdown::updateExpandedState() {
     if (!m_panelContainer) return;
 
+    if (m_displayMode == LFDropdownDisplayMode::Popup) {
+        if (m_expanded && !m_options.empty()) {
+            showPopupPanel();
+        } else {
+            hidePopupPanel();
+        }
+        updateTriggerText();
+        return;
+    }
+
+    ensureInlinePanelAttached();
     if (m_expanded && !m_options.empty()) {
         m_panelContainer->setHeight(resolvePanelHeight());
         m_panelContainer->setDisplay(YGDisplayFlex);
@@ -326,7 +356,171 @@ void LFDropdown::updateOptionStyles() {
     }
 }
 
+void LFDropdown::ensureInlinePanelAttached() {
+    if (!m_panelContainer) return;
+
+    if (m_panelContainer->getParent() != this) {
+        m_panelContainer->removeFromParent();
+        m_panelContainer->setPositionType(YGPositionTypeRelative);
+        m_panelContainer->setPosition(YGEdgeLeft, YGUndefined);
+        m_panelContainer->setPosition(YGEdgeTop, YGUndefined);
+        m_panelContainer->setPosition(YGEdgeRight, YGUndefined);
+        m_panelContainer->setPosition(YGEdgeBottom, YGUndefined);
+        m_panelContainer->setTranslate(0.0f, 0.0f);
+        m_panelContainer->setTranslatePercent(0.0f, 0.0f);
+        m_panelContainer->matchParentWidth();
+        LFNode::addChild(m_panelContainer);
+    }
+}
+
+void LFDropdown::ensurePopupOverlay() {
+    if (m_popupOverlay) return;
+
+    m_popupOverlay = LFOverlay::create();
+    m_popupOverlay->setVisible(false);
+    m_popupOverlay->setModal(true);
+    m_popupOverlay->setBarrierColor(0x00000000);
+    m_popupOverlay->setDismissOnBarrierTap(true);
+
+    std::weak_ptr<LFDropdown> weakSelf = std::static_pointer_cast<LFDropdown>(shared_from_this());
+    m_popupOverlay->setOnDismiss([weakSelf]() {
+        if (auto self = weakSelf.lock()) {
+            self->handlePopupDismissed();
+        }
+    });
+}
+
+void LFDropdown::showPopupPanel() {
+    if (!m_panelContainer || m_options.empty()) return;
+
+    ensurePopupOverlay();
+    if (!m_popupOverlay) return;
+
+    float x = 0.0f;
+    float y = 0.0f;
+    float width = 0.0f;
+    float height = 0.0f;
+    resolvePopupGeometry(x, y, width, height);
+
+    if (!almostEqual(m_popupResolvedX, x) ||
+        !almostEqual(m_popupResolvedY, y) ||
+        !almostEqual(m_popupResolvedWidth, width) ||
+        !almostEqual(m_popupResolvedHeight, height)) {
+        m_popupResolvedX = x;
+        m_popupResolvedY = y;
+        m_popupResolvedWidth = width;
+        m_popupResolvedHeight = height;
+        m_panelContainer->setWidth(width);
+        m_panelContainer->setHeight(height);
+    }
+
+    m_panelContainer->setDisplay(YGDisplayFlex);
+    m_popupOverlay->show(m_panelContainer, LFBoxAlign::TopLeft, x, y);
+}
+
+void LFDropdown::hidePopupPanel() {
+    if (m_popupOverlay && m_popupOverlay->isShowing()) {
+        m_popupOverlay->dismiss();
+    }
+
+    if (m_popupOverlay && m_popupOverlay->getParent()) {
+        m_popupOverlay->removeFromParent();
+    }
+
+    if (m_panelContainer) {
+        m_panelContainer->setDisplay(YGDisplayNone);
+    }
+}
+
+void LFDropdown::handlePopupDismissed() {
+    if (m_panelContainer) {
+        m_panelContainer->setDisplay(YGDisplayNone);
+    }
+
+    if (m_popupOverlay && m_popupOverlay->getParent()) {
+        m_popupOverlay->removeFromParent();
+    }
+
+    if (m_expanded) {
+        m_expanded = false;
+        updateTriggerText();
+    }
+}
+
 float LFDropdown::resolvePanelHeight() const {
     float desiredHeight = static_cast<float>(m_options.size()) * m_optionHeight;
     return std::min(desiredHeight, m_maxPanelHeight);
+}
+
+float LFDropdown::resolvePopupPanelWidth() const {
+    if (m_triggerButton && m_triggerButton->getLayoutWidth() > 0.0f) {
+        return m_triggerButton->getLayoutWidth();
+    }
+    if (getLayoutWidth() > 0.0f) {
+        return getLayoutWidth();
+    }
+    return 200.0f;
+}
+
+void LFDropdown::resolvePopupGeometry(float& x, float& y, float& width, float& height) const {
+    width = resolvePopupPanelWidth();
+    height = resolvePanelHeight();
+
+    float triggerX = m_triggerButton ? getAbsoluteX(m_triggerButton.get()) : getAbsoluteX(this);
+    float triggerY = m_triggerButton ? getAbsoluteY(m_triggerButton.get()) : getAbsoluteY(this);
+    float triggerHeight = m_triggerButton ? m_triggerButton->getLayoutHeight() : getLayoutHeight();
+
+    x = triggerX;
+    y = triggerY + triggerHeight + m_popupGap;
+
+    auto& engine = LFEngine::getInstance();
+    float windowWidth = engine.getWindowWidth();
+    float windowHeight = engine.getWindowHeight();
+
+    if (windowWidth > 0.0f) {
+        width = std::min(width, windowWidth);
+        if (x + width > windowWidth) {
+            x = std::max(0.0f, windowWidth - width);
+        }
+        x = std::max(0.0f, x);
+    }
+
+    if (windowHeight > 0.0f && y + height > windowHeight) {
+        float upwardY = triggerY - height - m_popupGap;
+        if (upwardY >= 0.0f) {
+            y = upwardY;
+        } else {
+            height = std::max(0.0f, windowHeight - y);
+        }
+    }
+}
+
+float LFDropdown::getAbsoluteX(const LFNode* node) const {
+    float x = 0.0f;
+    const LFNode* current = node;
+    while (current) {
+        x += current->getLayoutX();
+        const auto& transform = current->getTransform();
+        x += transform.translateX;
+        x += current->getLayoutWidth() * (transform.translatePercentX / 100.0f);
+        current = current->getParent();
+    }
+    return x;
+}
+
+float LFDropdown::getAbsoluteY(const LFNode* node) const {
+    float y = 0.0f;
+    const LFNode* current = node;
+    while (current) {
+        y += current->getLayoutY();
+        const auto& transform = current->getTransform();
+        y += transform.translateY;
+        y += current->getLayoutHeight() * (transform.translatePercentY / 100.0f);
+        current = current->getParent();
+    }
+    return y;
+}
+
+bool LFDropdown::almostEqual(float a, float b) {
+    return std::fabs(a - b) <= 0.001f;
 }
