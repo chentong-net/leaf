@@ -39,7 +39,6 @@ void LFDropdown::initLayout() {
     std::weak_ptr<LFDropdown> weakSelf = std::static_pointer_cast<LFDropdown>(shared_from_this());
     m_triggerButton->setOnClick([weakSelf](LFButton*) {
         if (auto self = weakSelf.lock()) {
-            self->requestFocus();
             self->toggle();
         }
     });
@@ -67,35 +66,6 @@ void LFDropdown::initLayout() {
     m_scrollView->addChild(m_optionsContainer);
     m_panelContainer->addChild(m_scrollView, LFBoxAlign::MatchParent);
     addChild(m_panelContainer);
-
-    setFocusable(true);
-    setOnKeyDown([weakSelf](LFKeyEvent& event) {
-        auto self = weakSelf.lock();
-        if (!self || !self->isEnabled()) return;
-
-        if (event.keyCode == LFKeyCode::Enter) {
-            self->toggle();
-            event.stopPropagation();
-        } else if (event.keyCode == LFKeyCode::Escape) {
-            self->collapse();
-            event.stopPropagation();
-        } else if (event.keyCode == LFKeyCode::Down) {
-            int next = self->getSelectedIndex() + 1;
-            if (next < 0) next = 0;
-            if (next < static_cast<int>(self->getOptions().size())) {
-                self->setSelectedIndex(next);
-                self->expand();
-            }
-            event.stopPropagation();
-        } else if (event.keyCode == LFKeyCode::Up) {
-            int prev = self->getSelectedIndex() - 1;
-            if (prev >= 0) {
-                self->setSelectedIndex(prev);
-                self->expand();
-            }
-            event.stopPropagation();
-        }
-    });
 
     updateTriggerText();
 }

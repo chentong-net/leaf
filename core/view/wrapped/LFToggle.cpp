@@ -61,9 +61,6 @@ void LFToggle::setEnabled(bool enabled) {
     if (m_enabled == enabled) return;
 
     m_enabled = enabled;
-    if (!m_enabled && hasFocus()) {
-        clearFocus();
-    }
     applyVisualProgress(m_visualProgress);
 }
 
@@ -157,7 +154,6 @@ void LFToggle::onAfterCalculateLayout() {
 void LFToggle::initLayout() {
     setWidth(m_trackWidth);
     setHeight(m_trackHeight);
-    setFocusable(true);
     setTouchEnabled(true);
 
     m_thumb = LFBox::create();
@@ -169,29 +165,9 @@ void LFToggle::initLayout() {
 }
 
 void LFToggle::initInteractions() {
-    setOnTouchDown([this](const LFTouchEvent&) {
-        if (!m_enabled) return;
-        requestFocus();
-    });
-
     setOnTap([this](const LFPoint&) {
         if (!m_enabled) return;
         toggle(true, true);
-    });
-
-    setOnKeyDown([this](LFKeyEvent& event) {
-        if (!m_enabled) return;
-
-        if (event.keyCode == LFKeyCode::Enter) {
-            toggle(true, true);
-            event.stopPropagation();
-        } else if (event.keyCode == LFKeyCode::Left) {
-            setChecked(false, true, true);
-            event.stopPropagation();
-        } else if (event.keyCode == LFKeyCode::Right) {
-            setChecked(true, true, true);
-            event.stopPropagation();
-        }
     });
 }
 
