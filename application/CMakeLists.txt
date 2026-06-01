@@ -6,6 +6,7 @@ set(EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../examples)
 set(PLUGINS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../plugins)
 
 add_subdirectory(${EXAMPLES_DIR}/my_profile my_profile_build)
+add_subdirectory(${EXAMPLES_DIR}/component_lab component_lab_build)
 add_subdirectory(${EXAMPLES_DIR}/reader_app reader_app_build)
 add_subdirectory(${PLUGINS_DIR}/file_picker file_picker_build)
 add_subdirectory(${PLUGINS_DIR}/path_provider path_provider_build)
@@ -24,6 +25,7 @@ target_include_directories(app-adapter
 target_link_libraries(app-adapter
         PRIVATE
         leaf-core
+        component-lab
         reader-app
         my-profile
         file-picker
