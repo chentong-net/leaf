@@ -347,14 +347,22 @@ void LFAudioPlayer::stop() {
 void LFAudioPlayer::seek(double positionSeconds) {
     if (positionSeconds < 0.0) positionSeconds = 0.0;
 #if defined(_WIN32)
+    bool shouldResumePlayback = false;
+    bool seekSucceeded = true;
     if (m_platform && !m_platform->alias.empty()) {
-        sendMci("seek " + m_platform->alias + " to " + std::to_string(static_cast<int>(positionSeconds * 1000.0)));
+        shouldResumePlayback = queryMciPlaying(m_platform->alias);
+        seekSucceeded = sendMci("seek " + m_platform->alias + " to " + std::to_string(static_cast<int>(positionSeconds * 1000.0)));
     }
 #endif
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_positionSeconds = positionSeconds;
     }
+#if defined(_WIN32)
+    if (seekSucceeded && shouldResumePlayback) {
+        play();
+    }
+#endif
 }
 
 void LFAudioPlayer::setLooping(bool looping) {
