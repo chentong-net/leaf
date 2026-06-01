@@ -21,4 +21,6 @@ target_link_libraries(component-lab
         PUBLIC
         leaf-core
         my-profile
+        audio-player
+        path-provider
 )

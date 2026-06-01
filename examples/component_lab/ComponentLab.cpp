@@ -1,9 +1,14 @@
 #include "ComponentLab.h"
 #include "LFEngine.h"
+#include "LFAudioPlayer.h"
+#include "LFPathProvider.h"
 #include "ProfilePage.h"
 
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -96,6 +101,124 @@ void setTextFormat(const std::shared_ptr<LFText>& text, const char* format, floa
     char buffer[96];
     std::snprintf(buffer, sizeof(buffer), format, value);
     text->setText(buffer);
+}
+
+std::string formatAudioTime(double seconds) {
+    if (seconds < 0.0) {
+        seconds = 0.0;
+    }
+
+    const int totalSeconds = static_cast<int>(seconds + 0.5);
+    const int minutes = totalSeconds / 60;
+    const int remainingSeconds = totalSeconds % 60;
+
+    char buffer[32];
+    std::snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes, remainingSeconds);
+    return buffer;
+}
+
+std::string formatAudioProgress(double positionSeconds, double durationSeconds) {
+    return formatAudioTime(positionSeconds) + " / " + formatAudioTime(durationSeconds);
+}
+
+bool writeBinaryFile(const std::filesystem::path& path, const std::shared_ptr<LFData>& data) {
+    if (!data || !data->data || data->size == 0) {
+        return false;
+    }
+
+    std::ofstream output(path, std::ios::binary | std::ios::trunc);
+    if (!output.is_open()) {
+        return false;
+    }
+
+    output.write(reinterpret_cast<const char*>(data->data), static_cast<std::streamsize>(data->size));
+    return output.good();
+}
+
+struct AudioDemoState {
+    std::shared_ptr<LFAudioPlayer> player;
+    bool ready = false;
+    bool durationResolved = false;
+    bool playing = false;
+    bool dragging = false;
+    double durationSeconds = 0.0;
+    double playbackPositionSeconds = 0.0;
+    double dragPreviewPositionSeconds = 0.0;
+    double playStartEngineTime = 0.0;
+    double playStartPositionSeconds = 0.0;
+    double nextDurationProbeTime = 0.0;
+    std::string tempAudioPath;
+};
+
+double resolveAudioPosition(const std::shared_ptr<AudioDemoState>& state) {
+    if (!state) {
+        return 0.0;
+    }
+
+    double position = state->playbackPositionSeconds;
+    if (state->playing) {
+        const double elapsed = LFEngine::getInstance().getElapsedTime() - state->playStartEngineTime;
+        position = state->playStartPositionSeconds + elapsed;
+
+        if (state->durationSeconds > 0.0) {
+            position = std::fmod(position, state->durationSeconds);
+            if (position < 0.0) {
+                position += state->durationSeconds;
+            }
+        }
+    }
+
+    if (state->durationSeconds > 0.0) {
+        position = std::clamp(position, 0.0, state->durationSeconds);
+    } else if (position < 0.0) {
+        position = 0.0;
+    }
+
+    return position;
+}
+
+void syncAudioProgress(const std::shared_ptr<AudioDemoState>& state,
+                       const LFSlider::Ptr& slider,
+                       const std::shared_ptr<LFText>& progressText) {
+    if (!state || !slider || !progressText || !state->ready) {
+        return;
+    }
+
+    const double duration = state->durationSeconds > 0.0 ? state->durationSeconds : 1.0;
+    const double position = state->dragging ? state->dragPreviewPositionSeconds : resolveAudioPosition(state);
+
+    slider->setRange(0.0f, static_cast<float>(duration));
+    if (!state->dragging) {
+        slider->setValue(static_cast<float>(position), false);
+        state->playbackPositionSeconds = position;
+    }
+
+    progressText->setText(formatAudioProgress(position, duration));
+}
+
+void commitAudioSeek(const std::shared_ptr<AudioDemoState>& state,
+                     const LFSlider::Ptr& slider,
+                     const std::shared_ptr<LFText>& progressText) {
+    if (!state || !slider || !state->player || !state->ready) {
+        return;
+    }
+
+    double nextPosition = static_cast<double>(slider->getValue());
+    if (state->durationSeconds > 0.0) {
+        nextPosition = std::clamp(nextPosition, 0.0, state->durationSeconds);
+    } else if (nextPosition < 0.0) {
+        nextPosition = 0.0;
+    }
+
+    state->playbackPositionSeconds = nextPosition;
+    state->playStartPositionSeconds = nextPosition;
+    state->playStartEngineTime = LFEngine::getInstance().getElapsedTime();
+
+    state->player->seek(nextPosition);
+    if (progressText) {
+        const double duration = state->durationSeconds > 0.0 ? state->durationSeconds : 1.0;
+        progressText->setText(formatAudioProgress(nextPosition, duration));
+    }
 }
 
 LFLinear::Ptr buildFunctionDemoPage() {
@@ -449,6 +572,219 @@ LFLinear::Ptr buildFunctionDemoPage() {
     sliderCard->addChild(sliderButtons);
 
     page->addChild(sliderCard);
+
+    auto audioCard = makeSectionCard(
+        "LFAudioPlayer",
+        "Loads test-music.mp3 through LFResourceProvider, writes it to a temporary file, and tests looping playback with drag-end seek."
+    );
+
+    auto audioStatus = makeText("Audio: loading...", 13.0f, 0xFF475569);
+    audioStatus->matchParentWidth();
+    audioCard->addChild(audioStatus);
+
+    auto audioProgress = makeText("00:00 / 00:00", 14.0f, 0xFF1D4ED8);
+    audioProgress->matchParentWidth();
+    audioCard->addChild(audioProgress);
+
+    auto audioSlider = LFSlider::create(0.0f, 1.0f, 0.0f);
+    audioSlider->matchParentWidth();
+    audioSlider->setTrackThickness(8.0f);
+    audioSlider->setThumbDiameter(22.0f);
+    audioSlider->setTrackColor(0xFFE2E8F0);
+    audioSlider->setProgressColor(0xFF2563EB);
+    audioSlider->setThumbColor(0xFFFFFFFF);
+    audioSlider->setEnabled(false);
+    audioCard->addChild(audioSlider);
+
+    auto audioButton = makeActionButton("播放/暂停", nullptr);
+    audioButton->setFontSize(13.0f);
+    audioButton->setEnabled(false);
+    audioCard->addChild(audioButton);
+
+    auto audioState = std::make_shared<AudioDemoState>();
+    audioState->player = LFAudioPlayer::create();
+
+    std::weak_ptr<AudioDemoState> weakAudioState = audioState;
+    std::weak_ptr<LFSlider> weakAudioSlider = audioSlider;
+    std::weak_ptr<LFText> weakAudioStatus = audioStatus;
+    std::weak_ptr<LFText> weakAudioProgress = audioProgress;
+    std::weak_ptr<LFButton> weakAudioButton = audioButton;
+
+    audioState->player->setOnError([weakAudioState, weakAudioStatus, weakAudioButton, weakAudioSlider](const LFAudioPlayerEvent&) {
+        auto state = weakAudioState.lock();
+        auto status = weakAudioStatus.lock();
+        auto button = weakAudioButton.lock();
+        auto slider = weakAudioSlider.lock();
+
+        if (state) {
+            state->ready = false;
+            state->playing = false;
+            state->dragging = false;
+        }
+
+        if (status) {
+            status->setText("Audio: load failed");
+        }
+        if (button) {
+            button->setEnabled(false);
+        }
+        if (slider) {
+            slider->setEnabled(false);
+        }
+    });
+
+    audioSlider->setOnDragBegin([audioState](float value) {
+        audioState->dragging = true;
+        audioState->dragPreviewPositionSeconds = static_cast<double>(value);
+    });
+
+    audioSlider->setOnValueChanged([audioState, weakAudioProgress](float value) {
+        if (audioState->dragging) {
+            audioState->dragPreviewPositionSeconds = static_cast<double>(value);
+            if (auto progress = weakAudioProgress.lock()) {
+                const double duration = audioState->durationSeconds > 0.0 ? audioState->durationSeconds : 1.0;
+                progress->setText(formatAudioProgress(audioState->dragPreviewPositionSeconds, duration));
+            }
+        }
+    });
+
+    audioSlider->setOnDragEnd([audioState, weakAudioSlider, weakAudioProgress](float value) {
+        auto slider = weakAudioSlider.lock();
+        audioState->dragging = false;
+        audioState->dragPreviewPositionSeconds = static_cast<double>(value);
+        if (slider) {
+            commitAudioSeek(audioState, slider, weakAudioProgress.lock());
+        }
+    });
+
+    audioButton->setOnClick([audioState, weakAudioStatus, weakAudioSlider, weakAudioProgress](LFButton*) {
+        auto status = weakAudioStatus.lock();
+        auto slider = weakAudioSlider.lock();
+        auto progress = weakAudioProgress.lock();
+        if (!audioState->player || !audioState->ready) {
+            return;
+        }
+
+        if (audioState->playing) {
+            audioState->playbackPositionSeconds = resolveAudioPosition(audioState);
+            audioState->playStartPositionSeconds = audioState->playbackPositionSeconds;
+            audioState->player->pause();
+            audioState->playing = false;
+            if (status) {
+                status->setText("Audio: paused");
+            }
+        } else {
+            audioState->playStartPositionSeconds = audioState->playbackPositionSeconds;
+            audioState->playStartEngineTime = LFEngine::getInstance().getElapsedTime();
+            audioState->player->play();
+            audioState->playing = true;
+            if (status) {
+                status->setText("Audio: playing");
+            }
+        }
+
+        if (slider && progress) {
+            syncAudioProgress(audioState, slider, progress);
+        }
+    });
+
+    page->addChild(audioCard);
+
+    LFPathProvider::getTemporaryPath([weakAudioState, weakAudioStatus, weakAudioSlider, weakAudioProgress, weakAudioButton](const LFPathProviderResult& result) {
+        auto state = weakAudioState.lock();
+        auto status = weakAudioStatus.lock();
+        auto slider = weakAudioSlider.lock();
+        auto progress = weakAudioProgress.lock();
+        auto button = weakAudioButton.lock();
+        if (!state || !status || !slider || !progress || !button || !state->player) {
+            return;
+        }
+
+        std::filesystem::path tempDir;
+        if (result.ok && !result.path.empty()) {
+            tempDir = std::filesystem::u8path(result.path);
+        } else {
+            std::error_code ec;
+            tempDir = std::filesystem::temp_directory_path(ec);
+            if (ec) {
+                status->setText("Audio: load failed");
+                return;
+            }
+        }
+
+        const std::filesystem::path tempAudioPath = tempDir / "leaf_component_lab_test_music.mp3";
+        state->tempAudioPath = tempAudioPath.u8string();
+
+        LFResourceProvider::getInstance().fetchAsset("test-music.mp3", [weakAudioState, weakAudioStatus, weakAudioSlider, weakAudioProgress, weakAudioButton, tempAudioPath](std::shared_ptr<LFData> data) {
+            auto state = weakAudioState.lock();
+            auto status = weakAudioStatus.lock();
+            auto slider = weakAudioSlider.lock();
+            auto progress = weakAudioProgress.lock();
+            auto button = weakAudioButton.lock();
+            if (!state || !status || !slider || !progress || !button || !state->player) {
+                return;
+            }
+
+            if (!writeBinaryFile(tempAudioPath, data)) {
+                status->setText("Audio: load failed");
+                button->setEnabled(false);
+                slider->setEnabled(false);
+                return;
+            }
+
+            state->player->setLooping(true);
+            state->player->setVolume(1.0f);
+            state->player->setSource(tempAudioPath.u8string());
+
+#if defined(__DESKTOP__)
+            state->durationSeconds = state->player->getDuration();
+            state->durationResolved = state->durationSeconds > 0.0;
+            if (state->durationSeconds <= 0.0) {
+                state->durationSeconds = 1.0;
+            }
+#else
+            state->durationSeconds = 1.0;
+            state->durationResolved = false;
+#endif
+            state->playbackPositionSeconds = 0.0;
+            state->dragPreviewPositionSeconds = 0.0;
+            state->playStartPositionSeconds = 0.0;
+            state->playStartEngineTime = LFEngine::getInstance().getElapsedTime();
+            state->nextDurationProbeTime = state->playStartEngineTime + 0.2;
+            state->ready = true;
+            state->playing = false;
+            state->dragging = false;
+
+            slider->setEnabled(true);
+            button->setEnabled(true);
+            status->setText("Audio: ready");
+            syncAudioProgress(state, slider, progress);
+        });
+    });
+
+    LFEngine::getInstance().addFrameTask([weakAudioState, weakAudioSlider, weakAudioProgress]() mutable {
+        auto state = weakAudioState.lock();
+        auto slider = weakAudioSlider.lock();
+        auto progress = weakAudioProgress.lock();
+        if (!state || !slider || !progress) {
+            return false;
+        }
+
+        if (state->ready) {
+            const double now = LFEngine::getInstance().getElapsedTime();
+            if (!state->durationResolved && state->player && now >= state->nextDurationProbeTime) {
+                state->nextDurationProbeTime = now + 0.5;
+                const double duration = state->player->getDuration();
+                if (duration > 0.0) {
+                    state->durationResolved = true;
+                    state->durationSeconds = duration;
+                }
+            }
+            syncAudioProgress(state, slider, progress);
+        }
+
+        return true;
+    });
 
     std::weak_ptr<LFOverlay> weakOverlay = overlay;
     auto showCenter = makeActionButton("Center", [weakOverlay, overlayStatus](LFButton*) {
