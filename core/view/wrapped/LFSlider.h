@@ -22,6 +22,7 @@ class LFSlider : public LFBox {
 public:
     using Ptr = std::shared_ptr<LFSlider>;
     using ValueChangedCallback = std::function<void(float value)>;
+    using DragCallback = std::function<void(float value)>;
 
     static Ptr create(float minValue = 0.0f, float maxValue = 1.0f, float value = 0.0f);
 
@@ -54,6 +55,8 @@ public:
     void setDisabledOpacity(float opacity);
 
     void setOnValueChanged(ValueChangedCallback callback);
+    void setOnDragBegin(DragCallback callback);
+    void setOnDragEnd(DragCallback callback);
 
     LFBox::Ptr getTrackNode() const { return m_track; }
     LFBox::Ptr getProgressNode() const { return m_progress; }
@@ -87,6 +90,8 @@ private:
     LFBox::Ptr m_progress;
     LFBox::Ptr m_thumb;
     ValueChangedCallback m_onValueChanged;
+    DragCallback m_onDragBegin;
+    DragCallback m_onDragEnd;
 
     float m_minValue = 0.0f;
     float m_maxValue = 1.0f;

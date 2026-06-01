@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace {
 
@@ -146,6 +147,14 @@ void LFSlider::setOnValueChanged(ValueChangedCallback callback) {
     m_onValueChanged = std::move(callback);
 }
 
+void LFSlider::setOnDragBegin(DragCallback callback) {
+    m_onDragBegin = std::move(callback);
+}
+
+void LFSlider::setOnDragEnd(DragCallback callback) {
+    m_onDragEnd = std::move(callback);
+}
+
 void LFSlider::onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {
     syncVisualState();
     LFBox::onBeforeCalculateLayout(ownerWidth, ownerHeight);
@@ -189,6 +198,10 @@ void LFSlider::initInteractions() {
         if (!m_enabled) return;
         m_isDragging = true;
 
+        if (m_onDragBegin) {
+            m_onDragBegin(m_value);
+        }
+
         if (const auto* touch = event.getPrimaryTouch()) {
             updateStateFromLocalX(toLocalPoint(*touch).x, true, false);
         }
@@ -210,6 +223,9 @@ void LFSlider::initInteractions() {
             updateStateFromLocalX(toLocalPoint(*touch).x, false, false);
         }
         setValue(m_value, true);
+        if (m_onDragEnd) {
+            m_onDragEnd(m_value);
+        }
     });
 
     setOnTouchCancel([this](const LFTouchEvent&) {
