@@ -25,5 +25,7 @@ include ':leaf-android'
 include ':leaf-plugin'
 include ':file-picker'
 include ':path-provider'
+include ':audio-player'
 project(':file-picker').projectDir = new File('../plugins/file_picker/android/module')
 project(':path-provider').projectDir = new File('../plugins/path_provider/android/module')
+project(':audio-player').projectDir = new File('../plugins/audio_player/android/module')

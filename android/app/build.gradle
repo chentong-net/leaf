@@ -35,4 +35,5 @@ dependencies {
     implementation project(':leaf-plugin')
     implementation project(':file-picker')
     implementation project(':path-provider')
+    implementation project(':audio-player')
 }

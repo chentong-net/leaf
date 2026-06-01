@@ -10,6 +10,7 @@ add_subdirectory(${EXAMPLES_DIR}/component_lab component_lab_build)
 add_subdirectory(${EXAMPLES_DIR}/reader_app reader_app_build)
 add_subdirectory(${PLUGINS_DIR}/file_picker file_picker_build)
 add_subdirectory(${PLUGINS_DIR}/path_provider path_provider_build)
+add_subdirectory(${PLUGINS_DIR}/audio_player audio_player_build)
 
 add_library(app-adapter STATIC
         AppLaunch.cpp
@@ -30,4 +31,5 @@ target_link_libraries(app-adapter
         my-profile
         file-picker
         path-provider
+        audio-player
 )
