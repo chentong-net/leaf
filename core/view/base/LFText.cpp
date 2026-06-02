@@ -35,19 +35,35 @@ const std::string& LFText::getWrappedText(NVGcontext* vg, float wrapWidth) {
     constexpr int kBatchRows = 16;
     NVGtextRow rows[kBatchRows];
     const char* cursor = m_text.c_str();
+    int appendedLineCount = 0;
 
     while (cursor && *cursor != '\0') {
         int nrows = nvgTextBreakLines(vg, cursor, nullptr, wrapWidth, rows, kBatchRows);
         if (nrows <= 0) break;
 
         for (int i = 0; i < nrows; ++i) {
+            if (m_hasMaxLinesConfigured && m_maxLines > 0 && appendedLineCount >= m_maxLines) {
+                break;
+            }
+
             const NVGtextRow& row = rows[i];
             if (row.end > row.start) {
                 m_wrappedTextCache.append(row.start, static_cast<size_t>(row.end - row.start));
             }
-            if (row.next && *row.next != '\0') {
+            appendedLineCount++;
+
+            if ((!m_hasMaxLinesConfigured || m_maxLines <= 0) &&
+                row.next && *row.next != '\0') {
                 m_wrappedTextCache.push_back('\n');
+            } else if (m_hasMaxLinesConfigured && m_maxLines > 0) {
+                if (appendedLineCount < m_maxLines && row.next && *row.next != '\0') {
+                    m_wrappedTextCache.push_back('\n');
+                }
             }
+        }
+
+        if (m_hasMaxLinesConfigured && m_maxLines > 0 && appendedLineCount >= m_maxLines) {
+            break;
         }
 
         const char* next = rows[nrows - 1].next;
@@ -118,6 +134,16 @@ void LFText::setTextVAlign(LFTextVAlign align) {
     markDirty();
 }
 
+void LFText::setMaxLines(int maxLines) {
+    int safeMaxLines = std::max(0, maxLines);
+    if (m_hasMaxLinesConfigured && m_maxLines == safeMaxLines) return;
+    m_maxLines = safeMaxLines;
+    m_hasMaxLinesConfigured = true;
+    invalidateWrapCache();
+    YGNodeMarkDirty(getYGNode());
+    markDirty();
+}
+
 /**
  * 测量回调：告诉 Yoga 这段文字到底有多大
  */
@@ -162,20 +188,33 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
     // 统一以 LEFT|TOP 测量，再由外部逻辑处理对齐。
     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
 
-    if (widthMode == YGMeasureModeExactly) {
-        // 宽度固定：计算在该宽度下的高度 (自动换行)
-        nvgTextBoxBounds(vg, 0, 0, width, textNode->m_text.c_str(), nullptr, bounds);
-        result.width = width;
-        result.height = (float) ceil(bounds[3] - bounds[1]);
-    } else if (widthMode == YGMeasureModeAtMost) {
-        // 宽度受限 (最大不能超过 width)：尝试在该宽度下测量
-        nvgTextBoxBounds(vg, 0, 0, width, textNode->m_text.c_str(), nullptr, bounds);
-        result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
-        result.height = (float) ceil(bounds[3] - bounds[1]);
+    if (!textNode->m_hasMaxLinesConfigured || textNode->m_maxLines <= 0) {
+        if (widthMode == YGMeasureModeExactly) {
+            // 宽度固定：计算在该宽度下的高度 (自动换行)
+            nvgTextBoxBounds(vg, 0, 0, width, textNode->m_text.c_str(), nullptr, bounds);
+            result.width = width;
+            result.height = (float) ceil(bounds[3] - bounds[1]);
+        } else if (widthMode == YGMeasureModeAtMost) {
+            // 宽度受限 (最大不能超过 width)：尝试在该宽度下测量
+            nvgTextBoxBounds(vg, 0, 0, width, textNode->m_text.c_str(), nullptr, bounds);
+            result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
+            result.height = (float) ceil(bounds[3] - bounds[1]);
+        } else {
+            // 宽度无限：保留原始文本自然宽度测量
+            nvgTextBounds(vg, 0, 0, textNode->m_text.c_str(), nullptr, bounds);
+            result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
+            result.height = (float) ceil(bounds[3] - bounds[1]);
+        }
     } else {
-        // 宽度无限：保留原始文本自然宽度测量
-        nvgTextBounds(vg, 0, 0, textNode->m_text.c_str(), nullptr, bounds);
-        result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
+        float measureWrapWidth = (widthMode == YGMeasureModeUndefined) ? 1000000.0f : width;
+        const std::string& visibleText = textNode->getWrappedText(vg, measureWrapWidth);
+        nvgTextBoxBounds(vg, 0, 0, measureWrapWidth, visibleText.c_str(), nullptr, bounds);
+
+        if (widthMode == YGMeasureModeExactly) {
+            result.width = width;
+        } else {
+            result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
+        }
         result.height = (float) ceil(bounds[3] - bounds[1]);
     }
 

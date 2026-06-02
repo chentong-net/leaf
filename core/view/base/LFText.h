@@ -26,6 +26,7 @@ public:
     void setFontFamily(const std::string& family);
     void setTextHAlign(LFTextHAlign align);
     void setTextVAlign(LFTextVAlign align);
+    void setMaxLines(int maxLines);
 
     /**
      * 设置全局测量上下文
@@ -56,6 +57,8 @@ private:
     std::string m_fontFamily = "sans";
     LFTextHAlign m_textHAlign = LFTextHAlign::Left;
     LFTextVAlign m_textVAlign = LFTextVAlign::Top;
+    int m_maxLines = 0;
+    bool m_hasMaxLinesConfigured = false;
     std::string m_wrappedTextCache;
     float m_wrappedWidthCache = -1.0f;
     bool m_wrapCacheValid = false;
