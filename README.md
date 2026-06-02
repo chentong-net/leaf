@@ -72,6 +72,9 @@ xxx # plugin name (e.g., file_picker)
 - [x] LFListView
 - [x] LFInput
 - [ ] Overlay / popup layer
+    - [x] Simple overlay
+    - [x] Dropdown
+- [ ] Plugin resource merging/packaging script
 - [ ] External texture support
 - [ ] Network image loading support
 - [x] Plugin mechanism

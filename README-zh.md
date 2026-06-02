@@ -72,6 +72,9 @@ xxx # 插件名（如：file_picker）
 - [x] LFListView
 - [x] LFInput
 - [ ] 弹出层
+    - [x] 简单弹窗
+    - [x] LFDropdown
+- [ ] 插件资源合并打包脚本
 - [ ] 扩展纹理
 - [ ] 支持加载网络图片
 - [x] 插件机制
