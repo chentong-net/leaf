@@ -21,6 +21,8 @@ target_link_libraries(component-lab
         PUBLIC
         leaf-core
         my-profile
+        checkbox
         audio-player
         path-provider
+        radio-group
 )

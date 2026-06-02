@@ -1,7 +1,9 @@
 #include "ComponentLab.h"
 #include "LFEngine.h"
 #include "LFAudioPlayer.h"
+#include "LFCheckbox.h"
 #include "LFPathProvider.h"
+#include "LFRadioGroup.h"
 #include "ProfilePage.h"
 
 #include <cstdio>
@@ -241,7 +243,7 @@ LFLinear::Ptr buildFunctionDemoPage() {
     page->addChild(title);
 
     auto description = makeText(
-        "Use this page to validate LFDropdown, LFToggle, LFOverlay, and LFSlider across layout, state, disabled, and interaction cases.",
+        "Use this page to validate LFDropdown, LFToggle, LFCheckbox, LFRadioGroup, LFOverlay, LFSlider, and LFAudioPlayer across layout, state, disabled, and interaction cases.",
         14.0f,
         0xFF637083
     );
@@ -453,6 +455,142 @@ LFLinear::Ptr buildFunctionDemoPage() {
     toggleCard->addChild(toggleControls);
 
     page->addChild(toggleCard);
+
+    auto choiceCard = makeSectionCard(
+        "LFCheckbox / LFRadioGroup",
+        "Covers whole-row click, checked callback, programmatic state changes, horizontal and vertical radio layouts, clearing selection, and disabled state."
+    );
+
+    auto checkboxStatus = makeText("Checked options: Remember learned words", 14.0f, 0xFF3567A3);
+    checkboxStatus->matchParentWidth();
+    choiceCard->addChild(checkboxStatus);
+
+    auto rememberCheckbox = LFCheckbox::create("Remember learned words", true);
+    rememberCheckbox->matchParentWidth();
+    rememberCheckbox->setBoxSize(22.0f);
+    rememberCheckbox->setTextColor(0xFF334155, 0xFF0F5B99);
+    rememberCheckbox->setIndicatorColor(0xFFFFFFFF, 0xFF2563EB);
+    rememberCheckbox->setBorderColor(0xFFCBD5E1, 0xFF2563EB);
+    choiceCard->addChild(rememberCheckbox);
+
+    auto pronunciationCheckbox = LFCheckbox::create("Auto play pronunciation", false);
+    pronunciationCheckbox->matchParentWidth();
+    pronunciationCheckbox->setBoxSize(22.0f);
+    pronunciationCheckbox->setIndicatorColor(0xFFFFFFFF, 0xFF0EA5E9);
+    pronunciationCheckbox->setBorderColor(0xFFCBD5E1, 0xFF0284C7);
+    pronunciationCheckbox->setTextColor(0xFF334155, 0xFF0369A1);
+    choiceCard->addChild(pronunciationCheckbox);
+
+    auto disabledCheckbox = LFCheckbox::create("Disabled checkbox", true);
+    disabledCheckbox->matchParentWidth();
+    disabledCheckbox->setEnabled(false);
+    disabledCheckbox->setDisabledOpacity(0.32f);
+    choiceCard->addChild(disabledCheckbox);
+
+    auto updateCheckboxStatus = [checkboxStatus, rememberCheckbox, pronunciationCheckbox]() {
+        std::string summary = "Checked options:";
+        bool hasAny = false;
+        if (rememberCheckbox->isChecked()) {
+            summary += " Remember learned words";
+            hasAny = true;
+        }
+        if (pronunciationCheckbox->isChecked()) {
+            summary += hasAny ? " | Auto play pronunciation" : " Auto play pronunciation";
+            hasAny = true;
+        }
+        if (!hasAny) {
+            summary += " none";
+        }
+        checkboxStatus->setText(summary);
+    };
+
+    rememberCheckbox->setOnCheckedChanged([updateCheckboxStatus](bool) {
+        updateCheckboxStatus();
+    });
+    pronunciationCheckbox->setOnCheckedChanged([updateCheckboxStatus](bool) {
+        updateCheckboxStatus();
+    });
+
+    auto checkboxControls = makeRow();
+    auto enableAllCheckboxes = makeActionButton("Check All", [rememberCheckbox, pronunciationCheckbox](LFButton*) {
+        rememberCheckbox->setChecked(true);
+        pronunciationCheckbox->setChecked(true);
+    });
+    auto clearAllCheckboxes = makeActionButton("Clear All", [rememberCheckbox, pronunciationCheckbox](LFButton*) {
+        rememberCheckbox->setChecked(false);
+        pronunciationCheckbox->setChecked(false);
+    });
+    enableAllCheckboxes->setFlexGrow(1.0f);
+    clearAllCheckboxes->setFlexGrow(1.0f);
+    checkboxControls->addChild(enableAllCheckboxes);
+    checkboxControls->addChild(clearAllCheckboxes);
+    choiceCard->addChild(checkboxControls);
+
+    auto radioStatus = makeText("Vertical radio: Normal", 14.0f, 0xFF7C3AED);
+    radioStatus->matchParentWidth();
+    choiceCard->addChild(radioStatus);
+
+    auto difficultyGroup = LFRadioGroup::create({"Easy", "Normal", "Hard"});
+    difficultyGroup->matchParentWidth();
+    difficultyGroup->setSelectedIndex(1, false);
+    difficultyGroup->setOptionSpacing(8.0f);
+    difficultyGroup->setItemSpacing(10.0f);
+    difficultyGroup->setIndicatorColor(0xFFFFFFFF, 0xFFF3E8FF);
+    difficultyGroup->setBorderColor(0xFFD8B4FE, 0xFF7C3AED);
+    difficultyGroup->setTextColor(0xFF334155, 0xFF6D28D9);
+    difficultyGroup->setItemBackgroundColor(0x00000000, 0x122563EB);
+    difficultyGroup->setOnSelectionChanged([radioStatus](int, const std::string& value) {
+        radioStatus->setText("Vertical radio: " + value);
+    });
+    choiceCard->addChild(difficultyGroup);
+
+    auto horizontalStatus = makeText("Horizontal radio: English -> Chinese", 14.0f, 0xFF0F766E);
+    horizontalStatus->matchParentWidth();
+    choiceCard->addChild(horizontalStatus);
+
+    auto modeGroup = LFRadioGroup::create({"English -> Chinese", "Chinese -> English", "Spelling"});
+    modeGroup->setOptionDirection(LFOrientation::Horizontal);
+    modeGroup->setOptionSpacing(12.0f);
+    modeGroup->setItemSpacing(8.0f);
+    modeGroup->setSelectedIndex(0, false);
+    modeGroup->setIndicatorSize(18.0f);
+    modeGroup->setInnerDotSize(8.0f);
+    modeGroup->setIndicatorColor(0xFFFFFFFF, 0xFFE6FFFB);
+    modeGroup->setBorderColor(0xFF99F6E4, 0xFF0F766E);
+    modeGroup->setTextColor(0xFF334155, 0xFF0F766E);
+    modeGroup->setItemBackgroundColor(0x00000000, 0x140F766E);
+    modeGroup->setOnSelectionChanged([horizontalStatus](int, const std::string& value) {
+        horizontalStatus->setText("Horizontal radio: " + value);
+    });
+    choiceCard->addChild(modeGroup);
+
+    auto disabledGroup = LFRadioGroup::create({"Disabled A", "Disabled B"});
+    disabledGroup->matchParentWidth();
+    disabledGroup->setSelectedIndex(0, false);
+    disabledGroup->setEnabled(false);
+    disabledGroup->setDisabledOpacity(0.32f);
+    choiceCard->addChild(disabledGroup);
+
+    auto radioControls = makeRow();
+    auto selectHard = makeActionButton("Select Hard", [difficultyGroup](LFButton*) {
+        difficultyGroup->setSelectedIndex(2);
+    });
+    auto clearRadio = makeActionButton("Clear Radio", [difficultyGroup, radioStatus](LFButton*) {
+        difficultyGroup->clearSelection(false);
+        radioStatus->setText("Vertical radio: none");
+    });
+    auto selectSpelling = makeActionButton("Select Spelling", [modeGroup](LFButton*) {
+        modeGroup->setSelectedIndex(2);
+    });
+    selectHard->setFlexGrow(1.0f);
+    clearRadio->setFlexGrow(1.0f);
+    selectSpelling->setFlexGrow(1.0f);
+    radioControls->addChild(selectHard);
+    radioControls->addChild(clearRadio);
+    radioControls->addChild(selectSpelling);
+    choiceCard->addChild(radioControls);
+
+    page->addChild(choiceCard);
 
     auto overlayCard = makeSectionCard(
         "LFOverlay",
