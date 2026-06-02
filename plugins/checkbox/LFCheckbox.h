@@ -63,7 +63,9 @@ private:
     void updateIndicatorGeometry();
 
     LFBox::Ptr m_indicator;
-    std::shared_ptr<LFText> m_checkmark;
+    LFBox::Ptr m_checkmarkContainer;
+    LFBox::Ptr m_checkmarkShortStroke;
+    LFBox::Ptr m_checkmarkLongStroke;
     std::shared_ptr<LFText> m_label;
     CheckedChangedCallback m_onCheckedChanged;
 

@@ -14,6 +14,7 @@ constexpr float kMinBoxSize = 14.0f;
 constexpr float kMinCornerRadius = 0.0f;
 constexpr float kMinBorderWidth = 0.0f;
 constexpr float kMinFontSize = 8.0f;
+constexpr float kMinStrokeThickness = 2.0f;
 
 float clampNonNegative(float value) {
     return std::max(0.0f, value);
@@ -169,12 +170,18 @@ void LFCheckbox::initLayout() {
     m_indicator->setTouchEnabled(false);
     addChild(m_indicator);
 
-    m_checkmark = std::make_shared<LFText>();
-    m_checkmark->setText("√");
-    m_checkmark->setTouchEnabled(false);
-    m_checkmark->setTextHAlign(LFTextHAlign::Center);
-    m_checkmark->setTextVAlign(LFTextVAlign::Center);
-    m_indicator->addChild(m_checkmark, LFBoxAlign::Center);
+    m_checkmarkContainer = LFBox::create();
+    m_checkmarkContainer->setTouchEnabled(false);
+    m_checkmarkContainer->setBackgroundColor(0x00000000);
+    m_indicator->addChild(m_checkmarkContainer, LFBoxAlign::Center);
+
+    m_checkmarkShortStroke = LFBox::create();
+    m_checkmarkShortStroke->setTouchEnabled(false);
+    m_checkmarkContainer->addChild(m_checkmarkShortStroke, LFBoxAlign::Center);
+
+    m_checkmarkLongStroke = LFBox::create();
+    m_checkmarkLongStroke->setTouchEnabled(false);
+    m_checkmarkContainer->addChild(m_checkmarkLongStroke, LFBoxAlign::Center);
 
     m_label = std::make_shared<LFText>();
     m_label->setTouchEnabled(false);
@@ -203,9 +210,14 @@ void LFCheckbox::updateVisualState() {
         m_indicator->setBorder(m_borderWidth, m_checked ? m_checkedBorderColor : m_uncheckedBorderColor);
     }
 
-    if (m_checkmark) {
-        m_checkmark->setTextColor(m_checkmarkColor);
-        m_checkmark->setDisplay(m_checked ? YGDisplayFlex : YGDisplayNone);
+    if (m_checkmarkContainer) {
+        m_checkmarkContainer->setDisplay(m_checked ? YGDisplayFlex : YGDisplayNone);
+    }
+    if (m_checkmarkShortStroke) {
+        m_checkmarkShortStroke->setBackgroundColor(m_checkmarkColor);
+    }
+    if (m_checkmarkLongStroke) {
+        m_checkmarkLongStroke->setBackgroundColor(m_checkmarkColor);
     }
 
     if (m_label) {
@@ -223,7 +235,32 @@ void LFCheckbox::updateIndicatorGeometry() {
     m_indicator->setHeight(m_boxSize);
     m_indicator->setBorderRadius(std::min(m_cornerRadius, m_boxSize * 0.5f));
 
-    if (m_checkmark) {
-        m_checkmark->setFontSize(std::max(kMinFontSize, m_boxSize * 0.7f));
+    if (m_checkmarkContainer) {
+        m_checkmarkContainer->setWidth(m_boxSize);
+        m_checkmarkContainer->setHeight(m_boxSize);
+    }
+
+    const float strokeThickness = std::max(kMinStrokeThickness, m_boxSize * 0.12f);
+    const float shortStrokeWidth = std::max(strokeThickness * 1.8f, m_boxSize * 0.28f);
+    const float longStrokeWidth = std::max(shortStrokeWidth + strokeThickness, m_boxSize * 0.5f);
+    const float shortOffsetX = -m_boxSize * 0.14f;
+    const float shortOffsetY = m_boxSize * 0.10f;
+    const float longOffsetX = m_boxSize * 0.08f;
+    const float longOffsetY = -m_boxSize * 0.03f;
+
+    if (m_checkmarkShortStroke) {
+        m_checkmarkShortStroke->setWidth(shortStrokeWidth);
+        m_checkmarkShortStroke->setHeight(strokeThickness);
+        m_checkmarkShortStroke->setBorderRadius(strokeThickness * 0.5f);
+        m_checkmarkShortStroke->setRotate(45.0f);
+        m_checkmarkShortStroke->setTranslate(shortOffsetX, shortOffsetY);
+    }
+
+    if (m_checkmarkLongStroke) {
+        m_checkmarkLongStroke->setWidth(longStrokeWidth);
+        m_checkmarkLongStroke->setHeight(strokeThickness);
+        m_checkmarkLongStroke->setBorderRadius(strokeThickness * 0.5f);
+        m_checkmarkLongStroke->setRotate(-45.0f);
+        m_checkmarkLongStroke->setTranslate(longOffsetX, longOffsetY);
     }
 }
