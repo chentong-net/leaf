@@ -58,6 +58,33 @@ LFLinear::Ptr makeSectionCard(const std::string& titleText, const std::string& d
     return card;
 }
 
+LFLinear::Ptr makeTextPreviewBox(const std::string& labelText,
+                                 const std::string& bodyText,
+                                 int maxLines = 0) {
+    auto box = LFLinear::createVertical();
+    box->matchParentWidth();
+    box->wrapContentHeight();
+    box->setPadding(YGEdgeAll, 14.0f);
+    box->setSpacing(8.0f);
+    box->setBackgroundColor(0xFFF8FAFD);
+    box->setBorderRadius(14.0f);
+    box->setBorder(1.0f, 0xFFDDE6F0);
+
+    auto label = makeText(labelText, 12.0f, 0xFF64748B);
+    label->matchParentWidth();
+    box->addChild(label);
+
+    auto body = makeText(bodyText, 14.0f, 0xFF243244);
+    body->matchParentWidth();
+    body->setLineHeight(1.4f);
+    if (maxLines > 0) {
+        body->setMaxLines(maxLines);
+    }
+    box->addChild(body);
+
+    return box;
+}
+
 LFLinear::Ptr makeRow() {
     auto row = LFLinear::createHorizontal();
     row->matchParentWidth();
@@ -591,6 +618,68 @@ LFLinear::Ptr buildFunctionDemoPage() {
     choiceCard->addChild(radioControls);
 
     page->addChild(choiceCard);
+
+    auto textCard = makeSectionCard(
+        "LFText",
+        "Covers default wrapping and maxLines clip behavior while keeping the current engine-side line-break pipeline."
+    );
+
+    const std::string textSample =
+        "This LFText sample is intentionally long so it wraps into multiple lines on narrow layouts and can be clipped cleanly when maxLines is enabled.";
+
+    textCard->addChild(makeTextPreviewBox("No maxLines", textSample));
+    textCard->addChild(makeTextPreviewBox("maxLines = 2", textSample, 2));
+    textCard->addChild(makeTextPreviewBox("maxLines = 1", textSample, 1));
+
+    auto runtimeTextStatus = makeText("Runtime preview: unlimited", 14.0f, 0xFF3567A3);
+    runtimeTextStatus->matchParentWidth();
+    textCard->addChild(runtimeTextStatus);
+
+    auto runtimeTextBox = LFLinear::createVertical();
+    runtimeTextBox->matchParentWidth();
+    runtimeTextBox->wrapContentHeight();
+    runtimeTextBox->setPadding(YGEdgeAll, 14.0f);
+    runtimeTextBox->setBackgroundColor(0xFFF8FAFD);
+    runtimeTextBox->setBorderRadius(14.0f);
+    runtimeTextBox->setBorder(1.0f, 0xFFDDE6F0);
+
+    auto runtimeText = makeText(textSample, 14.0f, 0xFF243244);
+    runtimeText->matchParentWidth();
+    runtimeText->setLineHeight(1.4f);
+    runtimeTextBox->addChild(runtimeText);
+    textCard->addChild(runtimeTextBox);
+
+    auto textControlRow1 = makeRow();
+    auto textNoLimitButton = makeActionButton("No Limit", [runtimeText, runtimeTextStatus](LFButton*) {
+        runtimeText->setMaxLines(0);
+        runtimeTextStatus->setText("Runtime preview: unlimited");
+    });
+    auto textOneLineButton = makeActionButton("1 Line", [runtimeText, runtimeTextStatus](LFButton*) {
+        runtimeText->setMaxLines(1);
+        runtimeTextStatus->setText("Runtime preview: maxLines = 1");
+    });
+    textNoLimitButton->setFlexGrow(1.0f);
+    textOneLineButton->setFlexGrow(1.0f);
+    textControlRow1->addChild(textNoLimitButton);
+    textControlRow1->addChild(textOneLineButton);
+    textCard->addChild(textControlRow1);
+
+    auto textControlRow2 = makeRow();
+    auto textTwoLinesButton = makeActionButton("2 Lines", [runtimeText, runtimeTextStatus](LFButton*) {
+        runtimeText->setMaxLines(2);
+        runtimeTextStatus->setText("Runtime preview: maxLines = 2");
+    });
+    auto textThreeLinesButton = makeActionButton("3 Lines", [runtimeText, runtimeTextStatus](LFButton*) {
+        runtimeText->setMaxLines(3);
+        runtimeTextStatus->setText("Runtime preview: maxLines = 3");
+    });
+    textTwoLinesButton->setFlexGrow(1.0f);
+    textThreeLinesButton->setFlexGrow(1.0f);
+    textControlRow2->addChild(textTwoLinesButton);
+    textControlRow2->addChild(textThreeLinesButton);
+    textCard->addChild(textControlRow2);
+
+    page->addChild(textCard);
 
     auto overlayCard = makeSectionCard(
         "LFOverlay",
