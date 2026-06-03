@@ -84,6 +84,7 @@ xxx # 插件名（如：file_picker）
 - [x] 适配桌面端
 - [x] 适配鸿蒙
 - [ ] Android setEGLConfigChooser问题修复
+- [ ] LFListView支持嵌套
 
 ##### 低优先级
 

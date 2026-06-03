@@ -84,6 +84,7 @@ xxx # plugin name (e.g., file_picker)
 - [x] Desktop support
 - [x] HarmonyOS support
 - [ ] Fix Android `setEGLConfigChooser` issue
+- [ ] LFListView supports nesting
 
 ##### Low Priority
 
