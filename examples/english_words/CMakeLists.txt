@@ -4,8 +4,10 @@ endif()
 
 add_library(english-words STATIC
         EnglishWordsApp.cpp
+        EnglishWordsData.cpp
         LearningPage.cpp
         MainPage.cpp
+        TopicPage.cpp
 )
 
 set_target_properties(english-words PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -18,4 +20,6 @@ target_include_directories(english-words
 target_link_libraries(english-words
         PUBLIC
         leaf-core
+        audio-player
+        path-provider
 )

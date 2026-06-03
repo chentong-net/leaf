@@ -1,8 +1,12 @@
 #include "LearningPage.h"
 
+#include "EnglishWordsData.h"
+#include "TopicPage.h"
+
 #include <functional>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace {
 
@@ -20,19 +24,12 @@ constexpr float kLevelCardSpacing = 10.0f;
 constexpr float kTopicItemExtent = 60.0f;
 constexpr float kTopicRowHeight = 52.0f;
 
-struct TopicSpec {
-    const char* label;
+struct LevelStyle {
+    uint32_t accentColor = 0xFF3567A3;
+    uint32_t tintColor = 0xFFEAF3FF;
 };
 
-struct LevelSpec {
-    const char* title;
-    uint32_t accentColor;
-    uint32_t tintColor;
-    const TopicSpec* topics;
-    int topicCount;
-};
-
-using TopicTapCallback = std::function<void(const TopicSpec&)>;
+using TopicTapCallback = std::function<void(const EnglishWordTopic&)>;
 
 std::shared_ptr<LFText> makeText(const std::string& text, float size, uint32_t color) {
     auto node = std::make_shared<LFText>();
@@ -70,40 +67,31 @@ std::shared_ptr<LFLinear> makeIconButtonLikeSurface(const std::string& iconPath,
     return surface;
 }
 
-const TopicSpec kLevel1Topics[] = {
-    {"1.01 My day"},
-    {"1.02 Family"},
-    {"1.03 Describing people"},
-    {"1.04 Countries"},
-};
+void clearChildren(const LFNode::Ptr& node) {
+    if (!node) {
+        return;
+    }
 
-const TopicSpec kLevel2Topics[] = {
-    {"2.01 Everyday things"},
-    {"2.02 Shopping"},
-    {"2.03 Transport"},
-    {"2.04 Internet"},
-};
+    auto children = node->getChildren();
+    for (const auto& child : children) {
+        node->removeChild(child);
+    }
+}
 
-const TopicSpec kLevel3Topics[] = {
-    {"3.01 People"},
-    {"3.02 Business"},
-    {"3.03 Air travel"},
-    {"3.04 Environment"},
-};
+LevelStyle resolveLevelStyle(const std::string& levelId, int index) {
+    if (levelId == "1") return {0xFF3567A3, 0xFFEAF3FF};
+    if (levelId == "2") return {0xFFAF7A1A, 0xFFFFF4DE};
+    if (levelId == "3") return {0xFF2F8B61, 0xFFE9F7F0};
+    if (levelId == "4") return {0xFFAF5A4A, 0xFFFFEEEA};
 
-const TopicSpec kLevel4Topics[] = {
-    {"4.01 School. College. University"},
-    {"4.02 Air travel"},
-    {"4.03 Success and Failure"},
-    {"4.04 Adverbs"},
-};
-
-const LevelSpec kLevels[] = {
-    {"1 - Beginner", 0xFF3567A3, 0xFFEAF3FF, kLevel1Topics, 4},
-    {"2 - Elementary", 0xFFAF7A1A, 0xFFFFF4DE, kLevel2Topics, 4},
-    {"3 - Intermediate", 0xFF2F8B61, 0xFFE9F7F0, kLevel3Topics, 4},
-    {"4 - Advanced", 0xFFAF5A4A, 0xFFFFEEEA, kLevel4Topics, 4},
-};
+    static const std::vector<LevelStyle> kFallback = {
+        {0xFF3567A3, 0xFFEAF3FF},
+        {0xFFAF7A1A, 0xFFFFF4DE},
+        {0xFF2F8B61, 0xFFE9F7F0},
+        {0xFFAF5A4A, 0xFFFFEEEA},
+    };
+    return kFallback[static_cast<size_t>(index % static_cast<int>(kFallback.size()))];
+}
 
 class TopicListItemView : public LFLinear {
 public:
@@ -146,14 +134,14 @@ public:
         m_row->addChild(arrow);
     }
 
-    void bind(const TopicSpec& topic, TopicTapCallback onTap) {
+    void bind(const EnglishWordTopic& topic, TopicTapCallback onTap) {
         m_topic = topic;
         m_onTap = std::move(onTap);
-        m_title->setText(topic.label ? topic.label : "");
+        m_title->setText(topic.title);
     }
 
 private:
-    TopicSpec m_topic{};
+    EnglishWordTopic m_topic;
     TopicTapCallback m_onTap;
     std::shared_ptr<LFLinear> m_row;
     std::shared_ptr<LFText> m_title;
@@ -161,12 +149,12 @@ private:
 
 class TopicListAdapter : public LFListAdapter {
 public:
-    TopicListAdapter(const LevelSpec& level, TopicTapCallback onTap)
+    TopicListAdapter(const EnglishWordLevel& level, TopicTapCallback onTap)
         : m_level(level), m_onTap(std::move(onTap)) {
     }
 
     int getCount() override {
-        return m_level.topicCount;
+        return static_cast<int>(m_level.topics.size());
     }
 
     LFNode::Ptr createView() override {
@@ -174,9 +162,11 @@ public:
     }
 
     void bindView(LFNode::Ptr view, int index) override {
-        if (!view || index < 0 || index >= m_level.topicCount) return;
+        if (!view || index < 0 || index >= static_cast<int>(m_level.topics.size())) {
+            return;
+        }
         auto item = std::static_pointer_cast<TopicListItemView>(view);
-        item->bind(m_level.topics[index], m_onTap);
+        item->bind(m_level.topics[static_cast<size_t>(index)], m_onTap);
     }
 
     float getItemExtent(int index) override {
@@ -185,7 +175,7 @@ public:
     }
 
 private:
-    LevelSpec m_level;
+    EnglishWordLevel m_level;
     TopicTapCallback m_onTap;
 };
 
@@ -249,38 +239,38 @@ public:
         m_card->addChild(m_topicList);
     }
 
-    void bind(const LevelSpec& level,
+    void bind(const EnglishWordLevel& level,
+              const LevelStyle& style,
               std::function<void()> onToggle,
               TopicTapCallback onTopicTap) {
         m_level = level;
+        m_style = style;
         m_onToggle = std::move(onToggle);
 
-        m_title->setText(level.title ? level.title : "");
-        m_topicList->setHeight(static_cast<float>(level.topicCount) * kTopicItemExtent);
-        m_topicAdapter = std::make_shared<TopicListAdapter>(level, std::move(onTopicTap));
+        m_title->setText(level.title);
+        m_topicList->setHeight(static_cast<float>(m_level.topics.size()) * kTopicItemExtent);
+        m_topicAdapter = std::make_shared<TopicListAdapter>(m_level, std::move(onTopicTap));
         m_topicList->setAdapter(m_topicAdapter);
         setExpanded(false);
     }
 
     void setExpanded(bool expanded) {
-        m_expanded = expanded;
-
         if (expanded) {
-            m_card->setBorder(1.5f, m_level.accentColor);
-            m_headerRow->setBackgroundColor(m_level.tintColor);
-            m_iconBubble->setBackgroundColor(m_level.accentColor);
+            m_card->setBorder(1.5f, m_style.accentColor);
+            m_headerRow->setBackgroundColor(m_style.tintColor);
+            m_iconBubble->setBackgroundColor(m_style.accentColor);
             m_topicList->setDisplay(YGDisplayFlex);
         } else {
             m_card->setBorder(1.0f, kCardBorderColor);
             m_headerRow->setBackgroundColor(0xFFFFFFFF);
-            m_iconBubble->setBackgroundColor(m_level.tintColor);
+            m_iconBubble->setBackgroundColor(m_style.tintColor);
             m_topicList->setDisplay(YGDisplayNone);
         }
     }
 
 private:
-    LevelSpec m_level{};
-    bool m_expanded = false;
+    EnglishWordLevel m_level;
+    LevelStyle m_style;
     std::function<void()> m_onToggle;
     std::shared_ptr<LFLinear> m_card;
     std::shared_ptr<LFLinear> m_headerRow;
@@ -348,41 +338,103 @@ void LearningPage::initUI(std::weak_ptr<LFNavigator> nav) {
     scrollView->setScrollBarEnabled(false);
     root->addChild(scrollView);
 
-    auto content = LFLinear::createVertical();
-    content->matchParentWidth();
-    content->wrapContentHeight();
-    content->setPadding(YGEdgeAll, 8.0f);
-    content->setPadding(YGEdgeBottom, 20.0f);
-    content->setSpacing(0.0f);
-    content->setBackgroundColor(kSurfaceColor);
-    content->setBorderRadius(28.0f);
-    content->setBorder(1.0f, kSurfaceBorderColor);
-    scrollView->addChild(content);
+    m_content = LFLinear::createVertical();
+    m_content->matchParentWidth();
+    m_content->wrapContentHeight();
+    m_content->setPadding(YGEdgeAll, 8.0f);
+    m_content->setPadding(YGEdgeBottom, 20.0f);
+    m_content->setSpacing(0.0f);
+    m_content->setBackgroundColor(kSurfaceColor);
+    m_content->setBorderRadius(28.0f);
+    m_content->setBorder(1.0f, kSurfaceBorderColor);
+    scrollView->addChild(m_content);
+
+    loadLevels(nav);
+}
+
+void LearningPage::loadLevels(std::weak_ptr<LFNavigator> nav) {
+    showStatus("Loading topics...");
+
+    std::weak_ptr<LearningPage> weakSelf = std::static_pointer_cast<LearningPage>(shared_from_this());
+    loadEnglishWordLevels(
+        [weakSelf, nav](bool ok, std::vector<EnglishWordLevel> levels, const std::string& error) {
+            auto self = weakSelf.lock();
+            if (!self) {
+                return;
+            }
+
+            if (!ok) {
+                self->showStatus(error.empty() ? "Failed to load topics." : "Failed to load topics.");
+                return;
+            }
+
+            self->renderLevels(levels, nav);
+        }
+    );
+}
+
+void LearningPage::renderLevels(const std::vector<EnglishWordLevel>& levels, std::weak_ptr<LFNavigator> nav) {
+    if (!m_content) {
+        return;
+    }
+
+    clearChildren(m_content);
+    if (levels.empty()) {
+        showStatus("No levels available.");
+        return;
+    }
 
     auto expandedIndex = std::make_shared<int>(0);
     auto sections = std::make_shared<std::vector<LevelSectionView::Ptr>>();
 
-    for (int i = 0; i < static_cast<int>(sizeof(kLevels) / sizeof(LevelSpec)); ++i) {
+    for (int index = 0; index < static_cast<int>(levels.size()); ++index) {
         auto section = LevelSectionView::create();
         section->bind(
-            kLevels[i],
-            [expandedIndex, sections, i]() {
-                *expandedIndex = (*expandedIndex == i) ? -1 : i;
+            levels[static_cast<size_t>(index)],
+            resolveLevelStyle(levels[static_cast<size_t>(index)].id, index),
+            [expandedIndex, sections, index]() {
+                *expandedIndex = (*expandedIndex == index) ? -1 : index;
                 for (int sectionIndex = 0; sectionIndex < static_cast<int>(sections->size()); ++sectionIndex) {
-                    if ((*sections)[sectionIndex]) {
-                        (*sections)[sectionIndex]->setExpanded(sectionIndex == *expandedIndex);
+                    if ((*sections)[static_cast<size_t>(sectionIndex)]) {
+                        (*sections)[static_cast<size_t>(sectionIndex)]->setExpanded(sectionIndex == *expandedIndex);
                     }
                 }
             },
-            [](const TopicSpec& topic) {
-                (void)topic;
+            [nav](const EnglishWordTopic& topic) {
+                if (auto navigator = nav.lock()) {
+                    navigator->push(TopicPage::create(navigator, topic));
+                }
             }
         );
         sections->push_back(section);
-        content->addChild(section);
+        m_content->addChild(section);
     }
 
-    for (int i = 0; i < static_cast<int>(sections->size()); ++i) {
-        (*sections)[i]->setExpanded(i == *expandedIndex);
+    for (int index = 0; index < static_cast<int>(sections->size()); ++index) {
+        (*sections)[static_cast<size_t>(index)]->setExpanded(index == *expandedIndex);
     }
+}
+
+void LearningPage::showStatus(const std::string& text) {
+    if (!m_content) {
+        return;
+    }
+
+    clearChildren(m_content);
+
+    auto card = LFLinear::createVertical();
+    card->matchParentWidth();
+    card->wrapContentHeight();
+    card->setPadding(YGEdgeAll, 24.0f);
+    card->setBorderRadius(22.0f);
+    card->setBackgroundColor(0xFFFFFFFF);
+    card->setBorder(1.0f, kCardBorderColor);
+    card->setShadow(0.0f, 8.0f, 22.0f, 0.0f, kCardShadowColor);
+
+    auto message = makeText(text, 14.0f, 0xFF526275);
+    message->matchParentWidth();
+    message->setTextHAlign(LFTextHAlign::Center);
+    card->addChild(message);
+
+    m_content->addChild(card);
 }
