@@ -7,31 +7,30 @@
 
 #include "EnglishWordsDataManager.h"
 #include "LFEngine.h"
+#include "LFAudioPlayer.h"
 
-#include <functional>
 #include <string>
 #include <vector>
 
 class TopicPage : public LFPage {
 public:
-    static std::shared_ptr<TopicPage> create(
-        const std::string& title,
-        std::function<void()> onBack,
-        std::function<void(const EnglishWordEntry&)> onEntrySelected);
+    static std::shared_ptr<TopicPage> create(const EnglishWordTopic& topic);
 
-    void setEntries(const std::vector<EnglishWordEntry>& entries);
-    void showStatus(const std::string& text);
+    void onExit() override;
 
 private:
     void buildUI();
+    void loadEntries();
     void refreshList();
+    void showStatus(const std::string& text);
+    void playEntryAudio(const EnglishWordEntry& entry);
 
-    std::string m_title;
+    EnglishWordTopic m_topic;
     std::string m_statusMessage = "Loading...";
+    EnglishWordsDataManager::Ptr m_dataManager;
     std::vector<EnglishWordEntry> m_entries;
-    std::function<void()> m_onBack;
-    std::function<void(const EnglishWordEntry&)> m_onEntrySelected;
     std::shared_ptr<LFListView> m_listView;
+    std::shared_ptr<LFAudioPlayer> m_audioPlayer;
 };
 
 #endif // ENGLISHWORDS_TOPICPAGE_H
