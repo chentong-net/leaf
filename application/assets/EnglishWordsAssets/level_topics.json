@@ -1,0 +1,979 @@
+{
+  "version": 1,
+  "levels": [
+    {
+      "id": "1",
+      "title": "1 - Beginner",
+      "topics": [
+        {
+          "id": "1.01",
+          "title": "01. Мой день (My day)",
+          "file": "EnglishWordsAssets/Resources/Data/1.01.Мой день (My day).txt"
+        },
+        {
+          "id": "1.02",
+          "title": "02. Семья (Family)",
+          "file": "EnglishWordsAssets/Resources/Data/1.02.Семья (Family).txt"
+        },
+        {
+          "id": "1.03",
+          "title": "03. Люди. Внешность. Характер. (Describing people)",
+          "file": "EnglishWordsAssets/Resources/Data/1.03.Люди. Внешность. Характер. (Describing people).txt"
+        },
+        {
+          "id": "1.04",
+          "title": "04. Люди. Профессии 1 (People. Jobs 1)",
+          "file": "EnglishWordsAssets/Resources/Data/1.04.Люди. Профессии 1 (People. Jobs 1).txt"
+        },
+        {
+          "id": "1.05",
+          "title": "05. Люди. Профессии 2 (People. Jobs 2)",
+          "file": "EnglishWordsAssets/Resources/Data/1.05.Люди. Профессии 2 (People. Jobs 2).txt"
+        },
+        {
+          "id": "1.06",
+          "title": "06. Страны (Countries)",
+          "file": "EnglishWordsAssets/Resources/Data/1.06.Страны (Countries).txt"
+        },
+        {
+          "id": "1.07",
+          "title": "07. Языки (Languages)",
+          "file": "EnglishWordsAssets/Resources/Data/1.07.Языки (Languages).txt"
+        },
+        {
+          "id": "1.08",
+          "title": "08. Знаки Зодиака (The Zodiac)",
+          "file": "EnglishWordsAssets/Resources/Data/1.08.Знаки Зодиака (The Zodiac).txt"
+        },
+        {
+          "id": "1.09",
+          "title": "09. Путешествие (Travelling)",
+          "file": "EnglishWordsAssets/Resources/Data/1.09.Путешествие (Travelling).txt"
+        },
+        {
+          "id": "1.10",
+          "title": "10. В городе (In the city)",
+          "file": "EnglishWordsAssets/Resources/Data/1.10.В городе (In the city).txt"
+        },
+        {
+          "id": "1.11",
+          "title": "11. Транспорт (Transport)",
+          "file": "EnglishWordsAssets/Resources/Data/1.11.Транспорт (Transport).txt"
+        },
+        {
+          "id": "1.12",
+          "title": "12. Места (Places)",
+          "file": "EnglishWordsAssets/Resources/Data/1.12.Места (Places).txt"
+        },
+        {
+          "id": "1.13",
+          "title": "13. Погода (Weather)",
+          "file": "EnglishWordsAssets/Resources/Data/1.13.Погода (Weather).txt"
+        },
+        {
+          "id": "1.14",
+          "title": "14. Цвета (Colours)",
+          "file": "EnglishWordsAssets/Resources/Data/1.14.Цвета (Colours).txt"
+        },
+        {
+          "id": "1.15",
+          "title": "15. Одежда (Clothes)",
+          "file": "EnglishWordsAssets/Resources/Data/1.15.Одежда (Clothes).txt"
+        },
+        {
+          "id": "1.16",
+          "title": "16. Личные вещи (Personal things)",
+          "file": "EnglishWordsAssets/Resources/Data/1.16.Личные вещи (Personal things).txt"
+        },
+        {
+          "id": "1.17",
+          "title": "17. Дом. Мебель. (Home. Furniture.)",
+          "file": "EnglishWordsAssets/Resources/Data/1.17.Дом. Мебель. (Home. Furniture.).txt"
+        },
+        {
+          "id": "1.18",
+          "title": "18. Школа и офис (School and Office)",
+          "file": "EnglishWordsAssets/Resources/Data/1.18.Школа и офис (School and Office).txt"
+        },
+        {
+          "id": "1.19",
+          "title": "19. Тело (The body)",
+          "file": "EnglishWordsAssets/Resources/Data/1.19.Тело (The body).txt"
+        },
+        {
+          "id": "1.20",
+          "title": "20. Здоровье (Health)",
+          "file": "EnglishWordsAssets/Resources/Data/1.20.Здоровье (Health).txt"
+        },
+        {
+          "id": "1.21",
+          "title": "21. Спорт (Sport)",
+          "file": "EnglishWordsAssets/Resources/Data/1.21.Спорт (Sport).txt"
+        },
+        {
+          "id": "1.22",
+          "title": "22. Движения (Movement)",
+          "file": "EnglishWordsAssets/Resources/Data/1.22.Движения (Movement).txt"
+        },
+        {
+          "id": "1.23",
+          "title": "23. Фрукты и овощи (Fruit and Vegetables)",
+          "file": "EnglishWordsAssets/Resources/Data/1.23.Фрукты и овощи (Fruit and Vegetables).txt"
+        },
+        {
+          "id": "1.24",
+          "title": "24. Дикие и домашние животные (Animals and Pets)",
+          "file": "EnglishWordsAssets/Resources/Data/1.24.Дикие и домашние животные (Animals and Pets).txt"
+        },
+        {
+          "id": "1.25",
+          "title": "25. Компьютеры (Computers)",
+          "file": "EnglishWordsAssets/Resources/Data/1.25.Компьютеры (Computers).txt"
+        },
+        {
+          "id": "1.26",
+          "title": "26. Числа 1 (Numbers 1)",
+          "file": "EnglishWordsAssets/Resources/Data/1.26.Числа 1 (Numbers 1).txt"
+        },
+        {
+          "id": "1.27",
+          "title": "27. Числа 2 (Numbers 2)",
+          "file": "EnglishWordsAssets/Resources/Data/1.27.Числа 2 (Numbers 2).txt"
+        },
+        {
+          "id": "1.28",
+          "title": "28. Времена года и месяцы (Seasons and Months)",
+          "file": "EnglishWordsAssets/Resources/Data/1.28.Времена года и месяцы (Seasons and Months).txt"
+        },
+        {
+          "id": "1.29",
+          "title": "29. Время и даты (Time and dates)",
+          "file": "EnglishWordsAssets/Resources/Data/1.29.Время и даты (Time and dates).txt"
+        },
+        {
+          "id": "1.30",
+          "title": "30. Дни недели и праздники (Days and Holidays)",
+          "file": "EnglishWordsAssets/Resources/Data/1.30.Дни недели и праздники (Days and Holidays).txt"
+        },
+        {
+          "id": "1.31",
+          "title": "31. Местоимения 1 (Pronouns 1)",
+          "file": "EnglishWordsAssets/Resources/Data/1.31.Местоимения 1 (Pronouns 1).txt"
+        },
+        {
+          "id": "1.32",
+          "title": "32. Местоимения 2 (Pronouns 2)",
+          "file": "EnglishWordsAssets/Resources/Data/1.32.Местоимения 2 (Pronouns 2).txt"
+        },
+        {
+          "id": "1.33",
+          "title": "33. Местоимения 3 (Pronouns 3)",
+          "file": "EnglishWordsAssets/Resources/Data/1.33.Местоимения 3 (Pronouns 3).txt"
+        },
+        {
+          "id": "1.34",
+          "title": "34. Вопросы (Questions)",
+          "file": "EnglishWordsAssets/Resources/Data/1.34.Вопросы (Questions).txt"
+        },
+        {
+          "id": "1.35",
+          "title": "35. Предлоги местонахождения (Prepositions of Place)",
+          "file": "EnglishWordsAssets/Resources/Data/1.35.Предлоги местонахождения (Prepositions of Place).txt"
+        },
+        {
+          "id": "1.36",
+          "title": "36. Глаголы 1 (Verbs 1)",
+          "file": "EnglishWordsAssets/Resources/Data/1.36.Глаголы 1 (Verbs 1).txt"
+        },
+        {
+          "id": "1.37",
+          "title": "37. Глаголы 2 (Verbs 2)",
+          "file": "EnglishWordsAssets/Resources/Data/1.37.Глаголы 2 (Verbs 2).txt"
+        },
+        {
+          "id": "1.38",
+          "title": "38. Прилагательные 1 (Adjectives 1)",
+          "file": "EnglishWordsAssets/Resources/Data/1.38.Прилагательные 1 (Adjectives 1).txt"
+        },
+        {
+          "id": "1.39",
+          "title": "39. Прилагательные 2 (Adjectives 2)",
+          "file": "EnglishWordsAssets/Resources/Data/1.39.Прилагательные 2 (Adjectives 2).txt"
+        },
+        {
+          "id": "1.40",
+          "title": "40. Фразовые глаголы (Phrasal Verbs)",
+          "file": "EnglishWordsAssets/Resources/Data/1.40.Фразовые глаголы (Phrasal Verbs).txt"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "title": "2 - Elementary",
+      "topics": [
+        {
+          "id": "2.01",
+          "title": "01. Повседневные занятия (Everyday things)",
+          "file": "EnglishWordsAssets/Resources/Data/2.01.Повседневные занятия (Everyday things).txt"
+        },
+        {
+          "id": "2.02",
+          "title": "02. Семья и друзья (Family and friends)",
+          "file": "EnglishWordsAssets/Resources/Data/2.02.Семья и друзья (Family and friends).txt"
+        },
+        {
+          "id": "2.03",
+          "title": "03. На кухне (In the kitchen)",
+          "file": "EnglishWordsAssets/Resources/Data/2.03.На кухне (In the kitchen).txt"
+        },
+        {
+          "id": "2.04",
+          "title": "04. В спальне и в ванной (In the bedroom and bathroom)",
+          "file": "EnglishWordsAssets/Resources/Data/2.04.В спальне и в ванной (In the bedroom and bathroom).txt"
+        },
+        {
+          "id": "2.05",
+          "title": "05. В гостиной (In the living room)",
+          "file": "EnglishWordsAssets/Resources/Data/2.05.В гостиной (In the living room).txt"
+        },
+        {
+          "id": "2.06",
+          "title": "06. Характер (Personality)",
+          "file": "EnglishWordsAssets/Resources/Data/2.06.Характер (Personality).txt"
+        },
+        {
+          "id": "2.07",
+          "title": "07. Внешность (Appearance)",
+          "file": "EnglishWordsAssets/Resources/Data/2.07.Внешность (Appearance).txt"
+        },
+        {
+          "id": "2.08",
+          "title": "08. Чувства (Feelings)",
+          "file": "EnglishWordsAssets/Resources/Data/2.08.Чувства (Feelings).txt"
+        },
+        {
+          "id": "2.09",
+          "title": "09. Отношение и убеждения (Attitudes and Beliefs)",
+          "file": "EnglishWordsAssets/Resources/Data/2.09.Отношение и убеждения (Attitudes and Beliefs).txt"
+        },
+        {
+          "id": "2.10",
+          "title": "10. Говорить и писать (Talk and write)",
+          "file": "EnglishWordsAssets/Resources/Data/2.10.Говорить и писать (Talk and write).txt"
+        },
+        {
+          "id": "2.11",
+          "title": "11. Профессии (Jobs)",
+          "file": "EnglishWordsAssets/Resources/Data/2.11.Профессии (Jobs).txt"
+        },
+        {
+          "id": "2.12",
+          "title": "12. Профессии. Прилагательные (Jobs. Adjectives)",
+          "file": "EnglishWordsAssets/Resources/Data/2.12.Профессии. Прилагательные (Jobs. Adjectives).txt"
+        },
+        {
+          "id": "2.13",
+          "title": "13. Покупки (Shopping)",
+          "file": "EnglishWordsAssets/Resources/Data/2.13.Покупки (Shopping).txt"
+        },
+        {
+          "id": "2.14",
+          "title": "14. Еда и напитки 1 (Food & Drink 1)",
+          "file": "EnglishWordsAssets/Resources/Data/2.14.Еда и напитки 1 (Food & Drink 1).txt"
+        },
+        {
+          "id": "2.15",
+          "title": "15. Еда и напитки 2 (Food & Drink 2)",
+          "file": "EnglishWordsAssets/Resources/Data/2.15.Еда и напитки 2 (Food & Drink 2).txt"
+        },
+        {
+          "id": "2.16",
+          "title": "16. Питание (Eating)",
+          "file": "EnglishWordsAssets/Resources/Data/2.16.Питание (Eating).txt"
+        },
+        {
+          "id": "2.17",
+          "title": "17. Красота и гигиена (Beauty and Hygiene)",
+          "file": "EnglishWordsAssets/Resources/Data/2.17.Красота и гигиена (Beauty and Hygiene).txt"
+        },
+        {
+          "id": "2.18",
+          "title": "18. Деньги (Money)",
+          "file": "EnglishWordsAssets/Resources/Data/2.18.Деньги (Money).txt"
+        },
+        {
+          "id": "2.19",
+          "title": "19. Числа (Numbers)",
+          "file": "EnglishWordsAssets/Resources/Data/2.19.Числа (Numbers).txt"
+        },
+        {
+          "id": "2.20",
+          "title": "20. Время (Time)",
+          "file": "EnglishWordsAssets/Resources/Data/2.20.Время (Time).txt"
+        },
+        {
+          "id": "2.21",
+          "title": "21. В городе (In the city)",
+          "file": "EnglishWordsAssets/Resources/Data/2.21.В городе (In the city).txt"
+        },
+        {
+          "id": "2.22",
+          "title": "22. За городом (In the country)",
+          "file": "EnglishWordsAssets/Resources/Data/2.22.За городом (In the country).txt"
+        },
+        {
+          "id": "2.23",
+          "title": "23. Путешествие (Travelling)",
+          "file": "EnglishWordsAssets/Resources/Data/2.23.Путешествие (Travelling).txt"
+        },
+        {
+          "id": "2.24",
+          "title": "24. Транспорт (Transport)",
+          "file": "EnglishWordsAssets/Resources/Data/2.24.Транспорт (Transport).txt"
+        },
+        {
+          "id": "2.25",
+          "title": "25. В гостинице 1 (At the hotel 1)",
+          "file": "EnglishWordsAssets/Resources/Data/2.25.В гостинице 1 (At the hotel 1).txt"
+        },
+        {
+          "id": "2.26",
+          "title": "26. В гостинице 2 (At the hotel 2)",
+          "file": "EnglishWordsAssets/Resources/Data/2.26.В гостинице 2 (At the hotel 2).txt"
+        },
+        {
+          "id": "2.27",
+          "title": "27. Погода (Weather)",
+          "file": "EnglishWordsAssets/Resources/Data/2.27.Погода (Weather).txt"
+        },
+        {
+          "id": "2.28",
+          "title": "28. Интернет (Internet)",
+          "file": "EnglishWordsAssets/Resources/Data/2.28.Интернет (Internet).txt"
+        },
+        {
+          "id": "2.29",
+          "title": "29. Хобби и увлечения 1 (Hobbies and Pastime 1)",
+          "file": "EnglishWordsAssets/Resources/Data/2.29.Хобби и увлечения 1 (Hobbies and Pastime 1).txt"
+        },
+        {
+          "id": "2.30",
+          "title": "30. Хобби и увлечения 2 (Hobbies and Pastime 2)",
+          "file": "EnglishWordsAssets/Resources/Data/2.30.Хобби и увлечения 2 (Hobbies and Pastime 2).txt"
+        },
+        {
+          "id": "2.31",
+          "title": "31. Изучение языка (Language learning)",
+          "file": "EnglishWordsAssets/Resources/Data/2.31.Изучение языка (Language learning).txt"
+        },
+        {
+          "id": "2.32",
+          "title": "32. Особые события (Special occasions)",
+          "file": "EnglishWordsAssets/Resources/Data/2.32.Особые события (Special occasions).txt"
+        },
+        {
+          "id": "2.33",
+          "title": "33. Общественные мероприятия (Social occasions)",
+          "file": "EnglishWordsAssets/Resources/Data/2.33.Общественные мероприятия (Social occasions).txt"
+        },
+        {
+          "id": "2.34",
+          "title": "34. Страны и континенты (Countries and Continents)",
+          "file": "EnglishWordsAssets/Resources/Data/2.34.Страны и континенты (Countries and Continents).txt"
+        },
+        {
+          "id": "2.35",
+          "title": "35. Страны. Прилагательные (Countries. Adjectives)",
+          "file": "EnglishWordsAssets/Resources/Data/2.35.Страны. Прилагательные (Countries. Adjectives).txt"
+        },
+        {
+          "id": "2.36",
+          "title": "36. Глаголы 1 (Verbs 1)",
+          "file": "EnglishWordsAssets/Resources/Data/2.36.Глаголы 1 (Verbs 1).txt"
+        },
+        {
+          "id": "2.37",
+          "title": "37. Глаголы 2 (Verbs 2)",
+          "file": "EnglishWordsAssets/Resources/Data/2.37.Глаголы 2 (Verbs 2).txt"
+        },
+        {
+          "id": "2.38",
+          "title": "38. Глаголы 3 (Verbs 3)",
+          "file": "EnglishWordsAssets/Resources/Data/2.38.Глаголы 3 (Verbs 3).txt"
+        },
+        {
+          "id": "2.39",
+          "title": "39. Глаголы 4 (Verbs 4)",
+          "file": "EnglishWordsAssets/Resources/Data/2.39.Глаголы 4 (Verbs 4).txt"
+        },
+        {
+          "id": "2.40",
+          "title": "40. Прилагательные 1 (Adjectives 1)",
+          "file": "EnglishWordsAssets/Resources/Data/2.40.Прилагательные 1 (Adjectives 1).txt"
+        },
+        {
+          "id": "2.41",
+          "title": "41. Прилагательные 2 (Adjectives 2)",
+          "file": "EnglishWordsAssets/Resources/Data/2.41.Прилагательные 2 (Adjectives 2).txt"
+        },
+        {
+          "id": "2.42",
+          "title": "42. Прилагательные 3 (Adjectives 3)",
+          "file": "EnglishWordsAssets/Resources/Data/2.42.Прилагательные 3 (Adjectives 3).txt"
+        },
+        {
+          "id": "2.43",
+          "title": "43. Прилагательные 4 (Adjectives 4)",
+          "file": "EnglishWordsAssets/Resources/Data/2.43.Прилагательные 4 (Adjectives 4).txt"
+        },
+        {
+          "id": "2.44",
+          "title": "44. Фразовые глаголы 1 (Phrasal Verbs 1)",
+          "file": "EnglishWordsAssets/Resources/Data/2.44.Фразовые глаголы 1 (Phrasal Verbs 1).txt"
+        },
+        {
+          "id": "2.45",
+          "title": "45. Фразовые глаголы 2 (Phrasal Verbs 2)",
+          "file": "EnglishWordsAssets/Resources/Data/2.45.Фразовые глаголы 2 (Phrasal Verbs 2).txt"
+        },
+        {
+          "id": "2.46",
+          "title": "46. Фразы GET (Get)",
+          "file": "EnglishWordsAssets/Resources/Data/2.46.Фразы GET (Get).txt"
+        },
+        {
+          "id": "2.47",
+          "title": "47. Фразы DO - MAKE (Do & Make)",
+          "file": "EnglishWordsAssets/Resources/Data/2.47.Фразы DO - MAKE (Do & Make).txt"
+        },
+        {
+          "id": "2.48",
+          "title": "48. Фразы с предлогами (Prepositional Phrases)",
+          "file": "EnglishWordsAssets/Resources/Data/2.48.Фразы с предлогами (Prepositional Phrases).txt"
+        },
+        {
+          "id": "2.49",
+          "title": "49. Наречия (Adverbs)",
+          "file": "EnglishWordsAssets/Resources/Data/2.49.Наречия (Adverbs).txt"
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "title": "3 - Intermediate",
+      "topics": [
+        {
+          "id": "3.01",
+          "title": "01. Люди (People)",
+          "file": "EnglishWordsAssets/Resources/Data/3.01.Люди (People).txt"
+        },
+        {
+          "id": "3.02",
+          "title": "02. Настроение и эмоции 1 (Moods and Emotions 1)",
+          "file": "EnglishWordsAssets/Resources/Data/3.02.Настроение и эмоции 1 (Moods and Emotions 1).txt"
+        },
+        {
+          "id": "3.03",
+          "title": "03. Настроение и эмоции 2 (Moods and Emotions 2)",
+          "file": "EnglishWordsAssets/Resources/Data/3.03.Настроение и эмоции 2 (Moods and Emotions 2).txt"
+        },
+        {
+          "id": "3.04",
+          "title": "04. Отношения (Relationships)",
+          "file": "EnglishWordsAssets/Resources/Data/3.04.Отношения (Relationships).txt"
+        },
+        {
+          "id": "3.05",
+          "title": "05. Характер 1 (Personality 1)",
+          "file": "EnglishWordsAssets/Resources/Data/3.05.Характер 1 (Personality 1).txt"
+        },
+        {
+          "id": "3.06",
+          "title": "06. Характер 2 (Personality 2)",
+          "file": "EnglishWordsAssets/Resources/Data/3.06.Характер 2 (Personality 2).txt"
+        },
+        {
+          "id": "3.07",
+          "title": "07. Чувства (Senses)",
+          "file": "EnglishWordsAssets/Resources/Data/3.07.Чувства (Senses).txt"
+        },
+        {
+          "id": "3.08",
+          "title": "08. Убеждения (Attitudes and Beliefs)",
+          "file": "EnglishWordsAssets/Resources/Data/3.08.Убеждения (Attitudes and Beliefs).txt"
+        },
+        {
+          "id": "3.09",
+          "title": "09. Думать. Говорить. Писать (Think. Talk. Write)",
+          "file": "EnglishWordsAssets/Resources/Data/3.09.Думать. Говорить. Писать (Think. Talk. Write).txt"
+        },
+        {
+          "id": "3.10",
+          "title": "10. Согласие и несогласие (Agreement and Disagreement)",
+          "file": "EnglishWordsAssets/Resources/Data/3.10.Согласие и несогласие (Agreement and Disagreement).txt"
+        },
+        {
+          "id": "3.11",
+          "title": "11. Взлёт и падение (Rise and Fall)",
+          "file": "EnglishWordsAssets/Resources/Data/3.11.Взлёт и падение (Rise and Fall).txt"
+        },
+        {
+          "id": "3.12",
+          "title": "12. Телодвижения (Movement)",
+          "file": "EnglishWordsAssets/Resources/Data/3.12.Телодвижения (Movement).txt"
+        },
+        {
+          "id": "3.13",
+          "title": "13. Лечебные средства (Medications)",
+          "file": "EnglishWordsAssets/Resources/Data/3.13.Лечебные средства (Medications).txt"
+        },
+        {
+          "id": "3.14",
+          "title": "14. Одежда (Clothes)",
+          "file": "EnglishWordsAssets/Resources/Data/3.14.Одежда (Clothes).txt"
+        },
+        {
+          "id": "3.15",
+          "title": "15. Бизнес (Business)",
+          "file": "EnglishWordsAssets/Resources/Data/3.15.Бизнес (Business).txt"
+        },
+        {
+          "id": "3.16",
+          "title": "16. Работа (Work)",
+          "file": "EnglishWordsAssets/Resources/Data/3.16.Работа (Work).txt"
+        },
+        {
+          "id": "3.17",
+          "title": "17. Офис (Office)",
+          "file": "EnglishWordsAssets/Resources/Data/3.17.Офис (Office).txt"
+        },
+        {
+          "id": "3.18",
+          "title": "18. Компьютер и ИТ (Computer and IT)",
+          "file": "EnglishWordsAssets/Resources/Data/3.18.Компьютер и ИТ (Computer and IT).txt"
+        },
+        {
+          "id": "3.19",
+          "title": "19. Деньги (Money)",
+          "file": "EnglishWordsAssets/Resources/Data/3.19.Деньги (Money).txt"
+        },
+        {
+          "id": "3.20",
+          "title": "20. Окружающая среда (Environment)",
+          "file": "EnglishWordsAssets/Resources/Data/3.20.Окружающая среда (Environment).txt"
+        },
+        {
+          "id": "3.21",
+          "title": "21. Спорт (Sport)",
+          "file": "EnglishWordsAssets/Resources/Data/3.21.Спорт (Sport).txt"
+        },
+        {
+          "id": "3.22",
+          "title": "22. Приготовление пищи (Cooking)",
+          "file": "EnglishWordsAssets/Resources/Data/3.22.Приготовление пищи (Cooking).txt"
+        },
+        {
+          "id": "3.23",
+          "title": "23. Школа и университет (School and University)",
+          "file": "EnglishWordsAssets/Resources/Data/3.23.Школа и университет (School and University).txt"
+        },
+        {
+          "id": "3.24",
+          "title": "24. Преступление и наказание (Crime and Punishment)",
+          "file": "EnglishWordsAssets/Resources/Data/3.24.Преступление и наказание (Crime and Punishment).txt"
+        },
+        {
+          "id": "3.25",
+          "title": "25. Преступление и наказание. Люди (Crime. People)",
+          "file": "EnglishWordsAssets/Resources/Data/3.25.Преступление и наказание. Люди (Crime. People).txt"
+        },
+        {
+          "id": "3.26",
+          "title": "26. Путешествие (Travelling)",
+          "file": "EnglishWordsAssets/Resources/Data/3.26.Путешествие (Travelling).txt"
+        },
+        {
+          "id": "3.27",
+          "title": "27. Транспорт (Transport)",
+          "file": "EnglishWordsAssets/Resources/Data/3.27.Транспорт (Transport).txt"
+        },
+        {
+          "id": "3.28",
+          "title": "28. Авиапутешествие (Air travel)",
+          "file": "EnglishWordsAssets/Resources/Data/3.28.Авиапутешествие (Air travel).txt"
+        },
+        {
+          "id": "3.29",
+          "title": "29. Места. Прилагательные (Places. Adjectives)",
+          "file": "EnglishWordsAssets/Resources/Data/3.29.Места. Прилагательные (Places. Adjectives).txt"
+        },
+        {
+          "id": "3.30",
+          "title": "30. Народы (Nations)",
+          "file": "EnglishWordsAssets/Resources/Data/3.30.Народы (Nations).txt"
+        },
+        {
+          "id": "3.31",
+          "title": "31. Фразы с глаголом HAVE (Phrases with HAVE)",
+          "file": "EnglishWordsAssets/Resources/Data/3.31.Фразы с глаголом HAVE (Phrases with HAVE).txt"
+        },
+        {
+          "id": "3.32",
+          "title": "32. Глаголы 1 (Verbs 1)",
+          "file": "EnglishWordsAssets/Resources/Data/3.32.Глаголы 1 (Verbs 1).txt"
+        },
+        {
+          "id": "3.33",
+          "title": "33. Глаголы 2 (Verbs 2)",
+          "file": "EnglishWordsAssets/Resources/Data/3.33.Глаголы 2 (Verbs 2).txt"
+        },
+        {
+          "id": "3.34",
+          "title": "34. Глаголы 3 (Verbs 3)",
+          "file": "EnglishWordsAssets/Resources/Data/3.34.Глаголы 3 (Verbs 3).txt"
+        },
+        {
+          "id": "3.35",
+          "title": "35. Глаголы 4 (Verbs 4)",
+          "file": "EnglishWordsAssets/Resources/Data/3.35.Глаголы 4 (Verbs 4).txt"
+        },
+        {
+          "id": "3.36",
+          "title": "36. Глаголы 5 (Verbs 5)",
+          "file": "EnglishWordsAssets/Resources/Data/3.36.Глаголы 5 (Verbs 5).txt"
+        },
+        {
+          "id": "3.37",
+          "title": "37. Существительные 1 (Nouns 1)",
+          "file": "EnglishWordsAssets/Resources/Data/3.37.Существительные 1 (Nouns 1).txt"
+        },
+        {
+          "id": "3.38",
+          "title": "38. Существительные 2 (Nouns 2)",
+          "file": "EnglishWordsAssets/Resources/Data/3.38.Существительные 2 (Nouns 2).txt"
+        },
+        {
+          "id": "3.39",
+          "title": "39. Существительные 3 (Nouns 3)",
+          "file": "EnglishWordsAssets/Resources/Data/3.39.Существительные 3 (Nouns 3).txt"
+        },
+        {
+          "id": "3.40",
+          "title": "40. Существительные 4 (Nouns 4)",
+          "file": "EnglishWordsAssets/Resources/Data/3.40.Существительные 4 (Nouns 4).txt"
+        },
+        {
+          "id": "3.41",
+          "title": "41. Существительные 5 (Nouns 5)",
+          "file": "EnglishWordsAssets/Resources/Data/3.41.Существительные 5 (Nouns 5).txt"
+        },
+        {
+          "id": "3.42",
+          "title": "42. Существительные 6 (Nouns 6)",
+          "file": "EnglishWordsAssets/Resources/Data/3.42.Существительные 6 (Nouns 6).txt"
+        },
+        {
+          "id": "3.43",
+          "title": "43. Существительные 7 (Nouns 7)",
+          "file": "EnglishWordsAssets/Resources/Data/3.43.Существительные 7 (Nouns 7).txt"
+        },
+        {
+          "id": "3.44",
+          "title": "44. Существительные 8 (Nouns 8)",
+          "file": "EnglishWordsAssets/Resources/Data/3.44.Существительные 8 (Nouns 8).txt"
+        },
+        {
+          "id": "3.45",
+          "title": "45. Прилагательные 1 (Adjectives 1)",
+          "file": "EnglishWordsAssets/Resources/Data/3.45.Прилагательные 1 (Adjectives 1).txt"
+        },
+        {
+          "id": "3.46",
+          "title": "46. Прилагательные 2 (Adjectives 2)",
+          "file": "EnglishWordsAssets/Resources/Data/3.46.Прилагательные 2 (Adjectives 2).txt"
+        },
+        {
+          "id": "3.47",
+          "title": "47. Прилагательные 3 (Adjectives 3)",
+          "file": "EnglishWordsAssets/Resources/Data/3.47.Прилагательные 3 (Adjectives 3).txt"
+        },
+        {
+          "id": "3.48",
+          "title": "48. Фразовые глаголы 1 (Phrasal Verbs 1)",
+          "file": "EnglishWordsAssets/Resources/Data/3.48.Фразовые глаголы 1 (Phrasal Verbs 1).txt"
+        },
+        {
+          "id": "3.49",
+          "title": "49. Фразовые глаголы 2 (Phrasal Verbs 2)",
+          "file": "EnglishWordsAssets/Resources/Data/3.49.Фразовые глаголы 2 (Phrasal Verbs 2).txt"
+        },
+        {
+          "id": "3.50",
+          "title": "50. Наречия 1 (Adverbs 1)",
+          "file": "EnglishWordsAssets/Resources/Data/3.50.Наречия 1 (Adverbs 1).txt"
+        },
+        {
+          "id": "3.51",
+          "title": "51. Наречия 2 (Adverbs 2)",
+          "file": "EnglishWordsAssets/Resources/Data/3.51.Наречия 2 (Adverbs 2).txt"
+        },
+        {
+          "id": "3.52",
+          "title": "52. Фразы с предлогами (Prepositional Phrases)",
+          "file": "EnglishWordsAssets/Resources/Data/3.52.Фразы с предлогами (Prepositional Phrases).txt"
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "title": "4 - Advanced",
+      "topics": [
+        {
+          "id": "4.01",
+          "title": "01. School. College. University",
+          "file": "EnglishWordsAssets/Resources/Data/4.01.School. College. University.txt"
+        },
+        {
+          "id": "4.02",
+          "title": "02. Air travel",
+          "file": "EnglishWordsAssets/Resources/Data/4.02.Air travel.txt"
+        },
+        {
+          "id": "4.03",
+          "title": "03. Car journey",
+          "file": "EnglishWordsAssets/Resources/Data/4.03.Car journey.txt"
+        },
+        {
+          "id": "4.04",
+          "title": "04. Sport",
+          "file": "EnglishWordsAssets/Resources/Data/4.04.Sport.txt"
+        },
+        {
+          "id": "4.05",
+          "title": "05. Health Problems",
+          "file": "EnglishWordsAssets/Resources/Data/4.05.Health Problems.txt"
+        },
+        {
+          "id": "4.06",
+          "title": "06. Cooking. Verbs & Adjectives",
+          "file": "EnglishWordsAssets/Resources/Data/4.06.Cooking. Verbs & Adjectives.txt"
+        },
+        {
+          "id": "4.07",
+          "title": "07. Agreement and disagreement",
+          "file": "EnglishWordsAssets/Resources/Data/4.07.Agreement and disagreement.txt"
+        },
+        {
+          "id": "4.08",
+          "title": "08. Talk and write",
+          "file": "EnglishWordsAssets/Resources/Data/4.08.Talk and write.txt"
+        },
+        {
+          "id": "4.09",
+          "title": "09. Success and Failure",
+          "file": "EnglishWordsAssets/Resources/Data/4.09.Success and Failure.txt"
+        },
+        {
+          "id": "4.10",
+          "title": "10. Rise and Fall",
+          "file": "EnglishWordsAssets/Resources/Data/4.10.Rise and Fall.txt"
+        },
+        {
+          "id": "4.11",
+          "title": "11. Crime and punishment. Verbs & Phrases",
+          "file": "EnglishWordsAssets/Resources/Data/4.11.Crime and punishment. Verbs & Phrases.txt"
+        },
+        {
+          "id": "4.12",
+          "title": "12. Crime and punishment. Other words",
+          "file": "EnglishWordsAssets/Resources/Data/4.12.Crime and punishment. Other words.txt"
+        },
+        {
+          "id": "4.13",
+          "title": "13. Business",
+          "file": "EnglishWordsAssets/Resources/Data/4.13.Business.txt"
+        },
+        {
+          "id": "4.14",
+          "title": "14. Money",
+          "file": "EnglishWordsAssets/Resources/Data/4.14.Money.txt"
+        },
+        {
+          "id": "4.15",
+          "title": "15. Groups of people and things",
+          "file": "EnglishWordsAssets/Resources/Data/4.15.Groups of people and things.txt"
+        },
+        {
+          "id": "4.16",
+          "title": "16. Containers",
+          "file": "EnglishWordsAssets/Resources/Data/4.16.Containers.txt"
+        },
+        {
+          "id": "4.17",
+          "title": "17. Tools",
+          "file": "EnglishWordsAssets/Resources/Data/4.17.Tools.txt"
+        },
+        {
+          "id": "4.18",
+          "title": "18. People",
+          "file": "EnglishWordsAssets/Resources/Data/4.18.People.txt"
+        },
+        {
+          "id": "4.19",
+          "title": "19. Describing people",
+          "file": "EnglishWordsAssets/Resources/Data/4.19.Describing people.txt"
+        },
+        {
+          "id": "4.20",
+          "title": "20. Personality 1",
+          "file": "EnglishWordsAssets/Resources/Data/4.20.Personality 1.txt"
+        },
+        {
+          "id": "4.21",
+          "title": "21. Personality 2",
+          "file": "EnglishWordsAssets/Resources/Data/4.21.Personality 2.txt"
+        },
+        {
+          "id": "4.22",
+          "title": "22. Personality 3",
+          "file": "EnglishWordsAssets/Resources/Data/4.22.Personality 3.txt"
+        },
+        {
+          "id": "4.23",
+          "title": "23. Moods and Emotions 1",
+          "file": "EnglishWordsAssets/Resources/Data/4.23.Moods and Emotions 1.txt"
+        },
+        {
+          "id": "4.24",
+          "title": "24. Moods and Emotions 2",
+          "file": "EnglishWordsAssets/Resources/Data/4.24.Moods and Emotions 2.txt"
+        },
+        {
+          "id": "4.25",
+          "title": "25. Movement",
+          "file": "EnglishWordsAssets/Resources/Data/4.25.Movement.txt"
+        },
+        {
+          "id": "4.26",
+          "title": "26. Sounds people make",
+          "file": "EnglishWordsAssets/Resources/Data/4.26.Sounds people make.txt"
+        },
+        {
+          "id": "4.27",
+          "title": "27. Environment",
+          "file": "EnglishWordsAssets/Resources/Data/4.27.Environment.txt"
+        },
+        {
+          "id": "4.28",
+          "title": "28. Verbs 1",
+          "file": "EnglishWordsAssets/Resources/Data/4.28.Verbs 1.txt"
+        },
+        {
+          "id": "4.29",
+          "title": "29. Verbs 2",
+          "file": "EnglishWordsAssets/Resources/Data/4.29.Verbs 2.txt"
+        },
+        {
+          "id": "4.30",
+          "title": "30. Verbs 3",
+          "file": "EnglishWordsAssets/Resources/Data/4.30.Verbs 3.txt"
+        },
+        {
+          "id": "4.31",
+          "title": "31. Verbs 4",
+          "file": "EnglishWordsAssets/Resources/Data/4.31.Verbs 4.txt"
+        },
+        {
+          "id": "4.32",
+          "title": "32. Verbs 5",
+          "file": "EnglishWordsAssets/Resources/Data/4.32.Verbs 5.txt"
+        },
+        {
+          "id": "4.33",
+          "title": "33. Adjectives 1",
+          "file": "EnglishWordsAssets/Resources/Data/4.33.Adjectives 1.txt"
+        },
+        {
+          "id": "4.34",
+          "title": "34. Adjectives 2",
+          "file": "EnglishWordsAssets/Resources/Data/4.34.Adjectives 2.txt"
+        },
+        {
+          "id": "4.35",
+          "title": "35. Adjectives 3",
+          "file": "EnglishWordsAssets/Resources/Data/4.35.Adjectives 3.txt"
+        },
+        {
+          "id": "4.36",
+          "title": "36. Adjectives 4",
+          "file": "EnglishWordsAssets/Resources/Data/4.36.Adjectives 4.txt"
+        },
+        {
+          "id": "4.37",
+          "title": "37. Adjectives 5",
+          "file": "EnglishWordsAssets/Resources/Data/4.37.Adjectives 5.txt"
+        },
+        {
+          "id": "4.38",
+          "title": "38. Nouns 1",
+          "file": "EnglishWordsAssets/Resources/Data/4.38.Nouns 1.txt"
+        },
+        {
+          "id": "4.39",
+          "title": "39. Nouns 2",
+          "file": "EnglishWordsAssets/Resources/Data/4.39.Nouns 2.txt"
+        },
+        {
+          "id": "4.40",
+          "title": "40. Nouns 3",
+          "file": "EnglishWordsAssets/Resources/Data/4.40.Nouns 3.txt"
+        },
+        {
+          "id": "4.41",
+          "title": "41. Nouns 4",
+          "file": "EnglishWordsAssets/Resources/Data/4.41.Nouns 4.txt"
+        },
+        {
+          "id": "4.42",
+          "title": "42. Nouns 5",
+          "file": "EnglishWordsAssets/Resources/Data/4.42.Nouns 5.txt"
+        },
+        {
+          "id": "4.43",
+          "title": "43. Nouns 6",
+          "file": "EnglishWordsAssets/Resources/Data/4.43.Nouns 6.txt"
+        },
+        {
+          "id": "4.44",
+          "title": "44. Nouns 7",
+          "file": "EnglishWordsAssets/Resources/Data/4.44.Nouns 7.txt"
+        },
+        {
+          "id": "4.45",
+          "title": "45. Nouns 8",
+          "file": "EnglishWordsAssets/Resources/Data/4.45.Nouns 8.txt"
+        },
+        {
+          "id": "4.46",
+          "title": "46. Nouns 9",
+          "file": "EnglishWordsAssets/Resources/Data/4.46.Nouns 9.txt"
+        },
+        {
+          "id": "4.47",
+          "title": "47. Phrasal Verbs 1",
+          "file": "EnglishWordsAssets/Resources/Data/4.47.Phrasal Verbs 1.txt"
+        },
+        {
+          "id": "4.48",
+          "title": "48. Phrasal Verbs 2",
+          "file": "EnglishWordsAssets/Resources/Data/4.48.Phrasal Verbs 2.txt"
+        },
+        {
+          "id": "4.49",
+          "title": "49. Adverbs",
+          "file": "EnglishWordsAssets/Resources/Data/4.49.Adverbs.txt"
+        }
+      ]
+    }
+  ]
+}
