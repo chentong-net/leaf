@@ -2,6 +2,7 @@
 
 #include "TopicPage.h"
 
+#include <algorithm>
 #include <functional>
 #include <string>
 #include <utility>
@@ -22,6 +23,8 @@ constexpr float kLevelCardPadding = 6.0f;
 constexpr float kLevelCardSpacing = 8.0f;
 constexpr float kTopicItemExtent = 60.0f;
 constexpr float kTopicRowHeight = 52.0f;
+constexpr float kDisclosureAnimationDuration = 0.22f;
+constexpr float kIconAnimationDuration = 0.18f;
 
 struct LevelStyle {
     uint32_t accentColor = 0xFF3567A3;
@@ -177,7 +180,6 @@ public:
         m_card->matchParentWidth();
         m_card->wrapContentHeight();
         m_card->setPadding(YGEdgeAll, kLevelCardPadding);
-        // m_card->setSpacing(kLevelCardSpacing);
         m_card->setBorderRadius(24.0f);
         m_card->setBackgroundColor(0xFFFFFFFF);
         m_card->setShadow(0.0f, 8.0f, 22.0f, 0.0f, 0x10233B53);
@@ -239,12 +241,22 @@ public:
         m_icon = createImage("EnglishWordsAssets/Images/icon-add.png", 18.0f);
         m_iconBubble->addChild(m_icon, LFBoxAlign::Center);
 
+        m_topicContainer = LFLinear::createVertical();
+        m_topicContainer->matchParentWidth();
+        m_topicContainer->wrapContentHeight();
+        m_topicContainer->setPadding(YGEdgeTop, kLevelCardSpacing);
+        m_topicContainer->setMasksToBounds(true);
+        m_topicContainer->setHeight(0.0f);
+        m_topicContainer->setOpacity(0.0f);
+        m_topicContainer->setDisplay(YGDisplayNone);
+        m_card->addChild(m_topicContainer);
+
         m_topicList = LFListView::createVertical();
         m_topicList->matchParentWidth();
         m_topicList->setScrollBarEnabled(false);
         m_topicList->setBounces(false);
         m_topicList->setMasksToBounds(true);
-        m_card->addChild(m_topicList);
+        m_topicContainer->addChild(m_topicList);
     }
 
     void bind(const EnglishWordLevel& level,
@@ -256,33 +268,136 @@ public:
 
         m_title->setText(level.title);
         m_meta->setText(std::to_string(level.topics.size()) + " topics");
-        m_topicList->setHeight(static_cast<float>(level.topics.size()) * kTopicItemExtent);
+        m_topicListHeight = static_cast<float>(level.topics.size()) * kTopicItemExtent;
+        m_topicList->setHeight(m_topicListHeight);
         m_topicList->setAdapter(std::make_shared<TopicListAdapter>(level, std::move(onTopicTap)));
-        setExpanded(false);
+        setExpanded(false, false);
     }
 
-    void setExpanded(bool expanded) {
+    void setBottomSpacing(float spacing) {
+        setPadding(YGEdgeBottom, spacing);
+    }
+
+    void setExpanded(bool expanded, bool animated = true) {
+        updateHeaderStyle(expanded);
+
+        const float targetHeight = expanded ? (m_topicListHeight + kLevelCardSpacing) : 0.0f;
+        const float targetRotation = expanded ? 45.0f : 0.0f;
+
+        if (!animated) {
+            m_topicContainerHeight = targetHeight;
+            m_iconRotation = targetRotation;
+            m_topicContainer->setDisplay(expanded ? YGDisplayFlex : YGDisplayNone);
+            m_topicContainer->setHeight(targetHeight);
+            m_topicContainer->setOpacity(expanded ? 1.0f : 0.0f);
+            m_icon->setRotate(targetRotation);
+            return;
+        }
+
+        if (m_topicContainerHeight == targetHeight && m_iconRotation == targetRotation) {
+            return;
+        }
+
+        stopAnimations();
+        m_topicContainer->setDisplay(YGDisplayFlex);
+        const float alphaRange = std::max(m_topicContainerHeight, targetHeight);
+
+        std::weak_ptr<LevelSectionView> weakSelf = std::static_pointer_cast<LevelSectionView>(shared_from_this());
+
+        m_expandAnimator = LFValueAnimator<float>::of(m_topicContainerHeight, targetHeight);
+        m_expandAnimator->setDuration(kDisclosureAnimationDuration);
+        m_expandAnimator->setEasing(LFEasingType::QuadOut);
+        m_expandAnimator->addUpdateListener([weakSelf, alphaRange](const float& height) {
+            auto self = weakSelf.lock();
+            if (!self) {
+                return;
+            }
+
+            self->m_topicContainerHeight = height;
+            self->m_topicContainer->setHeight(height);
+            const float alpha = alphaRange <= 0.0f
+                ? 0.0f
+                : std::clamp(height / alphaRange, 0.0f, 1.0f);
+            self->m_topicContainer->setOpacity(alpha);
+        });
+        m_expandAnimator->setOnEnd([weakSelf, expanded, targetHeight]() {
+            auto self = weakSelf.lock();
+            if (!self) {
+                return;
+            }
+
+            self->m_topicContainerHeight = targetHeight;
+            self->m_topicContainer->setHeight(targetHeight);
+            self->m_topicContainer->setOpacity(expanded ? 1.0f : 0.0f);
+            self->m_topicContainer->setDisplay(expanded ? YGDisplayFlex : YGDisplayNone);
+            self->m_expandAnimator.reset();
+        });
+
+        m_iconAnimator = LFValueAnimator<float>::of(m_iconRotation, targetRotation);
+        m_iconAnimator->setDuration(kIconAnimationDuration);
+        m_iconAnimator->setEasing(LFEasingType::QuadOut);
+        m_iconAnimator->addUpdateListener([weakSelf](const float& rotation) {
+            auto self = weakSelf.lock();
+            if (!self) {
+                return;
+            }
+
+            self->m_iconRotation = rotation;
+            self->m_icon->setRotate(rotation);
+        });
+        m_iconAnimator->setOnEnd([weakSelf, targetRotation]() {
+            auto self = weakSelf.lock();
+            if (!self) {
+                return;
+            }
+
+            self->m_iconRotation = targetRotation;
+            self->m_icon->setRotate(targetRotation);
+            self->m_iconAnimator.reset();
+        });
+
+        m_expandAnimator->start();
+        m_iconAnimator->start();
+        LFGlobalAnimationManager::getInstance().addAnimator(m_expandAnimator);
+        LFGlobalAnimationManager::getInstance().addAnimator(m_iconAnimator);
+    }
+
+private:
+    void updateHeaderStyle(bool expanded) {
         if (expanded) {
             m_card->setBorder(1.5f, m_style.accentColor);
             m_card->setShadow(0.0f, 10.0f, 26.0f, 0.0f, 0x163567A3);
             m_headerRow->setBackgroundColor(m_style.tintColor);
-            m_iconBubble->setBackgroundColor(m_style.accentColor);
             m_metaPill->setBackgroundColor(0xFFFFFFFF);
-            m_icon->setRotate(45.0f);
-            m_topicList->setDisplay(YGDisplayFlex);
+            m_iconBubble->setBackgroundColor(0xFFFFFFFF);
+            m_iconBubble->setBorder(1.0f, m_style.accentColor);
         } else {
             m_card->setBorder(1.0f, kCardBorderColor);
             m_card->setShadow(0.0f, 8.0f, 22.0f, 0.0f, 0x10233B53);
             m_headerRow->setBackgroundColor(m_style.tintColor);
-            m_iconBubble->setBackgroundColor(m_style.tintColor);
             m_metaPill->setBackgroundColor(0xFFFFFFFF);
-            m_icon->setRotate(0.0f);
-            m_topicList->setDisplay(YGDisplayNone);
+            m_iconBubble->setBackgroundColor(0xFFFFFFFF);
+            m_iconBubble->setBorder(1.0f, 0x12D6E2EF);
         }
     }
 
-private:
+    void stopAnimations() {
+        if (m_expandAnimator) {
+            m_expandAnimator->cancel();
+            LFGlobalAnimationManager::getInstance().removeAnimator(m_expandAnimator);
+            m_expandAnimator.reset();
+        }
+        if (m_iconAnimator) {
+            m_iconAnimator->cancel();
+            LFGlobalAnimationManager::getInstance().removeAnimator(m_iconAnimator);
+            m_iconAnimator.reset();
+        }
+    }
+
     LevelStyle m_style;
+    float m_topicListHeight = 0.0f;
+    float m_topicContainerHeight = 0.0f;
+    float m_iconRotation = 0.0f;
     std::function<void()> m_onToggle;
     std::shared_ptr<LFLinear> m_card;
     std::shared_ptr<LFLinear> m_headerRow;
@@ -292,7 +407,10 @@ private:
     std::shared_ptr<LFText> m_meta;
     std::shared_ptr<LFBox> m_iconBubble;
     std::shared_ptr<LFImage> m_icon;
+    std::shared_ptr<LFLinear> m_topicContainer;
     std::shared_ptr<LFListView> m_topicList;
+    std::shared_ptr<LFValueAnimator<float>> m_expandAnimator;
+    std::shared_ptr<LFValueAnimator<float>> m_iconAnimator;
 };
 
 } // namespace
@@ -373,7 +491,7 @@ void LearningPage::buildUI() {
     m_content->matchParentWidth();
     m_content->wrapContentHeight();
     m_content->setPadding(YGEdgeAll, 8.0f);
-    m_content->setPadding(YGEdgeBottom, 20.0f);
+    m_content->setMargin(YGEdgeBottom, 20.0f);
     m_content->setSpacing(0.0f);
     m_content->setBackgroundColor(kSurfaceColor);
     m_content->setBorderRadius(28.0f);
@@ -444,12 +562,13 @@ void LearningPage::renderLevels() {
                 }
             }
         );
+        section->setBottomSpacing(index == static_cast<int>(m_levels.size()) - 1 ? 0.0f : kLevelItemBottomSpacing);
         sections->push_back(section);
         m_content->addChild(section);
     }
 
     for (int index = 0; index < static_cast<int>(sections->size()); ++index) {
-        (*sections)[static_cast<size_t>(index)]->setExpanded(index == *expandedIndex);
+        (*sections)[static_cast<size_t>(index)]->setExpanded(index == *expandedIndex, false);
     }
 }
 
