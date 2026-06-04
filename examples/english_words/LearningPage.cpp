@@ -1,6 +1,6 @@
 #include "LearningPage.h"
 
-#include "EnglishWordsData.h"
+#include "EnglishWordsUI.h"
 #include "TopicPage.h"
 
 #include <functional>
@@ -9,13 +9,6 @@
 #include <vector>
 
 namespace {
-
-constexpr uint32_t kPageBackgroundColor = 0xFFF4F7FB;
-constexpr uint32_t kTitleColor = 0xFF142033;
-constexpr uint32_t kSurfaceColor = 0xFFEAF1F8;
-constexpr uint32_t kSurfaceBorderColor = 0xFFDDE7F1;
-constexpr uint32_t kCardBorderColor = 0xFFDCE6F2;
-constexpr uint32_t kCardShadowColor = 0x12233B53;
 
 constexpr float kLevelItemBottomSpacing = 12.0f;
 constexpr float kLevelHeaderHeight = 74.0f;
@@ -30,53 +23,6 @@ struct LevelStyle {
 };
 
 using TopicTapCallback = std::function<void(const EnglishWordTopic&)>;
-
-std::shared_ptr<LFText> makeText(const std::string& text, float size, uint32_t color) {
-    auto node = std::make_shared<LFText>();
-    node->setText(text);
-    node->setFontSize(size);
-    node->setTextColor(color);
-    node->setLineHeight(1.3f);
-    return node;
-}
-
-std::shared_ptr<LFImage> makeImage(const std::string& src, float size) {
-    auto image = std::make_shared<LFImage>();
-    image->setWidth(size);
-    image->setHeight(size);
-    image->setFit(LFImageFit::Contain);
-    image->setSrc(src);
-    return image;
-}
-
-std::shared_ptr<LFLinear> makeIconButtonLikeSurface(const std::string& iconPath, std::function<void()> onTap) {
-    auto surface = LFLinear::createHorizontal();
-    surface->setWidth(46.0f);
-    surface->setHeight(46.0f);
-    surface->setBorderRadius(16.0f);
-    surface->setBorder(1.0f, 0xFFD8E4F1);
-    surface->setBackgroundColor(0xFFFFFFFF);
-    surface->setShadow(0.0f, 6.0f, 18.0f, 0.0f, 0x10233B53);
-    surface->setGravity(LFAlignment::Center, LFAlignment::Center);
-    surface->addChild(makeImage(iconPath, 18.0f));
-    surface->setOnTap([onTap = std::move(onTap)](const LFPoint&) {
-        if (onTap) {
-            onTap();
-        }
-    });
-    return surface;
-}
-
-void clearChildren(const LFNode::Ptr& node) {
-    if (!node) {
-        return;
-    }
-
-    auto children = node->getChildren();
-    for (const auto& child : children) {
-        node->removeChild(child);
-    }
-}
 
 LevelStyle resolveLevelStyle(const std::string& levelId, int index) {
     if (levelId == "1") return {0xFF3567A3, 0xFFEAF3FF};
@@ -123,13 +69,13 @@ public:
         });
         addChild(m_row);
 
-        m_title = makeText("", 14.0f, 0xFF243244);
+        m_title = EnglishWordsUI::makeText("", 14.0f, 0xFF243244);
         m_title->setFlexGrow(1.0f);
         m_title->setFlexBasis(0.0f);
         m_title->setMaxLines(1);
         m_row->addChild(m_title);
 
-        auto arrow = makeImage("EnglishWordsAssets/Images/icon-arrow-right.png", 14.0f);
+        auto arrow = EnglishWordsUI::makeImage("EnglishWordsAssets/Images/icon-arrow-right.png", 14.0f);
         arrow->setOpacity(0.52f);
         m_row->addChild(arrow);
     }
@@ -199,7 +145,7 @@ public:
         m_card->setSpacing(kLevelCardSpacing);
         m_card->setBorderRadius(22.0f);
         m_card->setBackgroundColor(0xFFFFFFFF);
-        m_card->setShadow(0.0f, 10.0f, 24.0f, 0.0f, kCardShadowColor);
+        m_card->setShadow(0.0f, 10.0f, 24.0f, 0.0f, EnglishWordsUI::kCardShadowColor);
         addChild(m_card);
 
         m_headerRow = LFLinear::createHorizontal();
@@ -217,7 +163,7 @@ public:
         });
         m_card->addChild(m_headerRow);
 
-        m_title = makeText("", 17.0f, kTitleColor);
+        m_title = EnglishWordsUI::makeText("", 17.0f, EnglishWordsUI::kTitleColor);
         m_title->setFlexGrow(1.0f);
         m_title->setFlexBasis(0.0f);
         m_title->setMaxLines(1);
@@ -228,7 +174,7 @@ public:
         m_iconBubble->setHeight(40.0f);
         m_iconBubble->setBorderRadius(14.0f);
         m_iconBubble->setBorder(1.0f, 0x11E2E8F0);
-        m_iconBubble->addChild(makeImage("EnglishWordsAssets/Images/icon-add.png", 18.0f), LFBoxAlign::Center);
+        m_iconBubble->addChild(EnglishWordsUI::makeImage("EnglishWordsAssets/Images/icon-add.png", 18.0f), LFBoxAlign::Center);
         m_headerRow->addChild(m_iconBubble);
 
         m_topicList = LFListView::createVertical();
@@ -261,7 +207,7 @@ public:
             m_iconBubble->setBackgroundColor(m_style.accentColor);
             m_topicList->setDisplay(YGDisplayFlex);
         } else {
-            m_card->setBorder(1.0f, kCardBorderColor);
+            m_card->setBorder(1.0f, EnglishWordsUI::kCardBorderColor);
             m_headerRow->setBackgroundColor(0xFFFFFFFF);
             m_iconBubble->setBackgroundColor(m_style.tintColor);
             m_topicList->setDisplay(YGDisplayNone);
@@ -284,51 +230,20 @@ private:
 
 std::shared_ptr<LearningPage> LearningPage::create(std::weak_ptr<LFNavigator> nav) {
     auto page = std::make_shared<LearningPage>();
-    page->setBackgroundColor(kPageBackgroundColor);
+    page->setBackgroundColor(EnglishWordsUI::kPageBackgroundColor);
     page->initUI(nav);
     return page;
 }
 
 void LearningPage::initUI(std::weak_ptr<LFNavigator> nav) {
-    auto root = LFLinear::createVertical();
-    root->matchParentWidth();
-    root->matchParentHeight();
-    root->setPadding(YGEdgeTop, 20.0f);
-    root->setPadding(YGEdgeLeft, 20.0f);
-    root->setPadding(YGEdgeRight, 20.0f);
-    root->setSpacing(16.0f);
+    auto root = EnglishWordsUI::createPageRoot();
     addChild(root);
 
-    auto headerRow = LFLinear::createHorizontal();
-    headerRow->matchParentWidth();
-    headerRow->wrapContentHeight();
-    headerRow->setAlignItems(YGAlignCenter);
-    headerRow->setSpacing(12.0f);
-
-    auto backButton = makeIconButtonLikeSurface("EnglishWordsAssets/Images/icon-arrow-left.png", [nav]() {
+    EnglishWordsUI::addPageHeader(root, "Study", [nav]() {
         if (auto navigator = nav.lock()) {
             navigator->pop();
         }
-    });
-    headerRow->addChild(backButton);
-
-    auto titleWrap = LFLinear::createVertical();
-    titleWrap->setFlexGrow(1.0f);
-    titleWrap->setFlexBasis(0.0f);
-    titleWrap->wrapContentHeight();
-
-    auto title = makeText("Study", 22.0f, kTitleColor);
-    title->matchParentWidth();
-    title->setTextHAlign(LFTextHAlign::Center);
-    titleWrap->addChild(title);
-    headerRow->addChild(titleWrap);
-
-    auto spacer = LFBox::create();
-    spacer->setWidth(46.0f);
-    spacer->setHeight(46.0f);
-    headerRow->addChild(spacer);
-
-    root->addChild(headerRow);
+    }, 22.0f);
 
     auto scrollView = LFScrollView::createVertical();
     scrollView->matchParentWidth();
@@ -344,9 +259,9 @@ void LearningPage::initUI(std::weak_ptr<LFNavigator> nav) {
     m_content->setPadding(YGEdgeAll, 8.0f);
     m_content->setPadding(YGEdgeBottom, 20.0f);
     m_content->setSpacing(0.0f);
-    m_content->setBackgroundColor(kSurfaceColor);
+    m_content->setBackgroundColor(EnglishWordsUI::kSurfaceColor);
     m_content->setBorderRadius(28.0f);
-    m_content->setBorder(1.0f, kSurfaceBorderColor);
+    m_content->setBorder(1.0f, EnglishWordsUI::kSurfaceBorderColor);
     scrollView->addChild(m_content);
 
     loadLevels(nav);
@@ -357,14 +272,14 @@ void LearningPage::loadLevels(std::weak_ptr<LFNavigator> nav) {
 
     std::weak_ptr<LearningPage> weakSelf = std::static_pointer_cast<LearningPage>(shared_from_this());
     loadEnglishWordLevels(
-        [weakSelf, nav](bool ok, std::vector<EnglishWordLevel> levels, const std::string& error) {
+        [weakSelf, nav](bool ok, std::vector<EnglishWordLevel> levels, const std::string&) {
             auto self = weakSelf.lock();
             if (!self) {
                 return;
             }
 
             if (!ok) {
-                self->showStatus(error.empty() ? "Failed to load topics." : "Failed to load topics.");
+                self->showStatus("Failed to load topics.");
                 return;
             }
 
@@ -378,7 +293,7 @@ void LearningPage::renderLevels(const std::vector<EnglishWordLevel>& levels, std
         return;
     }
 
-    clearChildren(m_content);
+    EnglishWordsUI::clearChildren(m_content);
     if (levels.empty()) {
         showStatus("No levels available.");
         return;
@@ -420,21 +335,6 @@ void LearningPage::showStatus(const std::string& text) {
         return;
     }
 
-    clearChildren(m_content);
-
-    auto card = LFLinear::createVertical();
-    card->matchParentWidth();
-    card->wrapContentHeight();
-    card->setPadding(YGEdgeAll, 24.0f);
-    card->setBorderRadius(22.0f);
-    card->setBackgroundColor(0xFFFFFFFF);
-    card->setBorder(1.0f, kCardBorderColor);
-    card->setShadow(0.0f, 8.0f, 22.0f, 0.0f, kCardShadowColor);
-
-    auto message = makeText(text, 14.0f, 0xFF526275);
-    message->matchParentWidth();
-    message->setTextHAlign(LFTextHAlign::Center);
-    card->addChild(message);
-
-    m_content->addChild(card);
+    EnglishWordsUI::clearChildren(m_content);
+    m_content->addChild(EnglishWordsUI::makeStatusCard(text));
 }

@@ -1,6 +1,6 @@
 #include "TopicPage.h"
 
-#include "EnglishWordsData.h"
+#include "EnglishWordsUI.h"
 #include "LFAudioPlayer.h"
 #include "LFPathProvider.h"
 
@@ -14,65 +14,13 @@ struct TopicPageState {
     std::vector<EnglishWordEntry> entries;
     std::string statusMessage = "Loading...";
     std::string tempDirectory;
-    bool resolvingTempDirectory = false;
-    std::vector<std::function<void(const std::string&)>> pendingTempDirectoryCallbacks;
     std::unordered_map<std::string, std::string> cachedAudioFiles;
     std::shared_ptr<LFAudioPlayer> audioPlayer;
 };
 
 namespace {
 
-constexpr uint32_t kPageBackgroundColor = 0xFFF4F7FB;
-constexpr uint32_t kTitleColor = 0xFF142033;
-constexpr uint32_t kCardBorderColor = 0xFFDCE6F2;
-constexpr uint32_t kCardShadowColor = 0x10233B53;
 constexpr uint32_t kHintColor = 0xFF3567A3;
-
-std::shared_ptr<LFText> makeText(const std::string& text, float size, uint32_t color) {
-    auto node = std::make_shared<LFText>();
-    node->setText(text);
-    node->setFontSize(size);
-    node->setTextColor(color);
-    node->setLineHeight(1.3f);
-    return node;
-}
-
-std::shared_ptr<LFImage> makeImage(const std::string& src, float size) {
-    auto image = std::make_shared<LFImage>();
-    image->setWidth(size);
-    image->setHeight(size);
-    image->setFit(LFImageFit::Contain);
-    image->setSrc(src);
-    return image;
-}
-
-std::shared_ptr<LFLinear> makeIconButtonLikeSurface(const std::string& iconPath, std::function<void()> onTap) {
-    auto surface = LFLinear::createHorizontal();
-    surface->setWidth(46.0f);
-    surface->setHeight(46.0f);
-    surface->setBorderRadius(16.0f);
-    surface->setBorder(1.0f, 0xFFD8E4F1);
-    surface->setBackgroundColor(0xFFFFFFFF);
-    surface->setShadow(0.0f, 6.0f, 18.0f, 0.0f, 0x10233B53);
-    surface->setGravity(LFAlignment::Center, LFAlignment::Center);
-    surface->addChild(makeImage(iconPath, 18.0f));
-    surface->setOnTap([onTap = std::move(onTap)](const LFPoint&) {
-        if (onTap) {
-            onTap();
-        }
-    });
-    return surface;
-}
-
-bool ensureDirectory(const std::string& path) {
-    if (path.empty()) {
-        return false;
-    }
-
-    std::error_code ec;
-    std::filesystem::create_directories(std::filesystem::u8path(path), ec);
-    return !ec;
-}
 
 bool writeBinaryFile(const std::string& path, const std::shared_ptr<LFData>& data) {
     if (path.empty() || !data || !data->data || data->size == 0) {
@@ -116,22 +64,6 @@ std::string buildCachedAudioPath(const std::string& directory, const std::string
     return path.u8string();
 }
 
-void flushTempDirectoryCallbacks(const std::shared_ptr<TopicPageState>& state, const std::string& directory) {
-    if (!state) {
-        return;
-    }
-
-    state->resolvingTempDirectory = false;
-    auto callbacks = std::move(state->pendingTempDirectoryCallbacks);
-    state->pendingTempDirectoryCallbacks.clear();
-
-    for (auto& callback : callbacks) {
-        if (callback) {
-            callback(directory);
-        }
-    }
-}
-
 class WordListItemView : public LFLinear {
 public:
     using Ptr = std::shared_ptr<WordListItemView>;
@@ -151,9 +83,9 @@ public:
         m_card->setPadding(YGEdgeAll, 16.0f);
         m_card->setSpacing(14.0f);
         m_card->setBorderRadius(18.0f);
-        m_card->setBorder(1.0f, kCardBorderColor);
+        m_card->setBorder(1.0f, EnglishWordsUI::kCardBorderColor);
         m_card->setBackgroundColor(0xFFFFFFFF);
-        m_card->setShadow(0.0f, 8.0f, 20.0f, 0.0f, kCardShadowColor);
+        m_card->setShadow(0.0f, 8.0f, 20.0f, 0.0f, EnglishWordsUI::kCardShadowColor);
         m_card->setGravity(LFAlignment::Start, LFAlignment::Center);
         m_card->setOnTap([this](const LFPoint&) {
             if (m_onTap) {
@@ -169,15 +101,15 @@ public:
         m_copy->setSpacing(4.0f);
         m_card->addChild(m_copy);
 
-        m_word = makeText("", 16.0f, kTitleColor);
+        m_word = EnglishWordsUI::makeText("", 16.0f, EnglishWordsUI::kTitleColor);
         m_word->matchParentWidth();
         m_copy->addChild(m_word);
 
-        m_translation = makeText("", 13.0f, 0xFF657489);
+        m_translation = EnglishWordsUI::makeText("", 13.0f, 0xFF657489);
         m_translation->matchParentWidth();
         m_copy->addChild(m_translation);
 
-        m_hint = makeText("Play", 12.0f, kHintColor);
+        m_hint = EnglishWordsUI::makeText("Play", 12.0f, kHintColor);
         m_hint->setMaxLines(1);
         m_card->addChild(m_hint);
     }
@@ -273,7 +205,7 @@ private:
 std::shared_ptr<TopicPage> TopicPage::create(std::weak_ptr<LFNavigator> nav, EnglishWordTopic topic) {
     auto page = std::make_shared<TopicPage>();
     page->m_topic = std::move(topic);
-    page->setBackgroundColor(kPageBackgroundColor);
+    page->setBackgroundColor(EnglishWordsUI::kPageBackgroundColor);
     page->initUI(nav);
     return page;
 }
@@ -287,47 +219,14 @@ void TopicPage::onExit() {
 void TopicPage::initUI(std::weak_ptr<LFNavigator> nav) {
     m_state = std::make_shared<TopicPageState>();
 
-    auto root = LFLinear::createVertical();
-    root->matchParentWidth();
-    root->matchParentHeight();
-    root->setPadding(YGEdgeTop, 20.0f);
-    root->setPadding(YGEdgeLeft, 20.0f);
-    root->setPadding(YGEdgeRight, 20.0f);
-    root->setPadding(YGEdgeBottom, 20.0f);
-    root->setSpacing(16.0f);
+    auto root = EnglishWordsUI::createPageRoot(20.0f);
     addChild(root);
 
-    auto headerRow = LFLinear::createHorizontal();
-    headerRow->matchParentWidth();
-    headerRow->wrapContentHeight();
-    headerRow->setAlignItems(YGAlignCenter);
-    headerRow->setSpacing(12.0f);
-
-    auto backButton = makeIconButtonLikeSurface("EnglishWordsAssets/Images/icon-arrow-left.png", [nav]() {
+    EnglishWordsUI::addPageHeader(root, m_topic.title, [nav]() {
         if (auto navigator = nav.lock()) {
             navigator->pop();
         }
-    });
-    headerRow->addChild(backButton);
-
-    auto titleWrap = LFLinear::createVertical();
-    titleWrap->setFlexGrow(1.0f);
-    titleWrap->setFlexBasis(0.0f);
-    titleWrap->wrapContentHeight();
-
-    auto title = makeText(m_topic.title, 20.0f, kTitleColor);
-    title->matchParentWidth();
-    title->setTextHAlign(LFTextHAlign::Center);
-    title->setMaxLines(1);
-    titleWrap->addChild(title);
-    headerRow->addChild(titleWrap);
-
-    auto spacer = LFBox::create();
-    spacer->setWidth(46.0f);
-    spacer->setHeight(46.0f);
-    headerRow->addChild(spacer);
-
-    root->addChild(headerRow);
+    }, 20.0f);
 
     m_listView = LFListView::createVertical();
     m_listView->matchParentWidth();
@@ -335,8 +234,8 @@ void TopicPage::initUI(std::weak_ptr<LFNavigator> nav) {
     m_listView->setFlexBasis(0.0f);
     m_listView->setScrollBarEnabled(false);
     m_listView->setBounces(false);
-    m_listView->setBackgroundColor(0xFFEAF1F8);
-    m_listView->setBorder(1.0f, 0xFFDDE7F1);
+    m_listView->setBackgroundColor(EnglishWordsUI::kSurfaceColor);
+    m_listView->setBorder(1.0f, EnglishWordsUI::kSurfaceBorderColor);
     m_listView->setBorderRadius(28.0f);
     root->addChild(m_listView);
 
@@ -358,7 +257,7 @@ void TopicPage::loadEntries() {
     std::weak_ptr<TopicPage> weakSelf = std::static_pointer_cast<TopicPage>(shared_from_this());
     loadEnglishWordEntries(
         m_topic,
-        [weakSelf](bool ok, std::vector<EnglishWordEntry> entries, const std::string& error) {
+        [weakSelf](bool ok, std::vector<EnglishWordEntry> entries, const std::string&) {
             auto self = weakSelf.lock();
             if (!self || !self->m_state) {
                 return;
@@ -371,9 +270,7 @@ void TopicPage::loadEntries() {
                     : "";
             } else {
                 self->m_state->entries.clear();
-                self->m_state->statusMessage = error.empty()
-                    ? "Failed to load topic."
-                    : "Failed to load topic.";
+                self->m_state->statusMessage = "Failed to load topic.";
             }
 
             self->refreshList();
@@ -417,10 +314,6 @@ void TopicPage::playEntryAudio(const EnglishWordEntry& entry) {
                         return;
                     }
 
-                    if (!ensureDirectory(directory)) {
-                        return;
-                    }
-
                     const std::string filePath = buildCachedAudioPath(directory, entry.audioAssetPath);
                     if (!writeBinaryFile(filePath, data)) {
                         return;
@@ -444,27 +337,22 @@ void TopicPage::resolveTemporaryDirectory(std::function<void(const std::string&)
         return;
     }
 
-    m_state->pendingTempDirectoryCallbacks.push_back(std::move(callback));
-    if (m_state->resolvingTempDirectory) {
+    const std::string fallback = fallbackTemporaryDirectory();
+    if (!fallback.empty()) {
+        m_state->tempDirectory = fallback;
+        callback(m_state->tempDirectory);
         return;
     }
 
-    m_state->resolvingTempDirectory = true;
-
     std::weak_ptr<TopicPage> weakSelf = std::static_pointer_cast<TopicPage>(shared_from_this());
-    LFPathProvider::getTemporaryPath([weakSelf](const LFPathProviderResult& result) {
+    LFPathProvider::getTemporaryPath([weakSelf, callback = std::move(callback)](const LFPathProviderResult& result) mutable {
         auto self = weakSelf.lock();
         if (!self || !self->m_state) {
             return;
         }
 
-        std::string directory = result.ok ? result.path : "";
-        if (directory.empty()) {
-            directory = fallbackTemporaryDirectory();
-        }
-
-        self->m_state->tempDirectory = directory;
-        flushTempDirectoryCallbacks(self->m_state, directory);
+        self->m_state->tempDirectory = result.ok ? result.path : "";
+        callback(self->m_state->tempDirectory);
     });
 }
 

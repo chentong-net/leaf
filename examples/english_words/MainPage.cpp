@@ -1,5 +1,6 @@
 #include "MainPage.h"
 
+#include "EnglishWordsUI.h"
 #include "LearningPage.h"
 
 #include <array>
@@ -16,24 +17,6 @@ struct ShortcutSpec {
     bool opensStudyPage;
 };
 
-std::shared_ptr<LFText> makeText(const std::string& text, float size, uint32_t color) {
-    auto node = std::make_shared<LFText>();
-    node->setText(text);
-    node->setFontSize(size);
-    node->setTextColor(color);
-    node->setLineHeight(1.3f);
-    return node;
-}
-
-std::shared_ptr<LFImage> makeImage(const std::string& src, float size) {
-    auto image = std::make_shared<LFImage>();
-    image->setWidth(size);
-    image->setHeight(size);
-    image->setFit(LFImageFit::Contain);
-    image->setSrc(src);
-    return image;
-}
-
 LFButton::Ptr makeHeaderIconButton(const std::shared_ptr<LFText>& statusText) {
     auto button = LFButton::create();
     button->setWidth(52.0f);
@@ -44,7 +27,7 @@ LFButton::Ptr makeHeaderIconButton(const std::shared_ptr<LFText>& statusText) {
     button->setBackgroundColor(LFButtonState::Pressed, 0xFFEAF3FF);
     button->setShadow(0.0f, 8.0f, 20.0f, 0.0f, 0x10233B53);
 
-    auto icon = makeImage("EnglishWordsAssets/Images/icon-settings.png", 22.0f);
+    auto icon = EnglishWordsUI::makeImage("EnglishWordsAssets/Images/icon-settings.png", 22.0f);
     button->addChild(icon, LFBoxAlign::Center);
 
     button->setOnClick([statusText](LFButton*) {
@@ -86,10 +69,10 @@ LFButton::Ptr makeShortcutCard(const ShortcutSpec& spec,
     iconBubble->setBorderRadius(17.0f);
     iconBubble->setBackgroundColor(spec.iconSurfaceColor);
     iconBubble->setBorder(1.0f, 0x0DE2E8F0);
-    iconBubble->addChild(makeImage(spec.iconPath, 24.0f), LFBoxAlign::Center);
+    iconBubble->addChild(EnglishWordsUI::makeImage(spec.iconPath, 24.0f), LFBoxAlign::Center);
     topRow->addChild(iconBubble);
 
-    auto arrow = makeImage("arrow-right.png", 14.0f);
+    auto arrow = EnglishWordsUI::makeImage("arrow-right.png", 14.0f);
     arrow->setOpacity(0.58f);
     topRow->addChild(arrow);
 
@@ -100,11 +83,11 @@ LFButton::Ptr makeShortcutCard(const ShortcutSpec& spec,
     bottom->wrapContentHeight();
     bottom->setSpacing(6.0f);
 
-    auto title = makeText(spec.title, 17.0f, 0xFF142033);
+    auto title = EnglishWordsUI::makeText(spec.title, 17.0f, 0xFF142033);
     title->matchParentWidth();
     bottom->addChild(title);
 
-    auto subtitle = makeText(spec.subtitle, 12.5f, 0xFF6B7A90);
+    auto subtitle = EnglishWordsUI::makeText(spec.subtitle, 12.5f, 0xFF6B7A90);
     subtitle->matchParentWidth();
     bottom->addChild(subtitle);
 
@@ -139,7 +122,7 @@ LFPage::Ptr MainPage::create(std::weak_ptr<LFNavigator> nav) {
     }};
 
     auto page = LFPage::create();
-    page->setBackgroundColor(0xFFF4F7FB);
+    page->setBackgroundColor(EnglishWordsUI::kPageBackgroundColor);
 
     auto scrollView = LFScrollView::createVertical();
     scrollView->matchParentWidth();
@@ -152,7 +135,7 @@ LFPage::Ptr MainPage::create(std::weak_ptr<LFNavigator> nav) {
     content->wrapContentHeight();
     content->setPadding(YGEdgeAll, 20.0f);
     content->setSpacing(18.0f);
-    content->setBackgroundColor(0xFFF4F7FB);
+    content->setBackgroundColor(EnglishWordsUI::kPageBackgroundColor);
     scrollView->addChild(content);
 
     auto headerRow = LFLinear::createHorizontal();
@@ -166,17 +149,17 @@ LFPage::Ptr MainPage::create(std::weak_ptr<LFNavigator> nav) {
     headerLeft->wrapContentHeight();
     headerLeft->setSpacing(4.0f);
 
-    auto appName = makeText("EnglishWords", 30.0f, 0xFF142033);
+    auto appName = EnglishWordsUI::makeText("EnglishWords", 30.0f, 0xFF142033);
     appName->matchParentWidth();
     headerLeft->addChild(appName);
 
-    auto subtitle = makeText("English word trainer built with Leaf.", 13.0f, 0xFF6B7A90);
+    auto subtitle = EnglishWordsUI::makeText("English word trainer built with Leaf.", 13.0f, 0xFF6B7A90);
     subtitle->matchParentWidth();
     headerLeft->addChild(subtitle);
 
     headerRow->addChild(headerLeft);
 
-    auto statusText = makeText("Selected: none", 13.0f, 0xFFF8FBFF);
+    auto statusText = EnglishWordsUI::makeText("Selected: none", 13.0f, 0xFFF8FBFF);
     statusText->matchParentWidth();
     statusText->setMaxLines(1);
 
@@ -192,11 +175,11 @@ LFPage::Ptr MainPage::create(std::weak_ptr<LFNavigator> nav) {
     heroCard->setBorderRadius(28.0f);
     heroCard->setShadow(0.0f, 14.0f, 30.0f, 0.0f, 0x183567A3);
 
-    auto heroTitle = makeText("Home preview", 21.0f, 0xFFFFFFFF);
+    auto heroTitle = EnglishWordsUI::makeText("Home preview", 21.0f, 0xFFFFFFFF);
     heroTitle->matchParentWidth();
     heroCard->addChild(heroTitle);
 
-    auto heroSubtitle = makeText("The page is UI-first for now. Tap any entry to verify layout and click handling.", 13.0f, 0xFFDDEBFF);
+    auto heroSubtitle = EnglishWordsUI::makeText("The page is UI-first for now. Tap any entry to verify layout and click handling.", 13.0f, 0xFFDDEBFF);
     heroSubtitle->matchParentWidth();
     heroCard->addChild(heroSubtitle);
 
@@ -214,7 +197,7 @@ LFPage::Ptr MainPage::create(std::weak_ptr<LFNavigator> nav) {
 
     content->addChild(heroCard);
 
-    auto sectionLabel = makeText("Quick Access", 14.0f, 0xFF516174);
+    auto sectionLabel = EnglishWordsUI::makeText("Quick Access", 14.0f, 0xFF516174);
     sectionLabel->matchParentWidth();
     content->addChild(sectionLabel);
 
@@ -237,7 +220,7 @@ LFPage::Ptr MainPage::create(std::weak_ptr<LFNavigator> nav) {
     gridSurface->addChild(grid);
     content->addChild(gridSurface);
 
-    auto footnote = makeText("Navigation is intentionally deferred. This page is for home UI validation on desktop and mobile layouts.", 12.0f, 0xFF7A889C);
+    auto footnote = EnglishWordsUI::makeText("Navigation is intentionally deferred. This page is for home UI validation on desktop and mobile layouts.", 12.0f, 0xFF7A889C);
     footnote->matchParentWidth();
     content->addChild(footnote);
 
