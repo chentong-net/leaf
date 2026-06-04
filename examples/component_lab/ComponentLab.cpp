@@ -2,6 +2,7 @@
 #include "LFEngine.h"
 #include "LFAudioPlayer.h"
 #include "LFCheckbox.h"
+#include "LFI18n.h"
 #include "LFPathProvider.h"
 #include "LFRadioGroup.h"
 #include "ProfilePage.h"
@@ -148,6 +149,14 @@ std::string formatAudioTime(double seconds) {
 
 std::string formatAudioProgress(double positionSeconds, double durationSeconds) {
     return formatAudioTime(positionSeconds) + " / " + formatAudioTime(durationSeconds);
+}
+
+std::string describeLocale(const LFLocale& locale, const char* fallback = "Unavailable") {
+    const std::string tag = locale.toTag();
+    if (!tag.empty()) {
+        return tag;
+    }
+    return fallback ? fallback : "";
 }
 
 bool writeBinaryFile(const std::filesystem::path& path, const std::shared_ptr<LFData>& data) {
@@ -680,6 +689,112 @@ LFLinear::Ptr buildFunctionDemoPage() {
     textCard->addChild(textControlRow2);
 
     page->addChild(textCard);
+
+    auto i18nCard = makeSectionCard(
+        "LFI18n",
+        "Loads i18n.json via LFResourceProvider, applies system-language defaults, supports manual setLanguage, and demonstrates default-language fallback."
+    );
+
+    auto i18nStatus = makeText("i18n: loading...", 13.0f, 0xFF475569);
+    i18nStatus->matchParentWidth();
+    i18nCard->addChild(i18nStatus);
+
+    auto i18nTitle = makeText("...", 18.0f, 0xFF142033);
+    i18nTitle->matchParentWidth();
+    LFI18n::bindText(i18nTitle, "i18n.demo.title");
+    i18nCard->addChild(i18nTitle);
+
+    auto i18nDescription = makeText("...", 13.0f, 0xFF637083);
+    i18nDescription->matchParentWidth();
+    LFI18n::bindText(i18nDescription, "i18n.demo.description");
+    i18nCard->addChild(i18nDescription);
+
+    auto systemLanguageRow = makeRow();
+    auto systemLanguageLabel = makeText("...", 14.0f, 0xFF334155);
+    systemLanguageLabel->setFlexGrow(1.0f);
+    LFI18n::bindText(systemLanguageLabel, "i18n.demo.system_language_label");
+    auto systemLanguageValue = makeText("...", 14.0f, 0xFF0F5B99);
+    systemLanguageRow->addChild(systemLanguageLabel);
+    systemLanguageRow->addChild(systemLanguageValue);
+    i18nCard->addChild(systemLanguageRow);
+
+    auto currentLanguageRow = makeRow();
+    auto currentLanguageLabel = makeText("...", 14.0f, 0xFF334155);
+    currentLanguageLabel->setFlexGrow(1.0f);
+    LFI18n::bindText(currentLanguageLabel, "i18n.demo.current_language_label");
+    auto currentLanguageValue = makeText("...", 14.0f, 0xFF0F5B99);
+    currentLanguageRow->addChild(currentLanguageLabel);
+    currentLanguageRow->addChild(currentLanguageValue);
+    i18nCard->addChild(currentLanguageRow);
+
+    auto manualSwitchTip = makeText("...", 12.0f, 0xFF64748B);
+    manualSwitchTip->matchParentWidth();
+    LFI18n::bindText(manualSwitchTip, "i18n.demo.manual_switch_tip");
+    i18nCard->addChild(manualSwitchTip);
+
+    auto i18nButtonRow = makeRow();
+    auto setZhButton = makeActionButton("zh-CN", [i18nStatus, currentLanguageValue](LFButton*) {
+        const bool success = LFI18n::setLanguage(LFLocales::ZhCN);
+        currentLanguageValue->setText(describeLocale(LFI18n::getCurrentLanguage(), "Unavailable"));
+        i18nStatus->setText(success ? "i18n: setLanguage(zh-CN)" : "i18n: zh-CN unavailable, fallback applied");
+    });
+    auto setEnButton = makeActionButton("en-US", [i18nStatus, currentLanguageValue](LFButton*) {
+        const bool success = LFI18n::setLanguage(LFLocales::EnUS);
+        currentLanguageValue->setText(describeLocale(LFI18n::getCurrentLanguage(), "Unavailable"));
+        i18nStatus->setText(success ? "i18n: setLanguage(en-US)" : "i18n: en-US unavailable, fallback applied");
+    });
+    auto setRuButton = makeActionButton("ru-RU", [i18nStatus, currentLanguageValue](LFButton*) {
+        const bool success = LFI18n::setLanguage(LFLocales::RuRU);
+        currentLanguageValue->setText(describeLocale(LFI18n::getCurrentLanguage(), "Unavailable"));
+        i18nStatus->setText(success ? "i18n: setLanguage(ru-RU)" : "i18n: ru-RU unavailable, fallback applied");
+    });
+    setZhButton->setFlexGrow(1.0f);
+    setEnButton->setFlexGrow(1.0f);
+    setRuButton->setFlexGrow(1.0f);
+    i18nButtonRow->addChild(setZhButton);
+    i18nButtonRow->addChild(setEnButton);
+    i18nButtonRow->addChild(setRuButton);
+    i18nCard->addChild(i18nButtonRow);
+
+    auto sampleTextLabel = makeText("...", 13.0f, 0xFF64748B);
+    sampleTextLabel->matchParentWidth();
+    LFI18n::bindText(sampleTextLabel, "i18n.demo.sample_label");
+    i18nCard->addChild(sampleTextLabel);
+
+    auto samplePrimary = makeText("...", 14.0f, 0xFF243244);
+    samplePrimary->matchParentWidth();
+    samplePrimary->setLineHeight(1.4f);
+    LFI18n::bindText(samplePrimary, "i18n.demo.sample_primary");
+    i18nCard->addChild(samplePrimary);
+
+    auto sampleSecondary = makeText("...", 14.0f, 0xFF243244);
+    sampleSecondary->matchParentWidth();
+    sampleSecondary->setLineHeight(1.4f);
+    LFI18n::bindText(sampleSecondary, "i18n.demo.sample_secondary");
+    i18nCard->addChild(sampleSecondary);
+
+    auto fallbackLabel = makeText("...", 13.0f, 0xFF8B5E00);
+    fallbackLabel->matchParentWidth();
+    LFI18n::bindText(fallbackLabel, "i18n.demo.default_fallback_label");
+    i18nCard->addChild(fallbackLabel);
+
+    auto fallbackValue = makeText("...", 14.0f, 0xFF7C2D12);
+    fallbackValue->matchParentWidth();
+    fallbackValue->setLineHeight(1.4f);
+    LFI18n::bindText(fallbackValue, "i18n.demo.default_fallback_value");
+    i18nCard->addChild(fallbackValue);
+
+    LFI18n::initialize([i18nStatus, systemLanguageValue, currentLanguageValue](bool ready) {
+        systemLanguageValue->setText(describeLocale(LFI18n::getSystemLanguage(), "Unavailable"));
+        currentLanguageValue->setText(describeLocale(LFI18n::getCurrentLanguage(), "Unavailable"));
+        if (ready) {
+            i18nStatus->setText("i18n: ready");
+        } else {
+            i18nStatus->setText("i18n: load failed, using key fallback");
+        }
+    });
+
+    page->addChild(i18nCard);
 
     auto overlayCard = makeSectionCard(
         "LFOverlay",

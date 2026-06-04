@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "defaultLanguage": "zh-CN",
+  "translations": {
+    "zh-CN": {
+      "i18n.demo.title": "国际化测试区域",
+      "i18n.demo.description": "当前卡片中的标题、说明、示例文案和回退文案都来自 i18n.json。启动时会先尝试读取系统语言，也可以通过下面的 setLanguage 按钮手动切换。",
+      "i18n.demo.system_language_label": "系统语言",
+      "i18n.demo.current_language_label": "当前语言",
+      "i18n.demo.manual_switch_tip": "点击下面的语言按钮会直接调用 setLanguage(...)。",
+      "i18n.demo.sample_label": "多语言文案示例",
+      "i18n.demo.sample_primary": "这是一段中文示例文案，用来验证启动时的自动语言选择和运行时语言切换。",
+      "i18n.demo.sample_secondary": "如果某个语言没有提供对应 key，插件会回退到默认语言，而不是显示空白内容。",
+      "i18n.demo.default_fallback_label": "默认语言回退示例（下面这行只在默认语言中提供）",
+      "i18n.demo.default_fallback_value": "这行文本只写在默认语言 zh-CN 中，所以切换到英文或俄文时也会回退显示这句中文。"
+    },
+    "en-US": {
+      "i18n.demo.title": "Internationalization Test Area",
+      "i18n.demo.description": "The title, description, sample text, and fallback text inside this card are loaded from i18n.json. The plugin first tries the system language, and you can also switch language manually with setLanguage below.",
+      "i18n.demo.system_language_label": "System Language",
+      "i18n.demo.current_language_label": "Current Language",
+      "i18n.demo.manual_switch_tip": "Tap a language button below to call setLanguage(...).",
+      "i18n.demo.sample_label": "Localized Text Samples",
+      "i18n.demo.sample_primary": "This English sample verifies automatic language selection at startup and manual language switching at runtime.",
+      "i18n.demo.sample_secondary": "When a key is missing in the current language, the plugin falls back to the default language instead of leaving the text blank.",
+      "i18n.demo.default_fallback_label": "Default-language fallback sample (the line below exists only in the default language)"
+    },
+    "ru-RU": {
+      "i18n.demo.title": "Зона тестирования i18n",
+      "i18n.demo.description": "Заголовок, описание, примеры текста и проверка fallback в этой карточке загружаются из i18n.json. Сначала используется язык системы, а затем язык можно переключить вручную через setLanguage.",
+      "i18n.demo.system_language_label": "Системный язык",
+      "i18n.demo.current_language_label": "Текущий язык",
+      "i18n.demo.manual_switch_tip": "Нажмите кнопку языка ниже, чтобы вызвать setLanguage(...).",
+      "i18n.demo.sample_label": "Примеры локализованного текста",
+      "i18n.demo.sample_primary": "Этот русский пример нужен для проверки автоматического выбора языка при запуске и ручного переключения во время работы.",
+      "i18n.demo.sample_secondary": "Если для текущего языка нет нужного key, плагин откатится к языку по умолчанию, а не оставит пустую строку.",
+      "i18n.demo.default_fallback_label": "Проверка fallback к языку по умолчанию (строка ниже есть только в языке по умолчанию)"
+    }
+  }
+}
