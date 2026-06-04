@@ -23,6 +23,7 @@ target_link_libraries(component-lab
         my-profile
         checkbox
         audio-player
+        i18n
         path-provider
         radio-group
 )

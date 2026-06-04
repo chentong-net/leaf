@@ -34,7 +34,7 @@ add_executable(leaf-web
 
 target_link_libraries(leaf-web PRIVATE
         leaf-core
-        app-adapter
+        leaf-application
 )
 
 set_target_properties(leaf-web PROPERTIES SUFFIX ".html")

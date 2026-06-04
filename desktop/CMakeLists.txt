@@ -35,7 +35,7 @@ add_executable(leaf-desktop
 target_link_libraries(leaf-desktop PRIVATE
         glfw
         leaf-core
-        app-adapter
+        leaf-application
 )
 
 #if(APPLE)
