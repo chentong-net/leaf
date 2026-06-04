@@ -4,7 +4,7 @@ endif()
 
 add_library(english-words STATIC
         EnglishWordsApp.cpp
-        EnglishWordsData.cpp
+        EnglishWordsDataManager.cpp
         LearningPage.cpp
         MainPage.cpp
         TopicPage.cpp

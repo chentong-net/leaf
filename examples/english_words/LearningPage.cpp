@@ -1,7 +1,6 @@
 #include "LearningPage.h"
 
 #include "EnglishWordsUI.h"
-#include "TopicPage.h"
 
 #include <functional>
 #include <string>
@@ -195,8 +194,7 @@ public:
 
         m_title->setText(level.title);
         m_topicList->setHeight(static_cast<float>(m_level.topics.size()) * kTopicItemExtent);
-        m_topicAdapter = std::make_shared<TopicListAdapter>(m_level, std::move(onTopicTap));
-        m_topicList->setAdapter(m_topicAdapter);
+        m_topicList->setAdapter(std::make_shared<TopicListAdapter>(m_level, std::move(onTopicTap)));
         setExpanded(false);
     }
 
@@ -223,25 +221,28 @@ private:
     std::shared_ptr<LFText> m_title;
     std::shared_ptr<LFBox> m_iconBubble;
     std::shared_ptr<LFListView> m_topicList;
-    std::shared_ptr<TopicListAdapter> m_topicAdapter;
 };
 
 } // namespace
 
-std::shared_ptr<LearningPage> LearningPage::create(std::weak_ptr<LFNavigator> nav) {
+std::shared_ptr<LearningPage> LearningPage::create(
+    std::function<void()> onBack,
+    std::function<void(const EnglishWordTopic&)> onTopicSelected) {
     auto page = std::make_shared<LearningPage>();
+    page->m_onBack = std::move(onBack);
+    page->m_onTopicSelected = std::move(onTopicSelected);
     page->setBackgroundColor(EnglishWordsUI::kPageBackgroundColor);
-    page->initUI(nav);
+    page->buildUI();
     return page;
 }
 
-void LearningPage::initUI(std::weak_ptr<LFNavigator> nav) {
+void LearningPage::buildUI() {
     auto root = EnglishWordsUI::createPageRoot();
     addChild(root);
 
-    EnglishWordsUI::addPageHeader(root, "Study", [nav]() {
-        if (auto navigator = nav.lock()) {
-            navigator->pop();
+    EnglishWordsUI::addPageHeader(root, "Study", [this]() {
+        if (m_onBack) {
+            m_onBack();
         }
     }, 22.0f);
 
@@ -263,50 +264,40 @@ void LearningPage::initUI(std::weak_ptr<LFNavigator> nav) {
     m_content->setBorderRadius(28.0f);
     m_content->setBorder(1.0f, EnglishWordsUI::kSurfaceBorderColor);
     scrollView->addChild(m_content);
-
-    loadLevels(nav);
 }
 
-void LearningPage::loadLevels(std::weak_ptr<LFNavigator> nav) {
-    showStatus("Loading topics...");
-
-    std::weak_ptr<LearningPage> weakSelf = std::static_pointer_cast<LearningPage>(shared_from_this());
-    loadEnglishWordLevels(
-        [weakSelf, nav](bool ok, std::vector<EnglishWordLevel> levels, const std::string&) {
-            auto self = weakSelf.lock();
-            if (!self) {
-                return;
-            }
-
-            if (!ok) {
-                self->showStatus("Failed to load topics.");
-                return;
-            }
-
-            self->renderLevels(levels, nav);
-        }
-    );
+void LearningPage::setLevels(const std::vector<EnglishWordLevel>& levels) {
+    m_levels = levels;
+    renderLevels();
 }
 
-void LearningPage::renderLevels(const std::vector<EnglishWordLevel>& levels, std::weak_ptr<LFNavigator> nav) {
+void LearningPage::showStatus(const std::string& text) {
     if (!m_content) {
         return;
     }
-
     EnglishWordsUI::clearChildren(m_content);
-    if (levels.empty()) {
+    m_content->addChild(EnglishWordsUI::makeStatusCard(text));
+}
+
+void LearningPage::renderLevels() {
+    if (!m_content) {
+        return;
+    }
+    if (m_levels.empty()) {
         showStatus("No levels available.");
         return;
     }
 
+    EnglishWordsUI::clearChildren(m_content);
+
     auto expandedIndex = std::make_shared<int>(0);
     auto sections = std::make_shared<std::vector<LevelSectionView::Ptr>>();
 
-    for (int index = 0; index < static_cast<int>(levels.size()); ++index) {
+    for (int index = 0; index < static_cast<int>(m_levels.size()); ++index) {
         auto section = LevelSectionView::create();
         section->bind(
-            levels[static_cast<size_t>(index)],
-            resolveLevelStyle(levels[static_cast<size_t>(index)].id, index),
+            m_levels[static_cast<size_t>(index)],
+            resolveLevelStyle(m_levels[static_cast<size_t>(index)].id, index),
             [expandedIndex, sections, index]() {
                 *expandedIndex = (*expandedIndex == index) ? -1 : index;
                 for (int sectionIndex = 0; sectionIndex < static_cast<int>(sections->size()); ++sectionIndex) {
@@ -315,9 +306,9 @@ void LearningPage::renderLevels(const std::vector<EnglishWordLevel>& levels, std
                     }
                 }
             },
-            [nav](const EnglishWordTopic& topic) {
-                if (auto navigator = nav.lock()) {
-                    navigator->push(TopicPage::create(navigator, topic));
+            [this](const EnglishWordTopic& topic) {
+                if (m_onTopicSelected) {
+                    m_onTopicSelected(topic);
                 }
             }
         );
@@ -328,13 +319,4 @@ void LearningPage::renderLevels(const std::vector<EnglishWordLevel>& levels, std
     for (int index = 0; index < static_cast<int>(sections->size()); ++index) {
         (*sections)[static_cast<size_t>(index)]->setExpanded(index == *expandedIndex);
     }
-}
-
-void LearningPage::showStatus(const std::string& text) {
-    if (!m_content) {
-        return;
-    }
-
-    EnglishWordsUI::clearChildren(m_content);
-    m_content->addChild(EnglishWordsUI::makeStatusCard(text));
 }

@@ -1,35 +1,37 @@
 //
-// EnglishWords topic details page.
+// EnglishWords topic page.
 //
 
 #ifndef ENGLISHWORDS_TOPICPAGE_H
 #define ENGLISHWORDS_TOPICPAGE_H
 
-#include "EnglishWordsData.h"
+#include "EnglishWordsDataManager.h"
 #include "LFEngine.h"
 
 #include <functional>
 #include <string>
-
-struct TopicPageState;
+#include <vector>
 
 class TopicPage : public LFPage {
 public:
-    static std::shared_ptr<TopicPage> create(std::weak_ptr<LFNavigator> nav, EnglishWordTopic topic);
+    static std::shared_ptr<TopicPage> create(
+        const std::string& title,
+        std::function<void()> onBack,
+        std::function<void(const EnglishWordEntry&)> onEntrySelected);
 
-    void onExit() override;
+    void setEntries(const std::vector<EnglishWordEntry>& entries);
+    void showStatus(const std::string& text);
 
 private:
-    void initUI(std::weak_ptr<LFNavigator> nav);
-    void loadEntries();
+    void buildUI();
     void refreshList();
-    void playEntryAudio(const EnglishWordEntry& entry);
-    void resolveTemporaryDirectory(std::function<void(const std::string&)> callback);
-    void playAudioFile(const std::string& filePath);
 
-    EnglishWordTopic m_topic;
+    std::string m_title;
+    std::string m_statusMessage = "Loading...";
+    std::vector<EnglishWordEntry> m_entries;
+    std::function<void()> m_onBack;
+    std::function<void(const EnglishWordEntry&)> m_onEntrySelected;
     std::shared_ptr<LFListView> m_listView;
-    std::shared_ptr<TopicPageState> m_state;
 };
 
 #endif // ENGLISHWORDS_TOPICPAGE_H

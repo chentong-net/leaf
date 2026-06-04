@@ -1,68 +1,15 @@
 #include "TopicPage.h"
 
 #include "EnglishWordsUI.h"
-#include "LFAudioPlayer.h"
-#include "LFPathProvider.h"
 
-#include <filesystem>
-#include <fstream>
 #include <functional>
 #include <string>
 #include <utility>
-
-struct TopicPageState {
-    std::vector<EnglishWordEntry> entries;
-    std::string statusMessage = "Loading...";
-    std::string tempDirectory;
-    std::unordered_map<std::string, std::string> cachedAudioFiles;
-    std::shared_ptr<LFAudioPlayer> audioPlayer;
-};
+#include <vector>
 
 namespace {
 
 constexpr uint32_t kHintColor = 0xFF3567A3;
-
-bool writeBinaryFile(const std::string& path, const std::shared_ptr<LFData>& data) {
-    if (path.empty() || !data || !data->data || data->size == 0) {
-        return false;
-    }
-
-    const auto filePath = std::filesystem::u8path(path);
-    const auto parent = filePath.parent_path();
-    if (!parent.empty()) {
-        std::error_code ec;
-        std::filesystem::create_directories(parent, ec);
-        if (ec) {
-            return false;
-        }
-    }
-
-    std::ofstream output(filePath, std::ios::binary | std::ios::trunc);
-    if (!output.is_open()) {
-        return false;
-    }
-
-    output.write(reinterpret_cast<const char*>(data->data), static_cast<std::streamsize>(data->size));
-    return output.good();
-}
-
-std::string fallbackTemporaryDirectory() {
-#if defined(__DESKTOP__)
-    std::error_code ec;
-    const auto path = std::filesystem::temp_directory_path(ec);
-    if (!ec) {
-        return path.u8string();
-    }
-#endif
-    return "";
-}
-
-std::string buildCachedAudioPath(const std::string& directory, const std::string& assetPath) {
-    const size_t key = std::hash<std::string>{}(assetPath);
-    const auto path = std::filesystem::u8path(directory) /
-                      ("leaf_english_words_" + std::to_string(static_cast<unsigned long long>(key)) + ".mp3");
-    return path.u8string();
-}
 
 class WordListItemView : public LFLinear {
 public:
@@ -114,7 +61,7 @@ public:
         m_card->addChild(m_hint);
     }
 
-    void bindWord(const EnglishWordEntry& entry, std::function<void(const EnglishWordEntry&)> onTap) {
+    void bindEntry(const EnglishWordEntry& entry, std::function<void(const EnglishWordEntry&)> onTap) {
         m_entry = entry;
         m_onTap = std::move(onTap);
 
@@ -123,21 +70,15 @@ public:
         m_word->setTextHAlign(LFTextHAlign::Left);
         m_translation->setDisplay(YGDisplayFlex);
         m_translation->setText(entry.translation);
-
-        if (!entry.audioAssetPath.empty()) {
-            m_hint->setDisplay(YGDisplayFlex);
-            m_hint->setText("Play");
-        } else {
-            m_hint->setDisplay(YGDisplayNone);
-        }
+        m_hint->setDisplay(entry.audioAssetPath.empty() ? YGDisplayNone : YGDisplayFlex);
     }
 
-    void bindMessage(const std::string& message) {
+    void bindMessage(const std::string& text) {
         m_entry = EnglishWordEntry{};
         m_onTap = nullptr;
 
         m_card->setBackgroundColor(0xFFEAF1F8);
-        m_word->setText(message);
+        m_word->setText(text);
         m_word->setTextHAlign(LFTextHAlign::Center);
         m_translation->setDisplay(YGDisplayNone);
         m_hint->setDisplay(YGDisplayNone);
@@ -155,16 +96,17 @@ private:
 
 class TopicEntriesAdapter : public LFListAdapter {
 public:
-    TopicEntriesAdapter(std::shared_ptr<TopicPageState> state,
+    TopicEntriesAdapter(std::function<const std::vector<EnglishWordEntry>*()> entriesProvider,
+                        std::function<std::string()> statusProvider,
                         std::function<void(const EnglishWordEntry&)> onTap)
-        : m_state(std::move(state)), m_onTap(std::move(onTap)) {
+        : m_entriesProvider(std::move(entriesProvider)),
+          m_statusProvider(std::move(statusProvider)),
+          m_onTap(std::move(onTap)) {
     }
 
     int getCount() override {
-        if (!m_state) {
-            return 1;
-        }
-        return m_state->entries.empty() ? 1 : static_cast<int>(m_state->entries.size());
+        const auto* entries = m_entriesProvider ? m_entriesProvider() : nullptr;
+        return (!entries || entries->empty()) ? 1 : static_cast<int>(entries->size());
     }
 
     LFNode::Ptr createView() override {
@@ -173,58 +115,53 @@ public:
 
     void bindView(LFNode::Ptr view, int index) override {
         auto item = std::static_pointer_cast<WordListItemView>(view);
-        if (!item || !m_state) {
+        if (!item) {
             return;
         }
 
-        if (m_state->entries.empty()) {
-            item->bindMessage(m_state->statusMessage.empty() ? "No words available." : m_state->statusMessage);
+        const auto* entries = m_entriesProvider ? m_entriesProvider() : nullptr;
+        if (!entries || entries->empty() || index < 0 || index >= static_cast<int>(entries->size())) {
+            item->bindMessage(m_statusProvider ? m_statusProvider() : "No words available.");
             return;
         }
 
-        if (index < 0 || index >= static_cast<int>(m_state->entries.size())) {
-            item->bindMessage("No words available.");
-            return;
-        }
-
-        item->bindWord(m_state->entries[static_cast<size_t>(index)], m_onTap);
+        item->bindEntry((*entries)[static_cast<size_t>(index)], m_onTap);
     }
 
     float getEstimatedItemExtent(int index) override {
         (void)index;
-        return m_state && m_state->entries.empty() ? 88.0f : 94.0f;
+        const auto* entries = m_entriesProvider ? m_entriesProvider() : nullptr;
+        return (!entries || entries->empty()) ? 88.0f : 94.0f;
     }
 
 private:
-    std::shared_ptr<TopicPageState> m_state;
+    std::function<const std::vector<EnglishWordEntry>*()> m_entriesProvider;
+    std::function<std::string()> m_statusProvider;
     std::function<void(const EnglishWordEntry&)> m_onTap;
 };
 
 } // namespace
 
-std::shared_ptr<TopicPage> TopicPage::create(std::weak_ptr<LFNavigator> nav, EnglishWordTopic topic) {
+std::shared_ptr<TopicPage> TopicPage::create(
+    const std::string& title,
+    std::function<void()> onBack,
+    std::function<void(const EnglishWordEntry&)> onEntrySelected) {
     auto page = std::make_shared<TopicPage>();
-    page->m_topic = std::move(topic);
+    page->m_title = title;
+    page->m_onBack = std::move(onBack);
+    page->m_onEntrySelected = std::move(onEntrySelected);
     page->setBackgroundColor(EnglishWordsUI::kPageBackgroundColor);
-    page->initUI(nav);
+    page->buildUI();
     return page;
 }
 
-void TopicPage::onExit() {
-    if (m_state && m_state->audioPlayer) {
-        m_state->audioPlayer->stop();
-    }
-}
-
-void TopicPage::initUI(std::weak_ptr<LFNavigator> nav) {
-    m_state = std::make_shared<TopicPageState>();
-
+void TopicPage::buildUI() {
     auto root = EnglishWordsUI::createPageRoot(20.0f);
     addChild(root);
 
-    EnglishWordsUI::addPageHeader(root, m_topic.title, [nav]() {
-        if (auto navigator = nav.lock()) {
-            navigator->pop();
+    EnglishWordsUI::addPageHeader(root, m_title, [this]() {
+        if (m_onBack) {
+            m_onBack();
         }
     }, 20.0f);
 
@@ -239,136 +176,31 @@ void TopicPage::initUI(std::weak_ptr<LFNavigator> nav) {
     m_listView->setBorderRadius(28.0f);
     root->addChild(m_listView);
 
-    std::weak_ptr<TopicPage> weakSelf = std::static_pointer_cast<TopicPage>(shared_from_this());
-    auto adapter = std::make_shared<TopicEntriesAdapter>(
-        m_state,
-        [weakSelf](const EnglishWordEntry& entry) {
-            if (auto self = weakSelf.lock()) {
-                self->playEntryAudio(entry);
+    m_listView->setAdapter(std::make_shared<TopicEntriesAdapter>(
+        [this]() -> const std::vector<EnglishWordEntry>* { return &m_entries; },
+        [this]() { return m_statusMessage; },
+        [this](const EnglishWordEntry& entry) {
+            if (m_onEntrySelected) {
+                m_onEntrySelected(entry);
             }
         }
-    );
-    m_listView->setAdapter(adapter);
-
-    loadEntries();
+    ));
 }
 
-void TopicPage::loadEntries() {
-    std::weak_ptr<TopicPage> weakSelf = std::static_pointer_cast<TopicPage>(shared_from_this());
-    loadEnglishWordEntries(
-        m_topic,
-        [weakSelf](bool ok, std::vector<EnglishWordEntry> entries, const std::string&) {
-            auto self = weakSelf.lock();
-            if (!self || !self->m_state) {
-                return;
-            }
+void TopicPage::setEntries(const std::vector<EnglishWordEntry>& entries) {
+    m_entries = entries;
+    m_statusMessage = m_entries.empty() ? "No words available." : "";
+    refreshList();
+}
 
-            if (ok) {
-                self->m_state->entries = std::move(entries);
-                self->m_state->statusMessage = self->m_state->entries.empty()
-                    ? "No words available."
-                    : "";
-            } else {
-                self->m_state->entries.clear();
-                self->m_state->statusMessage = "Failed to load topic.";
-            }
-
-            self->refreshList();
-        }
-    );
+void TopicPage::showStatus(const std::string& text) {
+    m_entries.clear();
+    m_statusMessage = text;
+    refreshList();
 }
 
 void TopicPage::refreshList() {
     if (m_listView) {
         m_listView->notifyDataSetChanged();
     }
-}
-
-void TopicPage::playEntryAudio(const EnglishWordEntry& entry) {
-    if (entry.audioAssetPath.empty() || !m_state) {
-        return;
-    }
-
-    std::weak_ptr<TopicPage> weakSelf = std::static_pointer_cast<TopicPage>(shared_from_this());
-    resolveTemporaryDirectory(
-        [weakSelf, entry](const std::string& directory) {
-            auto self = weakSelf.lock();
-            if (!self || !self->m_state || directory.empty()) {
-                return;
-            }
-
-            auto cached = self->m_state->cachedAudioFiles.find(entry.audioAssetPath);
-            if (cached != self->m_state->cachedAudioFiles.end()) {
-                std::error_code ec;
-                if (std::filesystem::exists(std::filesystem::u8path(cached->second), ec) && !ec) {
-                    self->playAudioFile(cached->second);
-                    return;
-                }
-            }
-
-            LFResourceProvider::getInstance().fetchAsset(
-                entry.audioAssetPath,
-                [weakSelf, entry, directory](std::shared_ptr<LFData> data) {
-                    auto self = weakSelf.lock();
-                    if (!self || !self->m_state || !data || !data->data || data->size == 0) {
-                        return;
-                    }
-
-                    const std::string filePath = buildCachedAudioPath(directory, entry.audioAssetPath);
-                    if (!writeBinaryFile(filePath, data)) {
-                        return;
-                    }
-
-                    self->m_state->cachedAudioFiles[entry.audioAssetPath] = filePath;
-                    self->playAudioFile(filePath);
-                }
-            );
-        }
-    );
-}
-
-void TopicPage::resolveTemporaryDirectory(std::function<void(const std::string&)> callback) {
-    if (!callback || !m_state) {
-        return;
-    }
-
-    if (!m_state->tempDirectory.empty()) {
-        callback(m_state->tempDirectory);
-        return;
-    }
-
-    const std::string fallback = fallbackTemporaryDirectory();
-    if (!fallback.empty()) {
-        m_state->tempDirectory = fallback;
-        callback(m_state->tempDirectory);
-        return;
-    }
-
-    std::weak_ptr<TopicPage> weakSelf = std::static_pointer_cast<TopicPage>(shared_from_this());
-    LFPathProvider::getTemporaryPath([weakSelf, callback = std::move(callback)](const LFPathProviderResult& result) mutable {
-        auto self = weakSelf.lock();
-        if (!self || !self->m_state) {
-            return;
-        }
-
-        self->m_state->tempDirectory = result.ok ? result.path : "";
-        callback(self->m_state->tempDirectory);
-    });
-}
-
-void TopicPage::playAudioFile(const std::string& filePath) {
-    if (filePath.empty() || !m_state) {
-        return;
-    }
-
-    if (!m_state->audioPlayer) {
-        m_state->audioPlayer = LFAudioPlayer::create();
-        m_state->audioPlayer->setVolume(1.0f);
-        m_state->audioPlayer->setOnError([](const LFAudioPlayerEvent&) {
-        });
-    }
-
-    m_state->audioPlayer->stop();
-    m_state->audioPlayer->setSource(filePath);
-    m_state->audioPlayer->play();
 }
