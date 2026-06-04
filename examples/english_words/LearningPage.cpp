@@ -11,15 +11,15 @@ namespace {
 
 constexpr uint32_t kPageBackgroundColor = 0xFFF4F7FB;
 constexpr uint32_t kTitleColor = 0xFF142033;
+constexpr uint32_t kMetaColor = 0xFF5F7086;
 constexpr uint32_t kSurfaceColor = 0xFFEAF1F8;
 constexpr uint32_t kSurfaceBorderColor = 0xFFDDE7F1;
 constexpr uint32_t kCardBorderColor = 0xFFDCE6F2;
 constexpr uint32_t kCardShadowColor = 0x12233B53;
 
-constexpr float kLevelItemBottomSpacing = 12.0f;
-constexpr float kLevelHeaderHeight = 74.0f;
-constexpr float kLevelCardPadding = 10.0f;
-constexpr float kLevelCardSpacing = 10.0f;
+constexpr float kLevelItemBottomSpacing = 10.0f;
+constexpr float kLevelCardPadding = 6.0f;
+constexpr float kLevelCardSpacing = 8.0f;
 constexpr float kTopicItemExtent = 60.0f;
 constexpr float kTopicRowHeight = 52.0f;
 
@@ -177,20 +177,22 @@ public:
         m_card->matchParentWidth();
         m_card->wrapContentHeight();
         m_card->setPadding(YGEdgeAll, kLevelCardPadding);
-        m_card->setSpacing(kLevelCardSpacing);
-        m_card->setBorderRadius(22.0f);
+        // m_card->setSpacing(kLevelCardSpacing);
+        m_card->setBorderRadius(24.0f);
         m_card->setBackgroundColor(0xFFFFFFFF);
-        m_card->setShadow(0.0f, 10.0f, 24.0f, 0.0f, kCardShadowColor);
+        m_card->setShadow(0.0f, 8.0f, 22.0f, 0.0f, 0x10233B53);
         addChild(m_card);
 
         m_headerRow = LFLinear::createHorizontal();
         m_headerRow->matchParentWidth();
-        m_headerRow->setHeight(kLevelHeaderHeight);
-        m_headerRow->setPadding(YGEdgeLeft, 16.0f);
-        m_headerRow->setPadding(YGEdgeRight, 16.0f);
+        m_headerRow->wrapContentHeight();
+        m_headerRow->setPadding(YGEdgeLeft, 18.0f);
+        m_headerRow->setPadding(YGEdgeRight, 14.0f);
+        m_headerRow->setPadding(YGEdgeTop, 14.0f);
+        m_headerRow->setPadding(YGEdgeBottom, 14.0f);
         m_headerRow->setBorderRadius(18.0f);
         m_headerRow->setGravity(LFAlignment::Start, LFAlignment::Center);
-        m_headerRow->setDistribution(LFDistribution::SpaceBetween);
+        m_headerRow->setSpacing(14.0f);
         m_headerRow->setOnTap([this](const LFPoint&) {
             if (m_onToggle) {
                 m_onToggle();
@@ -198,19 +200,44 @@ public:
         });
         m_card->addChild(m_headerRow);
 
+        m_copy = LFLinear::createVertical();
+        m_copy->setFlexGrow(1.0f);
+        m_copy->setFlexBasis(0.0f);
+        m_copy->wrapContentHeight();
+        m_copy->setSpacing(8.0f);
+        m_headerRow->addChild(m_copy);
+
         m_title = createText("", 17.0f, kTitleColor);
-        m_title->setFlexGrow(1.0f);
-        m_title->setFlexBasis(0.0f);
+        m_title->matchParentWidth();
         m_title->setMaxLines(1);
-        m_headerRow->addChild(m_title);
+        m_copy->addChild(m_title);
+
+        m_metaPill = LFLinear::createHorizontal();
+        m_metaPill->setWidth(70);
+        m_metaPill->wrapContentHeight();
+        m_metaPill->setPadding(YGEdgeLeft, 10.0f);
+        m_metaPill->setPadding(YGEdgeRight, 10.0f);
+        m_metaPill->setPadding(YGEdgeTop, 6.0f);
+        m_metaPill->setPadding(YGEdgeBottom, 6.0f);
+        m_metaPill->setBorderRadius(10.0f);
+        m_metaPill->setGravity(LFAlignment::Center, LFAlignment::Center);
+        m_copy->addChild(m_metaPill);
+
+        m_meta = createText("", 11.5f, kMetaColor);
+        m_meta->setMaxLines(1);
+        m_meta->setTextHAlign(LFTextHAlign::Center);
+        m_meta->setTextVAlign(LFTextVAlign::Center);
+        m_metaPill->addChild(m_meta);
 
         m_iconBubble = LFBox::create();
-        m_iconBubble->setWidth(40.0f);
-        m_iconBubble->setHeight(40.0f);
-        m_iconBubble->setBorderRadius(14.0f);
-        m_iconBubble->setBorder(1.0f, 0x11E2E8F0);
-        m_iconBubble->addChild(createImage("EnglishWordsAssets/Images/icon-add.png", 18.0f), LFBoxAlign::Center);
+        m_iconBubble->setWidth(42.0f);
+        m_iconBubble->setHeight(42.0f);
+        m_iconBubble->setBorderRadius(15.0f);
+        m_iconBubble->setBorder(1.0f, 0x12D6E2EF);
         m_headerRow->addChild(m_iconBubble);
+
+        m_icon = createImage("EnglishWordsAssets/Images/icon-add.png", 18.0f);
+        m_iconBubble->addChild(m_icon, LFBoxAlign::Center);
 
         m_topicList = LFListView::createVertical();
         m_topicList->matchParentWidth();
@@ -228,6 +255,7 @@ public:
         m_onToggle = std::move(onToggle);
 
         m_title->setText(level.title);
+        m_meta->setText(std::to_string(level.topics.size()) + " topics");
         m_topicList->setHeight(static_cast<float>(level.topics.size()) * kTopicItemExtent);
         m_topicList->setAdapter(std::make_shared<TopicListAdapter>(level, std::move(onTopicTap)));
         setExpanded(false);
@@ -236,13 +264,19 @@ public:
     void setExpanded(bool expanded) {
         if (expanded) {
             m_card->setBorder(1.5f, m_style.accentColor);
+            m_card->setShadow(0.0f, 10.0f, 26.0f, 0.0f, 0x163567A3);
             m_headerRow->setBackgroundColor(m_style.tintColor);
             m_iconBubble->setBackgroundColor(m_style.accentColor);
+            m_metaPill->setBackgroundColor(0xFFFFFFFF);
+            m_icon->setRotate(45.0f);
             m_topicList->setDisplay(YGDisplayFlex);
         } else {
             m_card->setBorder(1.0f, kCardBorderColor);
-            m_headerRow->setBackgroundColor(0xFFFFFFFF);
+            m_card->setShadow(0.0f, 8.0f, 22.0f, 0.0f, 0x10233B53);
+            m_headerRow->setBackgroundColor(m_style.tintColor);
             m_iconBubble->setBackgroundColor(m_style.tintColor);
+            m_metaPill->setBackgroundColor(0xFFFFFFFF);
+            m_icon->setRotate(0.0f);
             m_topicList->setDisplay(YGDisplayNone);
         }
     }
@@ -252,8 +286,12 @@ private:
     std::function<void()> m_onToggle;
     std::shared_ptr<LFLinear> m_card;
     std::shared_ptr<LFLinear> m_headerRow;
+    std::shared_ptr<LFLinear> m_copy;
     std::shared_ptr<LFText> m_title;
+    std::shared_ptr<LFLinear> m_metaPill;
+    std::shared_ptr<LFText> m_meta;
     std::shared_ptr<LFBox> m_iconBubble;
+    std::shared_ptr<LFImage> m_icon;
     std::shared_ptr<LFListView> m_topicList;
 };
 
