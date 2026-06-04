@@ -18,7 +18,6 @@ constexpr uint32_t kHintColor = 0xFF3567A3;
 
 constexpr float kWordItemExtent = 82.0f;
 constexpr float kWordRowHeight = 74.0f;
-constexpr float kLastWordBottomSpacing = 8.0f;
 
 std::shared_ptr<LFText> createText(const std::string& text, float size, uint32_t color) {
     auto node = std::make_shared<LFText>();
@@ -93,10 +92,6 @@ public:
         m_row->addChild(m_hint);
     }
 
-    void setBottomSpacing(float spacing) {
-        setPadding(YGEdgeBottom, spacing);
-    }
-
     void bindEntry(const EnglishWordEntry& entry, std::function<void(const EnglishWordEntry&)> onTap) {
         m_entry = entry;
         m_onTap = std::move(onTap);
@@ -157,22 +152,18 @@ public:
 
         const auto* entries = m_entriesProvider ? m_entriesProvider() : nullptr;
         if (!entries || entries->empty() || index < 0 || index >= static_cast<int>(entries->size())) {
-            item->setBottomSpacing(0.0f);
+            item->setMargin(YGEdgeBottom, 0.0f);
             item->bindMessage(m_statusProvider ? m_statusProvider() : "No words available.");
             return;
         }
 
-        item->setBottomSpacing(index == static_cast<int>(entries->size()) - 1 ? kLastWordBottomSpacing : 0.0f);
+        item->setMargin(YGEdgeBottom, index == static_cast<int>(entries->size()) - 1 ? 8.0f : 0.0f);
         item->bindEntry((*entries)[static_cast<size_t>(index)], m_onTap);
     }
 
     float getItemExtent(int index) override {
-        const auto* entries = m_entriesProvider ? m_entriesProvider() : nullptr;
-        if (!entries || entries->empty() || index < 0 || index >= static_cast<int>(entries->size())) {
-            return kWordItemExtent;
-        }
-
-        return kWordItemExtent + (index == static_cast<int>(entries->size()) - 1 ? kLastWordBottomSpacing : 0.0f);
+        (void)index;
+        return kWordItemExtent;
     }
 
 private:
