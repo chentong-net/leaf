@@ -32,10 +32,10 @@ LFLocale LFI18n::getSystemLanguage() {
     return LFI18nManager::getInstance().getSystemLanguage();
 }
 
-std::string LFI18n::tr(const std::string& key) {
-    return LFI18nManager::getInstance().tr(key);
+std::string LFI18n::get(const std::string& key) {
+    return LFI18nManager::getInstance().get(key);
 }
 
-void LFI18n::bindText(const std::shared_ptr<LFText>& textNode, const std::string& key) {
-    LFI18nManager::getInstance().bindText(textNode, key);
+std::string LFI18n::tr(const std::string& key) {
+    return LFI18nManager::getInstance().get(key);
 }

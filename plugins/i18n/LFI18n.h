@@ -16,8 +16,8 @@ public:
     static LFLocale getDefaultLanguage();
     static LFLocale getSystemLanguage();
 
+    static std::string get(const std::string& key);
     static std::string tr(const std::string& key);
-    static void bindText(const std::shared_ptr<LFText>& textNode, const std::string& key);
 };
 
 #endif // LEAF_LFI18N_H

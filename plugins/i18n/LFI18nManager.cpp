@@ -1,16 +1,105 @@
 #include "LFI18nManager.h"
-#include "LFI18nPlatform.h"
+
 #include "LFJSONParser.h"
-#include "plugin/LFPlugin.h"
+#include "LFPathProvider.h"
+
+#include <chrono>
+#include <filesystem>
+#include <iterator>
 
 namespace {
 
-bool localeMatches(const LFLocale& lhs, const LFLocale& rhs) {
-    return lhs.toTag() == rhs.toTag();
-}
+constexpr auto kSyncWaitTimeout = std::chrono::seconds(2);
+constexpr const char* kDefaultAssetPath = "i18n.json";
+constexpr const char* kDefaultLanguageTag = "zh-CN";
+constexpr const char* kCacheFileName = "i18n_cache.json";
 
 bool localeLanguageMatches(const LFLocale& lhs, const LFLocale& rhs) {
     return !lhs.languageCode.empty() && lhs.languageCode == rhs.languageCode;
+}
+
+std::shared_ptr<LFData> loadAssetSynchronously(const std::string& assetPath) {
+    std::mutex waitMutex;
+    std::condition_variable waitCv;
+    bool completed = false;
+    std::shared_ptr<LFData> loadedData;
+
+    LFResourceProvider::getInstance().fetchAsset(assetPath, [&](std::shared_ptr<LFData> data) {
+        {
+            std::lock_guard<std::mutex> lock(waitMutex);
+            loadedData = std::move(data);
+            completed = true;
+        }
+        waitCv.notify_one();
+    });
+
+    std::unique_lock<std::mutex> waitLock(waitMutex);
+    if (!waitCv.wait_for(waitLock, kSyncWaitTimeout, [&completed]() {
+        return completed;
+    })) {
+        return nullptr;
+    }
+    return loadedData;
+}
+
+LFI18nPlatformLocaleResult loadSystemLanguageSynchronously() {
+    std::mutex waitMutex;
+    std::condition_variable waitCv;
+    bool completed = false;
+    LFI18nPlatformLocaleResult result;
+
+    LFI18nPlatform::getSystemLanguage([&](const LFI18nPlatformLocaleResult& platformLocale) {
+        {
+            std::lock_guard<std::mutex> lock(waitMutex);
+            result = platformLocale;
+            completed = true;
+        }
+        waitCv.notify_one();
+    });
+
+    std::unique_lock<std::mutex> waitLock(waitMutex);
+    if (!waitCv.wait_for(waitLock, kSyncWaitTimeout, [&completed]() {
+        return completed;
+    })) {
+        result.ok = false;
+        result.error = "get_system_language_timeout";
+    }
+    return result;
+}
+
+std::string loadApplicationSupportPathSynchronously() {
+    std::mutex waitMutex;
+    std::condition_variable waitCv;
+    bool completed = false;
+    LFPathProviderResult pathResult;
+
+    LFPathProvider::getApplicationSupportPath([&](const LFPathProviderResult& result) {
+        {
+            std::lock_guard<std::mutex> lock(waitMutex);
+            pathResult = result;
+            completed = true;
+        }
+        waitCv.notify_one();
+    });
+
+    std::unique_lock<std::mutex> waitLock(waitMutex);
+    if (!waitCv.wait_for(waitLock, kSyncWaitTimeout, [&completed]() {
+        return completed;
+    })) {
+        return "";
+    }
+    if (!pathResult.ok || pathResult.path.empty()) {
+        return "";
+    }
+    return pathResult.path;
+}
+
+std::filesystem::path resolveCacheFilePath() {
+    const std::string appSupportPath = loadApplicationSupportPathSynchronously();
+    if (appSupportPath.empty()) {
+        return {};
+    }
+    return std::filesystem::u8path(appSupportPath) / kCacheFileName;
 }
 
 } // namespace
@@ -21,61 +110,22 @@ LFI18nManager& LFI18nManager::getInstance() {
 }
 
 void LFI18nManager::initialize(LFI18nInitCallback callback) {
-    initializeFromAsset("i18n.json", std::move(callback));
+    initializeFromAsset(kDefaultAssetPath, std::move(callback));
 }
 
 void LFI18nManager::initializeFromAsset(const std::string& assetPath, LFI18nInitCallback callback) {
-    std::string resolvedAssetPath = assetPath.empty() ? "i18n.json" : assetPath;
-
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        if (callback) {
-            m_pendingCallbacks.push_back(std::move(callback));
-        }
-
-        if (m_loading && m_assetPath == resolvedAssetPath) {
-            return;
-        }
-
-        if (m_ready && m_assetPath == resolvedAssetPath) {
-            auto callbacks = std::move(m_pendingCallbacks);
-            m_pendingCallbacks.clear();
-            for (const auto& pending : callbacks) {
-                if (pending) {
-                    LFPluginCenter::dispatchToMain([pending]() {
-                        pending(true);
-                    });
-                }
-            }
-            return;
-        }
-
-        m_assetPath = resolvedAssetPath;
-        m_loading = true;
-        m_ready = false;
+    const bool ready = ensureInitializedFromAsset(assetPath);
+    if (callback) {
+        callback(ready);
     }
-
-    LFResourceProvider::getInstance().fetchAsset(resolvedAssetPath, [this](std::shared_ptr<LFData> data) {
-        ParsedTranslations parsed = parseTranslations(data);
-        LFI18nPlatform::getSystemLanguage([this, parsed = std::move(parsed)](const LFI18nPlatformLocaleResult& platformLocale) mutable {
-            std::vector<LFI18nInitCallback> callbacks;
-            {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                callbacks = std::move(m_pendingCallbacks);
-                m_pendingCallbacks.clear();
-            }
-
-            LFPluginCenter::dispatchToMain([this,
-                                            parsed = std::move(parsed),
-                                            platformLocale,
-                                            callbacks = std::move(callbacks)]() mutable {
-                finalizeInitialize(std::move(parsed), platformLocale, std::move(callbacks));
-            });
-        });
-    });
 }
 
-bool LFI18nManager::isReady() const {
+bool LFI18nManager::isReady() {
+    if (!ensureInitialized()) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_ready;
+    }
+
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_ready;
 }
@@ -85,37 +135,62 @@ bool LFI18nManager::setLanguage(const LFLocale& locale) {
 }
 
 bool LFI18nManager::setLanguage(const std::string& languageTag) {
-    bool changed = false;
-    bool success = false;
+    const std::string normalizedTag = LFLocale::fromTag(languageTag).toTag();
+    if (normalizedTag.empty()) {
+        return false;
+    }
+
+    ensureInitialized();
+
+    bool applied = false;
+    bool persistOnly = false;
+    std::string cacheLanguageTag = normalizedTag;
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_pendingLanguageTag = LFLocale::fromTag(languageTag).toTag();
-        success = applyCurrentLanguage(m_pendingLanguageTag);
-        changed = success;
+        m_pendingLanguageTag = normalizedTag;
+        if (!m_ready) {
+            persistOnly = true;
+        } else {
+            applied = applyCurrentLanguageLocked(normalizedTag);
+            if (!m_currentLanguageTag.empty()) {
+                cacheLanguageTag = m_currentLanguageTag;
+            }
+        }
     }
 
-    if (changed) {
-        refreshBindings();
+    const bool persisted = persistCachedLanguage(cacheLanguageTag);
+    if (persistOnly) {
+        return persisted;
     }
-    return success;
+    return applied;
 }
 
-LFLocale LFI18nManager::getCurrentLanguage() const {
+LFLocale LFI18nManager::getCurrentLanguage() {
+    ensureInitialized();
+
     std::lock_guard<std::mutex> lock(m_mutex);
     return LFLocale::fromTag(m_currentLanguageTag);
 }
 
-LFLocale LFI18nManager::getDefaultLanguage() const {
+LFLocale LFI18nManager::getDefaultLanguage() {
+    ensureInitialized();
+
     std::lock_guard<std::mutex> lock(m_mutex);
     return LFLocale::fromTag(m_defaultLanguageTag);
 }
 
-LFLocale LFI18nManager::getSystemLanguage() const {
+LFLocale LFI18nManager::getSystemLanguage() {
+    ensureInitialized();
+
     std::lock_guard<std::mutex> lock(m_mutex);
     return LFLocale::fromTag(m_systemLanguageTag);
 }
 
-std::string LFI18nManager::tr(const std::string& key) const {
+std::string LFI18nManager::get(const std::string& key) {
+    if (!ensureInitialized()) {
+        return key;
+    }
+
     std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ready) {
         return key;
@@ -123,25 +198,70 @@ std::string LFI18nManager::tr(const std::string& key) const {
     return resolveTextLocked(key);
 }
 
-void LFI18nManager::bindText(const std::shared_ptr<LFText>& textNode, const std::string& key) {
-    if (!textNode || key.empty()) {
-        return;
+std::string LFI18nManager::tr(const std::string& key) {
+    return get(key);
+}
+
+bool LFI18nManager::ensureInitialized() {
+    return ensureInitializedFromAsset("");
+}
+
+bool LFI18nManager::ensureInitializedFromAsset(const std::string& assetPath) {
+    const std::string resolvedAssetPath = assetPath.empty() ? kDefaultAssetPath : assetPath;
+
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        while (m_loading) {
+            m_stateCv.wait(lock, [this]() {
+                return !m_loading;
+            });
+        }
+
+        if (m_ready && m_assetPath == resolvedAssetPath) {
+            return true;
+        }
+
+        m_loading = true;
+        m_assetPath = resolvedAssetPath;
     }
 
-    std::string value;
-    bool shouldApplyNow = false;
+    ParsedTranslations parsed = parseTranslations(loadAssetSynchronously(resolvedAssetPath));
+    LFI18nPlatformLocaleResult systemLocale;
+    std::string cachedLanguageTag;
+    if (parsed.ok) {
+        systemLocale = loadSystemLanguageSynchronously();
+        cachedLanguageTag = loadCachedLanguage();
+    }
+
+    bool ready = false;
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_bindings.push_back({textNode, key});
-        shouldApplyNow = m_ready;
-        if (shouldApplyNow) {
-            value = resolveTextLocked(key);
-        }
-    }
+        if (!parsed.ok) {
+            clearStateLocked();
+            ready = false;
+        } else {
+            m_translations = std::move(parsed.translations);
+            m_languageOrder = std::move(parsed.languageOrder);
+            m_defaultLanguageTag = resolveDefaultLanguageTagLocked(
+                parsed.defaultLanguageTag.empty() ? kDefaultLanguageTag : parsed.defaultLanguageTag
+            );
+            m_systemLanguageTag = systemLocale.ok ? systemLocale.locale.toTag() : "";
 
-    if (shouldApplyNow) {
-        textNode->setText(value);
+            const std::string requestedTag = !m_pendingLanguageTag.empty()
+                ? m_pendingLanguageTag
+                : (!cachedLanguageTag.empty() ? cachedLanguageTag : m_systemLanguageTag);
+            if (!applyCurrentLanguageLocked(requestedTag)) {
+                m_currentLanguageTag = m_defaultLanguageTag;
+            }
+
+            m_ready = true;
+            ready = true;
+        }
+
+        m_loading = false;
     }
+    m_stateCv.notify_all();
+    return ready;
 }
 
 LFI18nManager::ParsedTranslations LFI18nManager::parseTranslations(const std::shared_ptr<LFData>& data) const {
@@ -199,54 +319,16 @@ LFI18nManager::ParsedTranslations LFI18nManager::parseTranslations(const std::sh
     return parsed;
 }
 
-void LFI18nManager::finalizeInitialize(
-        ParsedTranslations parsed,
-        LFI18nPlatformLocaleResult platformLocale,
-        std::vector<LFI18nInitCallback> callbacks) {
-    bool ready = false;
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_loading = false;
-
-        if (!parsed.ok) {
-            m_translations.clear();
-            m_languageOrder.clear();
-            m_ready = false;
-            ready = false;
-        } else {
-            m_translations = std::move(parsed.translations);
-            m_languageOrder = std::move(parsed.languageOrder);
-            m_defaultLanguageTag = resolveDefaultLanguageTagLocked(
-                parsed.defaultLanguageTag.empty() ? "zh-CN" : parsed.defaultLanguageTag
-            );
-            m_systemLanguageTag = platformLocale.ok
-                ? resolveAvailableLanguageTagLocked(platformLocale.locale.toTag())
-                : "";
-
-            const std::string requestedTag = !m_pendingLanguageTag.empty()
-                ? m_pendingLanguageTag
-                : m_systemLanguageTag;
-            if (!applyCurrentLanguage(requestedTag)) {
-                m_currentLanguageTag = m_defaultLanguageTag;
-            }
-
-            m_ready = true;
-            ready = true;
-        }
-    }
-
-    if (ready) {
-        refreshBindings();
-    }
-
-    for (const auto& callback : callbacks) {
-        if (callback) {
-            callback(ready);
-        }
-    }
+void LFI18nManager::clearStateLocked() {
+    m_ready = false;
+    m_defaultLanguageTag = kDefaultLanguageTag;
+    m_currentLanguageTag.clear();
+    m_systemLanguageTag.clear();
+    m_translations.clear();
+    m_languageOrder.clear();
 }
 
-bool LFI18nManager::applyCurrentLanguage(const std::string& requestedTag) {
+bool LFI18nManager::applyCurrentLanguageLocked(const std::string& requestedTag) {
     const std::string resolvedTag = resolveAvailableLanguageTagLocked(requestedTag);
     if (resolvedTag.empty()) {
         if (!m_defaultLanguageTag.empty()) {
@@ -336,25 +418,55 @@ std::string LFI18nManager::resolveTextLocked(const std::string& key) const {
     return key;
 }
 
-void LFI18nManager::refreshBindings() {
-    std::vector<std::pair<std::shared_ptr<LFText>, std::string>> updates;
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-
-        auto bindingIt = m_bindings.begin();
-        while (bindingIt != m_bindings.end()) {
-            auto textNode = bindingIt->textNode.lock();
-            if (!textNode) {
-                bindingIt = m_bindings.erase(bindingIt);
-                continue;
-            }
-
-            updates.emplace_back(textNode, resolveTextLocked(bindingIt->key));
-            ++bindingIt;
-        }
+bool LFI18nManager::persistCachedLanguage(const std::string& languageTag) const {
+    const std::string normalizedTag = LFLocale::fromTag(languageTag).toTag();
+    if (normalizedTag.empty()) {
+        return false;
     }
 
-    for (const auto& update : updates) {
-        update.first->setText(update.second);
+    const std::filesystem::path cacheFilePath = resolveCacheFilePath();
+    if (cacheFilePath.empty()) {
+        return false;
+    }
+
+    std::error_code ec;
+    std::filesystem::create_directories(cacheFilePath.parent_path(), ec);
+
+    std::ofstream output(cacheFilePath, std::ios::binary | std::ios::trunc);
+    if (!output.is_open()) {
+        return false;
+    }
+
+    output << "{\n  \"language\": \"" << normalizedTag << "\"\n}";
+    return output.good();
+}
+
+std::string LFI18nManager::loadCachedLanguage() const {
+    const std::filesystem::path cacheFilePath = resolveCacheFilePath();
+    if (cacheFilePath.empty()) {
+        return "";
+    }
+
+    std::ifstream input(cacheFilePath, std::ios::binary);
+    if (!input.is_open()) {
+        return "";
+    }
+
+    const std::string content(
+        (std::istreambuf_iterator<char>(input)),
+        std::istreambuf_iterator<char>()
+    );
+    if (content.empty()) {
+        return "";
+    }
+
+    try {
+        auto json = LFJSONParser::parse(content);
+        if (!json || !json->contains("language") || !json->at("language").isString()) {
+            return "";
+        }
+        return LFLocale::fromTag(json->at("language").asString()).toTag();
+    } catch (...) {
+        return "";
     }
 }

@@ -2,6 +2,10 @@ if (NOT TARGET leaf-core)
     message(FATAL_ERROR "i18n requires leaf-core target")
 endif()
 
+if (NOT TARGET path-provider)
+    message(FATAL_ERROR "i18n requires path-provider target")
+endif()
+
 if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP")
     add_library(i18n STATIC
             LFI18n.cpp
@@ -26,4 +30,5 @@ target_include_directories(i18n
 target_link_libraries(i18n
         PRIVATE
         leaf-core
+        path-provider
 )
