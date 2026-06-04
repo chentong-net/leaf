@@ -22,5 +22,5 @@ add_subdirectory(${APPLICATION_DIR} application_build)
 add_custom_target(leaf-native-all
         DEPENDS
         leaf-core
-        app-adapter
+        leaf-application
 )

@@ -24,7 +24,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
         leaf-core
-        app-adapter
+        leaf-application
         GLESv3
         android
         log
