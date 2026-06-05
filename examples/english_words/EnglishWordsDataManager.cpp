@@ -125,26 +125,51 @@ ParsedWordEntry parseWordLine(const std::string& rawLine) {
         return parsed;
     }
 
-    const size_t firstHash = line.find('#');
-    if (firstHash == std::string::npos) {
-        parsed.entry.text = line;
+    std::vector<std::string> parts;
+    size_t start = 0;
+    while (start <= line.size()) {
+        const size_t hashIndex = line.find('#', start);
+        if (hashIndex == std::string::npos) {
+            parts.push_back(trimCopy(line.substr(start)));
+            break;
+        }
+
+        parts.push_back(trimCopy(line.substr(start, hashIndex - start)));
+        start = hashIndex + 1;
+    }
+
+    if (parts.empty()) {
         return parsed;
     }
 
-    parsed.entry.text = trimCopy(line.substr(0, firstHash));
-
-    const size_t secondHash = line.find('#', firstHash + 1);
-    if (secondHash == std::string::npos) {
-        parsed.entry.translation = trimCopy(line.substr(firstHash + 1));
+    parsed.entry.text = parts[0];
+    if (parts.size() == 1) {
         return parsed;
     }
 
-    parsed.entry.translation = trimCopy(line.substr(secondHash + 1));
-    const std::string audioToken = trimCopy(line.substr(firstHash + 1, secondHash - firstHash - 1));
+    if (parts.size() == 2) {
+        parsed.entry.translation = parts[1];
+        parsed.entry.russianTranslation = parts[1];
+        return parsed;
+    }
+
+    const std::string& audioToken = parts[1];
     parsed.hasAudio = parseAudioToken(audioToken, parsed.audioFolder, parsed.audioId);
     if (parsed.hasAudio) {
         parsed.entry.audioAssetPath = buildAudioAssetPath(parsed.audioFolder, parsed.audioId);
     }
+
+    if (parsed.hasAudio) {
+        parsed.entry.russianTranslation = parts.size() >= 3 ? parts[2] : "";
+        parsed.entry.chineseTranslation = parts.size() >= 4 ? parts[3] : "";
+    } else {
+        parsed.entry.russianTranslation = parts.size() >= 2 ? parts[1] : "";
+        parsed.entry.chineseTranslation = parts.size() >= 3 ? parts[2] : "";
+    }
+
+    parsed.entry.translation = !parsed.entry.russianTranslation.empty()
+        ? parsed.entry.russianTranslation
+        : parsed.entry.chineseTranslation;
 
     return parsed;
 }

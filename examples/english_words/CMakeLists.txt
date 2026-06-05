@@ -5,8 +5,11 @@ endif()
 add_library(english-words STATIC
         EnglishWordsApp.cpp
         EnglishWordsDataManager.cpp
+        ExamPage.cpp
         LearningPage.cpp
         MainPage.cpp
+        PointPage.cpp
+        TestPage.cpp
         TopicPage.cpp
 )
 

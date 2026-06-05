@@ -1,6 +1,7 @@
 #include "MainPage.h"
 
 #include "LearningPage.h"
+#include "TestPage.h"
 
 #include <array>
 #include <string>
@@ -9,21 +10,27 @@ namespace {
 
 constexpr uint32_t kPageBackgroundColor = 0xFFF4F7FB;
 
+enum class ShortcutDestination {
+    None,
+    Study,
+    Test,
+};
+
 struct ShortcutSpec {
     const char* title;
     const char* iconPath;
     uint32_t iconSurfaceColor;
     uint32_t pressedColor;
-    bool opensStudyPage;
+    ShortcutDestination destination;
 };
 
 const std::array<ShortcutSpec, 6> kShortcuts = {{
-    {"Study", "EnglishWordsAssets/Images/icon-study.png", 0xFFEAF3FF, 0xFFF2F7FF, true},
-    {"Quick Test", "EnglishWordsAssets/Images/icon-test.png", 0xFFFFF1D6, 0xFFFFF6E6, false},
-    {"Test Setup", "EnglishWordsAssets/Images/icon-settings.png", 0xFFF1F5F9, 0xFFF5F8FC, false},
-    {"Results", "EnglishWordsAssets/Images/icon-result.png", 0xFFE6F4EA, 0xFFEEF8F1, false},
-    {"My Words", "EnglishWordsAssets/Images/icon-collect.png", 0xFFFFECEB, 0xFFFFF3F2, false},
-    {"Help", "EnglishWordsAssets/Images/icon-help.png", 0xFFE6FFFB, 0xFFEEFFFC, false},
+    {"Study", "EnglishWordsAssets/Images/icon-study.png", 0xFFEAF3FF, 0xFFF2F7FF, ShortcutDestination::Study},
+    {"Quick Test", "EnglishWordsAssets/Images/icon-test.png", 0xFFFFF1D6, 0xFFFFF6E6, ShortcutDestination::Test},
+    {"Test Setup", "EnglishWordsAssets/Images/icon-settings.png", 0xFFF1F5F9, 0xFFF5F8FC, ShortcutDestination::None},
+    {"Results", "EnglishWordsAssets/Images/icon-result.png", 0xFFE6F4EA, 0xFFEEF8F1, ShortcutDestination::None},
+    {"My Words", "EnglishWordsAssets/Images/icon-collect.png", 0xFFFFECEB, 0xFFFFF3F2, ShortcutDestination::None},
+    {"Help", "EnglishWordsAssets/Images/icon-help.png", 0xFFE6FFFB, 0xFFEEFFFC, ShortcutDestination::None},
 }};
 
 std::shared_ptr<LFText> createText(const std::string& text, float size, uint32_t color) {
@@ -182,17 +189,21 @@ void MainPage::buildUI() {
 
         button->addChild(vl, LFBoxAlign::Center);
 
-        button->setOnClick([weakSelf, opensStudyPage = shortcut.opensStudyPage](LFButton*) {
+        button->setOnClick([weakSelf, destination = shortcut.destination](LFButton*) {
             auto self = weakSelf.lock();
             if (!self) {
                 return;
             }
 
-            if (opensStudyPage) {
-                if (auto navigator = self->getNavigator()) {
+            if (auto navigator = self->getNavigator()) {
+                if (destination == ShortcutDestination::Study) {
                     navigator->push(LearningPage::create());
+                    return;
                 }
-                return;
+                if (destination == ShortcutDestination::Test) {
+                    navigator->push(TestPage::create());
+                    return;
+                }
             }
         });
     }

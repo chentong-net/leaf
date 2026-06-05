@@ -26,7 +26,34 @@ struct EnglishWordLevel {
 struct EnglishWordEntry {
     std::string text;
     std::string translation;
+    std::string russianTranslation;
+    std::string chineseTranslation;
     std::string audioAssetPath;
+};
+
+enum class EnglishWordsTestMode {
+    ChineseToEnglish = 0,
+    RussianToEnglish,
+    EnglishToChinese,
+    EnglishToRussian,
+    AudioToChinese,
+    AudioToRussian,
+    AudioToEnglish,
+};
+
+struct EnglishWordsQuestionResult {
+    EnglishWordEntry entry;
+    EnglishWordsTestMode mode = EnglishWordsTestMode::AudioToEnglish;
+    std::string userAnswer;
+    double score = 0.0;
+};
+
+struct EnglishWordsExamResult {
+    EnglishWordTopic topic;
+    EnglishWordsTestMode mode = EnglishWordsTestMode::AudioToEnglish;
+    double totalScore = 0.0;
+    int questionCount = 0;
+    std::vector<EnglishWordsQuestionResult> questions;
 };
 
 class EnglishWordsDataManager : public std::enable_shared_from_this<EnglishWordsDataManager> {
