@@ -24,12 +24,10 @@ struct ShortcutSpec {
     ShortcutDestination destination;
 };
 
-const std::array<ShortcutSpec, 6> kShortcuts = {{
+const std::array<ShortcutSpec, 4> kShortcuts = {{
     {"Study", "EnglishWordsAssets/Images/icon-study.png", 0xFFEAF3FF, 0xFFF2F7FF, ShortcutDestination::Study},
     {"Quick Test", "EnglishWordsAssets/Images/icon-test.png", 0xFFFFF1D6, 0xFFFFF6E6, ShortcutDestination::Test},
-    {"Test Setup", "EnglishWordsAssets/Images/icon-settings.png", 0xFFF1F5F9, 0xFFF5F8FC, ShortcutDestination::None},
     {"Results", "EnglishWordsAssets/Images/icon-result.png", 0xFFE6F4EA, 0xFFEEF8F1, ShortcutDestination::None},
-    {"My Words", "EnglishWordsAssets/Images/icon-collect.png", 0xFFFFECEB, 0xFFFFF3F2, ShortcutDestination::None},
     {"Help", "EnglishWordsAssets/Images/icon-help.png", 0xFFE6FFFB, 0xFFEEFFFC, ShortcutDestination::None},
 }};
 
