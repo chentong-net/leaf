@@ -52,8 +52,14 @@ void LFNavigator::push(LFPage::Ptr page, bool animated) {
     page->onEnter();
 
     if (animated && oldPage) {
+        page->setVisible(true);
         animatePush(oldPage, page);
     } else {
+        if (oldPage) {
+            oldPage->setVisible(false);
+        }
+        page->setVisible(true);
+        page->setTranslate(0, 0);
         page->onAppear();
     }
 }
@@ -73,6 +79,9 @@ void LFNavigator::pop(bool animated) {
         animatePop(exitPage, enterPage);
     } else {
         removeChild(exitPage);
+        // The previous page may have been hidden by an earlier animated push.
+        enterPage->setVisible(true);
+        enterPage->setTranslate(0, 0);
         enterPage->onAppear();
     }
 }
@@ -91,6 +100,8 @@ void LFNavigator::replace(LFPage::Ptr page) {
     page->setNavigator(std::static_pointer_cast<LFNavigator>(shared_from_this()));
     LFBox::addChild(page, LFBoxAlign::MatchParent);
     m_stack.push_back(page);
+    page->setVisible(true);
+    page->setTranslate(0, 0);
     page->onEnter();
     page->onAppear();
 }
