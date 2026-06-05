@@ -1,13 +1,13 @@
-﻿at the desk#1\73#за столом, за партой
-grab a pen#1\74#взять ручку
-in the bookcase#1\75#в книжном шкафу
-in the textbook#1\76#в учебнике
-mix paint#1\77#смешать краску
-on the board#1\78#на доске
-on the map#1\79#на карте
-on the poster#1\80#на плакате
-some paper#1\81#бумага
-take a ruler#1\82#взять линейку
-use scissors#1\83#пользоваться ножницами
-use the eraser#1\84#пользоваться резинкой
-write in pencil#1\85#писать карандашом
+﻿at the desk#1\73#за столом, за партой#在书桌前
+grab a pen#1\74#взять ручку#拿起笔
+in the bookcase#1\75#в книжном шкафу#在书架里
+in the textbook#1\76#в учебнике#在课本里
+mix paint#1\77#смешать краску#调颜料
+on the board#1\78#на доске#在黑板上
+on the map#1\79#на карте#在地图上
+on the poster#1\80#на плакате#在海报上
+some paper#1\81#бумага#一些纸
+take a ruler#1\82#взять линейку#拿尺子
+use scissors#1\83#пользоваться ножницами#用剪刀
+use the eraser#1\84#пользоваться резинкой#用橡皮
+write in pencil#1\85#писать карандашом#用铅笔写

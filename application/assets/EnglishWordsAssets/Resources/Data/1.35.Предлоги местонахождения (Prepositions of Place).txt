@@ -1,10 +1,10 @@
-﻿in (the cupboard)#1\19#в (шкафу)
-on (the table)#1\20#на (столе)
-under (the bed)#1\21#под (кроватью)
-in front of (the hotel)#1\22#перед (отелем)
-opposite (the shop)#1\23#напротив (магазина)
-above (the window)#1\24#над (окном)
-behind (the sofa)#1\25#позади; за (диваном)
-below (the picture)#1\26#ниже; под (картиной)
-between (two houses)#1\27#между (двух домов)
-next to (my office)#1\28#рядом с (моим офисом)
+﻿in (the cupboard)#1\19#в (шкафу)#在（橱柜里）
+on (the table)#1\20#на (столе)#在（桌上）
+under (the bed)#1\21#под (кроватью)#在（床下）
+in front of (the hotel)#1\22#перед (отелем)#在（酒店前面）
+opposite (the shop)#1\23#напротив (магазина)#在（商店对面）
+above (the window)#1\24#над (окном)#在（窗户上方）
+behind (the sofa)#1\25#позади; за (диваном)#在（沙发后面）
+below (the picture)#1\26#ниже; под (картиной)#在（画下面）
+between (two houses)#1\27#между (двух домов)#在（两栋房子之间）
+next to (my office)#1\28#рядом с (моим офисом)#在（我的办公室旁边）

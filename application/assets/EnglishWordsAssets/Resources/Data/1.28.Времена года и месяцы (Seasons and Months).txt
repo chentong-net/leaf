@@ -1,17 +1,17 @@
-﻿season#1\214#время года; сезон
-in winter#1\215#зимой
-in spring#1\216#весной
-in summer#1\217#летом
-in autumn#1\218#осенью
-in January#1\219#в январе
-in February#1\220#в феврале
-in March#1\221#в марте
-in April#1\222#в апреле
-in May#1\223#в мае
-in June#1\224#в июне
-in July#1\225#в июле
-in August#1\226#в августе
-in September#1\227#в сентябре
-in October#1\228#в октябре
-in November#1\229#в ноябре
-in December#1\230#в декабре
+﻿season#1\214#время года; сезон#季节
+in winter#1\215#зимой#在冬天
+in spring#1\216#весной#在春天
+in summer#1\217#летом#在夏天
+in autumn#1\218#осенью#在秋天
+in January#1\219#в январе#在一月
+in February#1\220#в феврале#在二月
+in March#1\221#в марте#在三月
+in April#1\222#в апреле#在四月
+in May#1\223#в мае#在五月
+in June#1\224#в июне#在六月
+in July#1\225#в июле#在七月
+in August#1\226#в августе#在八月
+in September#1\227#в сентябре#在九月
+in October#1\228#в октябре#在十月
+in November#1\229#в ноябре#在十一月
+in December#1\230#в декабре#在十二月

@@ -1,16 +1,16 @@
-﻿wake up#1\263#проснуться
-get up#1\264#встать с кровати
-have a shower#1\265#принять душ
-have breakfast#1\266#завтракать
-go to work#1\267#пойти на работу
-go for a walk#1\268#пойти на прогулку
-have lunch#1\269#обедать
-go shopping#1\270#ходить по магазинам
-come home#1\271#прийти домой
-cook dinner#1\272#готовить ужин
-have dinner#1\273#ужинать
-listen to the radio#1\274#слушать радио
-wash the dishes#1\275#мыть посуду
-watch TV#1\276#смотреть телевизор
-take a hot bath#1\277#принять горячую ванну
-go to bed#1\278#пойти спать
+﻿wake up#1\263#проснуться#醒来
+get up#1\264#встать с кровати#起床
+have a shower#1\265#принять душ#冲澡
+have breakfast#1\266#завтракать#吃早餐
+go to work#1\267#пойти на работу#去上班
+go for a walk#1\268#пойти на прогулку#去散步
+have lunch#1\269#обедать#吃午饭
+go shopping#1\270#ходить по магазинам#去购物
+come home#1\271#прийти домой#回家
+cook dinner#1\272#готовить ужин#做晚饭
+have dinner#1\273#ужинать#吃晚饭
+listen to the radio#1\274#слушать радио#听广播
+wash the dishes#1\275#мыть посуду#洗碗
+watch TV#1\276#смотреть телевизор#看电视
+take a hot bath#1\277#принять горячую ванну#洗热水澡
+go to bed#1\278#пойти спать#上床睡觉

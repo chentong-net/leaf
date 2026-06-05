@@ -1,18 +1,18 @@
-﻿hit the button#1\550#нажать на клавишу, кнопку
-cancel the download#1\551#отменить загрузку, скачивание
-click the link#1\552#нажать на ссылку
-put the cursor#1\553#установить курсор
-delete the file#1\554#удалить файл
-on the desktop#1\555#на рабочем столе
-double-click the icon#1\556#дважды кликнуть по иконке
-edit the document#1\557#отредактировать документ
-replace the hard drive#1\558#заменить жесткий диск
-icon#1\559#иконка, значок
-input data#1\560#вводить данные
-on the keyboard#1\561#на клавиатуре
-on the monitor#1\562#на экране монитора
-move the mouse#1\563#двигать мышкой
-save your work#1\564#сохранить работу
-digital camera#1\565#цифровая камера
-digital world#1\566#цифровой мир
-download the file#1\567#скачать, загрузить файл
+﻿hit the button#1\550#нажать на клавишу, кнопку#按按钮
+cancel the download#1\551#отменить загрузку, скачивание#取消下载
+click the link#1\552#нажать на ссылку#点击链接
+put the cursor#1\553#установить курсор#放置光标
+delete the file#1\554#удалить файл#删除文件
+on the desktop#1\555#на рабочем столе#在桌面上
+double-click the icon#1\556#дважды кликнуть по иконке#双击图标
+edit the document#1\557#отредактировать документ#编辑文档
+replace the hard drive#1\558#заменить жесткий диск#更换硬盘
+icon#1\559#иконка, значок#图标
+input data#1\560#вводить данные#输入数据
+on the keyboard#1\561#на клавиатуре#在键盘上
+on the monitor#1\562#на экране монитора#在显示器上
+move the mouse#1\563#двигать мышкой#移动鼠标
+save your work#1\564#сохранить работу#保存你的工作
+digital camera#1\565#цифровая камера#数码相机
+digital world#1\566#цифровой мир#数字世界
+download the file#1\567#скачать, загрузить файл#下载文件

@@ -1,12 +1,12 @@
-﻿weather#1\290#погода
-It’s sunny#1\291#солнечно
-It is windy#1\292#ветрено
-It’s cloudy.#1\293#облачно
-It is rainy#1\294#дождливо
-It’s snowy#1\295#идет снег
-It is foggy#1\296#туманно
-It’s chilly#1\297#прохладно
-It is hot#1\298#жарко
-It’s cold#1\299#холодно
-It is dry#1\300#сухо
-It’s damp#1\301#сыро
+﻿weather#1\290#погода#天气
+It’s sunny#1\291#солнечно#晴朗
+It is windy#1\292#ветрено#刮风
+It’s cloudy.#1\293#облачно#多云
+It is rainy#1\294#дождливо#下雨
+It’s snowy#1\295#идет снег#下雪
+It is foggy#1\296#туманно#有雾
+It’s chilly#1\297#прохладно#凉爽
+It is hot#1\298#жарко#炎热
+It’s cold#1\299#холодно#寒冷
+It is dry#1\300#сухо#干燥
+It’s damp#1\301#сыро#潮湿
