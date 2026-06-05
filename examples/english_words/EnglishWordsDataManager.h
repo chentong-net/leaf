@@ -64,6 +64,7 @@ public:
     using ResolveAudioPathCallback = std::function<void(bool ok, std::string path, const std::string& error)>;
 
     static Ptr create();
+    static void preloadLevels();
 
     void loadLevels(LoadLevelsCallback callback);
     void loadEntries(const EnglishWordTopic& topic, LoadEntriesCallback callback);

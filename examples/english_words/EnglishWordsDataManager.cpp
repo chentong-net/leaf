@@ -30,6 +30,24 @@ struct ParsedWordEntry {
 };
 
 using TextAssetCallback = std::function<void(bool ok, std::string text, const std::string& error)>;
+using LoadLevelsCallback = EnglishWordsDataManager::LoadLevelsCallback;
+
+enum class SharedLevelsCacheState {
+    Empty,
+    Loading,
+    Ready,
+};
+
+struct SharedLevelsCache {
+    SharedLevelsCacheState state = SharedLevelsCacheState::Empty;
+    std::vector<EnglishWordLevel> levels;
+    std::vector<LoadLevelsCallback> pendingCallbacks;
+};
+
+SharedLevelsCache& sharedLevelsCache() {
+    static SharedLevelsCache cache;
+    return cache;
+}
 
 std::string trimCopy(const std::string& value) {
     size_t start = 0;
@@ -82,6 +100,101 @@ void fetchTextAsset(const std::string& assetPath, TextAssetCallback callback) {
 
             std::string text(reinterpret_cast<const char*>(data->data), data->size);
             callback(true, stripUtf8Bom(std::move(text)), "");
+        }
+    );
+}
+
+bool parseLevelsJson(const std::string& text,
+                     std::vector<EnglishWordLevel>& levels,
+                     std::string& error) {
+    try {
+        auto root = LFJSONParser::parse(text);
+        if (!root || !root->contains("levels") || !root->at("levels").isArray()) {
+            error = "level_topics_parse_failed";
+            return false;
+        }
+
+        std::vector<EnglishWordLevel> parsedLevels;
+        for (auto& levelValue : root->at("levels").asArray()) {
+            if (!levelValue.isObject()) {
+                continue;
+            }
+
+            auto levelObject = levelValue.asObject();
+            EnglishWordLevel level;
+            level.id = stringField(levelObject, "id");
+            level.title = stringField(levelObject, "title");
+            if (level.title.empty()) {
+                continue;
+            }
+
+            if (levelObject->contains("topics") && levelObject->at("topics").isArray()) {
+                for (auto& topicValue : levelObject->at("topics").asArray()) {
+                    if (!topicValue.isObject()) {
+                        continue;
+                    }
+
+                    auto topicObject = topicValue.asObject();
+                    EnglishWordTopic topic;
+                    topic.id = stringField(topicObject, "id");
+                    topic.title = stringField(topicObject, "title");
+                    topic.fileAssetPath = stringField(topicObject, "file");
+                    if (!topic.title.empty() && !topic.fileAssetPath.empty()) {
+                        level.topics.push_back(std::move(topic));
+                    }
+                }
+            }
+
+            parsedLevels.push_back(std::move(level));
+        }
+
+        levels = std::move(parsedLevels);
+        error.clear();
+        return true;
+    } catch (...) {
+        error = "level_topics_parse_failed";
+        return false;
+    }
+}
+
+void finishSharedLevelsLoad(bool ok, std::vector<EnglishWordLevel> levels, const std::string& error) {
+    auto& cache = sharedLevelsCache();
+    cache.state = ok ? SharedLevelsCacheState::Ready : SharedLevelsCacheState::Empty;
+    cache.levels = ok ? std::move(levels) : std::vector<EnglishWordLevel>{};
+
+    auto callbacks = std::move(cache.pendingCallbacks);
+    cache.pendingCallbacks.clear();
+    for (auto& callback : callbacks) {
+        if (!callback) {
+            continue;
+        }
+        callback(ok, ok ? cache.levels : std::vector<EnglishWordLevel>{}, error);
+    }
+}
+
+void beginSharedLevelsLoad() {
+    auto& cache = sharedLevelsCache();
+    if (cache.state == SharedLevelsCacheState::Loading) {
+        return;
+    }
+
+    cache.state = SharedLevelsCacheState::Loading;
+    fetchTextAsset(
+        kLevelTopicsAssetPath,
+        [](bool ok, std::string text, const std::string& error) {
+            if (!ok) {
+                finishSharedLevelsLoad(false, {}, error.empty() ? "level_topics_load_failed" : error);
+                return;
+            }
+
+            std::vector<EnglishWordLevel> levels;
+            std::string parseError;
+            if (!parseLevelsJson(text, levels, parseError)) {
+                finishSharedLevelsLoad(false, {}, parseError.empty() ? "level_topics_parse_failed" : parseError);
+                return;
+            }
+
+            finishSharedLevelsLoad(true, std::move(levels), "");
         }
     );
 }
@@ -276,66 +389,29 @@ EnglishWordsDataManager::Ptr EnglishWordsDataManager::create() {
     return std::make_shared<EnglishWordsDataManager>();
 }
 
+void EnglishWordsDataManager::preloadLevels() {
+    auto& cache = sharedLevelsCache();
+    if (cache.state == SharedLevelsCacheState::Ready ||
+        cache.state == SharedLevelsCacheState::Loading) {
+        return;
+    }
+
+    beginSharedLevelsLoad();
+}
+
 void EnglishWordsDataManager::loadLevels(LoadLevelsCallback callback) {
     if (!callback) {
         return;
     }
 
-    fetchTextAsset(
-        kLevelTopicsAssetPath,
-        [callback = std::move(callback)](bool ok, std::string text, const std::string& error) mutable {
-            if (!ok) {
-                callback(false, {}, error.empty() ? "level_topics_load_failed" : error);
-                return;
-            }
+    auto& cache = sharedLevelsCache();
+    if (cache.state == SharedLevelsCacheState::Ready) {
+        callback(true, cache.levels, "");
+        return;
+    }
 
-            try {
-                auto root = LFJSONParser::parse(text);
-                if (!root || !root->contains("levels") || !root->at("levels").isArray()) {
-                    callback(false, {}, "level_topics_parse_failed");
-                    return;
-                }
-
-                std::vector<EnglishWordLevel> levels;
-                for (auto& levelValue : root->at("levels").asArray()) {
-                    if (!levelValue.isObject()) {
-                        continue;
-                    }
-
-                    auto levelObject = levelValue.asObject();
-                    EnglishWordLevel level;
-                    level.id = stringField(levelObject, "id");
-                    level.title = stringField(levelObject, "title");
-                    if (level.title.empty()) {
-                        continue;
-                    }
-
-                    if (levelObject->contains("topics") && levelObject->at("topics").isArray()) {
-                        for (auto& topicValue : levelObject->at("topics").asArray()) {
-                            if (!topicValue.isObject()) {
-                                continue;
-                            }
-
-                            auto topicObject = topicValue.asObject();
-                            EnglishWordTopic topic;
-                            topic.id = stringField(topicObject, "id");
-                            topic.title = stringField(topicObject, "title");
-                            topic.fileAssetPath = stringField(topicObject, "file");
-                            if (!topic.title.empty() && !topic.fileAssetPath.empty()) {
-                                level.topics.push_back(std::move(topic));
-                            }
-                        }
-                    }
-
-                    levels.push_back(std::move(level));
-                }
-
-                callback(true, std::move(levels), "");
-            } catch (...) {
-                callback(false, {}, "level_topics_parse_failed");
-            }
-        }
-    );
+    cache.pendingCallbacks.push_back(std::move(callback));
+    beginSharedLevelsLoad();
 }
 
 void EnglishWordsDataManager::loadEntries(const EnglishWordTopic& topic, LoadEntriesCallback callback) {
