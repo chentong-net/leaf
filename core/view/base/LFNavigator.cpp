@@ -73,6 +73,9 @@ void LFNavigator::pop(bool animated) {
         animatePop(exitPage, enterPage);
     } else {
         removeChild(exitPage);
+        // The previous page may have been hidden by an earlier animated push.
+        enterPage->setVisible(true);
+        enterPage->setTranslate(0, 0);
         enterPage->onAppear();
     }
 }
