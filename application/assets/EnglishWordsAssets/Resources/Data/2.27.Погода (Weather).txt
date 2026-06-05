@@ -1,14 +1,14 @@
-﻿(It’s) boiling hot#2\866#обжигающе горячо; жарко
-light breeze#2\867#лёгкий ветерок
-(It’s) drizzling#2\868#идет лёгкий дождь
-fair weather#2\869#ясная погода
-weather forecast#2\870#прогноз погоды
-(It’s) freezing#2\871#холодно; подмораживает
-heat wave#2\872#период сильной жары
-heavy rain#2\873#сильный дождь
-hurricane#2\874#ураган
-in the sunshine#2\875#на солнцепеке
-strong wind#2\876#сильный ветер
-summer shower#2\877#летний дождик
-thick fog#2\878#плотный туман
-through the fog#2\879#сквозь туман
+﻿(It’s) boiling hot#2\866#обжигающе горячо; жарко#热得要命
+light breeze#2\867#лёгкий ветерок#微风
+(It’s) drizzling#2\868#идет лёгкий дождь#下毛毛雨
+fair weather#2\869#ясная погода#晴朗的天气
+weather forecast#2\870#прогноз погоды#天气预报
+(It’s) freezing#2\871#холодно; подмораживает#冷得要命
+heat wave#2\872#период сильной жары#热浪
+heavy rain#2\873#сильный дождь#大雨
+hurricane#2\874#ураган#飓风
+in the sunshine#2\875#на солнцепеке#在阳光下
+strong wind#2\876#сильный ветер#大风
+summer shower#2\877#летний дождик#夏阵雨
+thick fog#2\878#плотный туман#浓雾
+through the fog#2\879#сквозь туман#穿过雾

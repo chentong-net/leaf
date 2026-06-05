@@ -1,13 +1,13 @@
-﻿in the countryside#2\108#в сельской местности
-in the town#2\109#в городе
-in the village#2\110#в деревне
-on the farm#2\111#на ферме
-on the island#2\112#на острове
-in the field#2\113#в поле
-in the mountains#2\114#в горах
-in the forest#2\115#в лесу
-in the lake#2\116#в озере
-in the river#2\117#в реке
-along the path#2\118#по тропинке
-wildlife#2\119#живая природа
-in nature#2\120#на природе
+﻿in the countryside#2\108#в сельской местности#在乡下
+in the town#2\109#в городе#在城镇里
+in the village#2\110#в деревне#在村庄里
+on the farm#2\111#на ферме#在农场上
+on the island#2\112#на острове#在岛上
+in the field#2\113#в поле#在田野里
+in the mountains#2\114#в горах#在山里
+in the forest#2\115#в лесу#在森林里
+in the lake#2\116#в озере#在湖里
+in the river#2\117#в реке#在河里
+along the path#2\118#по тропинке#沿着小路
+wildlife#2\119#живая природа#野生动物
+in nature#2\120#на природе#在大自然中

@@ -1,18 +1,18 @@
-﻿arrive at the hotel#3\409#прибыть в гостиницу
-arrive in London#3\410#прибыть в Лондон
-at the campsite#3\411#в палаточном лагере
-depart (from)#3\412#отправляться (из/от)
-reach (your) destination#3\413#достичь (своего) пункта назначения
-for a fortnight#3\414#на 2 недели
-get a tan#3\415#загореть
-go to the seaside#3\416#поехать к морю
-have a picnic#3\417#устроить пикник
-head for#3\418#направляться в/к
-hitchhike#3\419#путешествовать автостопом
-take out insurance#3\420#взять страховку
-detailed itinerary#3\421#подробная программа поездки
-package tour#3\422#турпакет; турпутёвка
-put up a tent#3\423#ставить палатку
-set off (for)#3\424#отправляться (в/к)
-on a business trip#3\425#в командировке
-trip#3\426#поездка; путешествие
+﻿arrive at the hotel#3\409#прибыть в гостиницу#到达酒店
+arrive in London#3\410#прибыть в Лондон#到达伦敦
+at the campsite#3\411#в палаточном лагере#在营地
+depart (from)#3\412#отправляться (из/от)#从…出发
+reach (your) destination#3\413#достичь (своего) пункта назначения#到达（你的）目的地
+for a fortnight#3\414#на 2 недели#两周
+get a tan#3\415#загореть#晒黑
+go to the seaside#3\416#поехать к морю#去海边
+have a picnic#3\417#устроить пикник#野餐
+head for#3\418#направляться в/к#前往
+hitchhike#3\419#путешествовать автостопом#搭便车旅行
+take out insurance#3\420#взять страховку#买保险
+detailed itinerary#3\421#подробная программа поездки#详细行程
+package tour#3\422#турпакет; турпутёвка#跟团游
+put up a tent#3\423#ставить палатку#搭帐篷
+set off (for)#3\424#отправляться (в/к)#动身去
+on a business trip#3\425#в командировке#在出差
+trip#3\426#поездка; путешествие#旅程

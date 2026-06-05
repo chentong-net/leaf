@@ -1,33 +1,33 @@
-﻿have an accident#3\703#попасть в аварию
-survive the accident#3\704#выжить после аварии; пережить аварию
-recover from the accident#3\705#поправиться после аварии
-consequences (for)#3\706#последствия (для)
-take … into consideration#3\707#принимать … в расчёт
-for your consideration#3\708#для вашего рассмотрения
-cause damage (to)#3\709#причинять ущерб/вред (чему-л.)
-escape the danger#3\710#избежать опасности
-in danger (of)#3\711#в опасности (чего-л.)
-out of danger#3\712#вне опасности
-distance (from … to …)#3\713#расстояние (от … до …)
-from a distance#3\714#на расстоянии
-in the distance#3\715#вдалеке
-within walking distance#3\716#можно дойти пешком
-without expression#3\717#без эмоций; без выражения
-failure#3\718#неудача
-hope (for)#3\719#надежда (на)
-lose hope#3\720#утратить надежду
-on the island#3\721#на острове
-desert island#3\722#необитаемый остров
-reason (for)#3\723#причина (чего-л.)
-within reason#3\724#в пределах разумного
-presence#3\725#присутствие
-out of proportion#3\726#непропорционально
-under the protection (of)#3\727#под охраной
-safety#3\728#безопасность
-for your own safety#3\729#для вашей безопасности
-at full speed#3\730#на полной скорости
-strength#3\731#сила, мощь
-supply#3\732#запас
-achievable target#3\733#достижимая цель
-reach the target#3\734#достичь цели
-truth#3\735#правда, истина
+﻿have an accident#3\703#попасть в аварию#出事故
+survive the accident#3\704#выжить после аварии; пережить аварию#在事故中幸存
+recover from the accident#3\705#поправиться после аварии#事故后康复
+consequences (for)#3\706#последствия (для)#后果
+take … into consideration#3\707#принимать … в расчёт#把…考虑进去
+for your consideration#3\708#для вашего рассмотрения#供你考虑
+cause damage (to)#3\709#причинять ущерб/вред (чему-л.)#对…造成损害
+escape the danger#3\710#избежать опасности#脱离危险
+in danger (of)#3\711#в опасности (чего-л.)#处于危险中
+out of danger#3\712#вне опасности#脱离危险
+distance (from … to …)#3\713#расстояние (от … до …)#从…到…的距离
+from a distance#3\714#на расстоянии#从远处
+in the distance#3\715#вдалеке#在远处
+within walking distance#3\716#можно дойти пешком#步行可达
+without expression#3\717#без эмоций; без выражения#面无表情地
+failure#3\718#неудача#失败
+hope (for)#3\719#надежда (на)#希望
+lose hope#3\720#утратить надежду#失去希望
+on the island#3\721#на острове#在岛上
+desert island#3\722#необитаемый остров#荒岛
+reason (for)#3\723#причина (чего-л.)#原因
+within reason#3\724#в пределах разумного#合理地
+presence#3\725#присутствие#在场
+out of proportion#3\726#непропорционально#不成比例地
+under the protection (of)#3\727#под охраной#在…保护下
+safety#3\728#безопасность#安全
+for your own safety#3\729#для вашей безопасности#为了你的安全
+at full speed#3\730#на полной скорости#全速地
+strength#3\731#сила, мощь#力量
+supply#3\732#запас#储备
+achievable target#3\733#достижимая цель#可实现的目标
+reach the target#3\734#достичь цели#达到目标
+truth#3\735#правда, истина#真相

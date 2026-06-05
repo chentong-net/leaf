@@ -1,14 +1,14 @@
-﻿bustling (resort)#3\44#суетливый, шумный (курорт)
-deserted (island)#3\45#безлюдный; необитаемый (остров)
-gorgeous (sunset)#3\46#яркий, пышный (закат)
-horrible (place)#3\47#ужасное (место)
-impressive (buildings)#3\48#впечатляющие (здание)
-luxurious (hotel)#3\49#роскошный (отель)
-magnificent (palace)#3\50#величественный (дворец)
-memorable (trip)#3\51#незабываемое (путешествие)
-mountainous (area)#3\52#гористая (область)
-overcrowded (city)#3\53#многолюдный (город)
-picturesque (scenery)#3\54#живописный (пейзаж)
-splendid (view)#3\55#великолепный (вид)
-unforgettable (experience)#3\56#незабываемые (переживания, впечатления)
-unspoiled (beaches)#3\57#неиспорченные (пляжи)
+﻿bustling (resort)#3\44#суетливый, шумный (курорт)#热闹的（度假地）
+deserted (island)#3\45#безлюдный; необитаемый (остров)#荒无人烟的（岛）
+gorgeous (sunset)#3\46#яркий, пышный (закат)#绚丽的（日落）
+horrible (place)#3\47#ужасное (место)#可怕的（地方）
+impressive (buildings)#3\48#впечатляющие (здание)#令人印象深刻的（建筑）
+luxurious (hotel)#3\49#роскошный (отель)#豪华的（酒店）
+magnificent (palace)#3\50#величественный (дворец)#宏伟的（宫殿）
+memorable (trip)#3\51#незабываемое (путешествие)#难忘的（旅行）
+mountainous (area)#3\52#гористая (область)#多山的（地区）
+overcrowded (city)#3\53#многолюдный (город)#拥挤的（城市）
+picturesque (scenery)#3\54#живописный (пейзаж)#风景如画的（景色）
+splendid (view)#3\55#великолепный (вид)#壮丽的（景色）
+unforgettable (experience)#3\56#незабываемые (переживания, впечатления)#难忘的（经历）
+unspoiled (beaches)#3\57#неиспорченные (пляжи)#未被破坏的（海滩）

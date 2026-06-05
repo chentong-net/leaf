@@ -1,25 +1,25 @@
-﻿arrive at work#2\59#прибывать на работу
-bake the cake#2\60#печь торт
-clean the house#2\61#убирать дом
-clean the windows#2\62#мыть окна
-cook#2\63#готовить (пищу)
-decorate the flat#2\64#делать ремонт в квартире
-do nothing#2\65#ничего не делать
-do the homework#2\66#делать домашнее задание
-do the housework#2\67#делать работу по дому
-do the laundry#2\68#стирать
-do the washing-up#2\69#мыть посуду
-drive to work#2\70#ехать (на машине) на работу
-go to sleep#2\71#пойти спать
-take a bath#2\72#принимать ванну
-have a break#2\73#сделать перерыв
-hoover#2\74#пылесосить
-invite friends (around)#2\75#приглашать друзей (к себе)
-iron#2\76#гладить
-lay the table#2\77#накрывать на стол
-make the bed#2\78#заправлять кровать
-tidy up#2\79#наводить порядок
-use the Internet#2\80#пользоваться интернетом
-walk the dog#2\81#гулять с собакой
-take a walk#2\82#выйти на прогулку
-take out the garbage#2\83#выносить мусор
+﻿arrive at work#2\59#прибывать на работу#到单位
+bake the cake#2\60#печь торт#烤蛋糕
+clean the house#2\61#убирать дом#打扫房子
+clean the windows#2\62#мыть окна#擦窗户
+cook#2\63#готовить (пищу)#做饭
+decorate the flat#2\64#делать ремонт в квартире#装修公寓
+do nothing#2\65#ничего не делать#什么也不做
+do the homework#2\66#делать домашнее задание#做作业
+do the housework#2\67#делать работу по дому#做家务
+do the laundry#2\68#стирать#洗衣服
+do the washing-up#2\69#мыть посуду#洗餐具
+drive to work#2\70#ехать (на машине) на работу#开车去上班
+go to sleep#2\71#пойти спать#去睡觉
+take a bath#2\72#принимать ванну#泡澡
+have a break#2\73#сделать перерыв#休息一下
+hoover#2\74#пылесосить#用吸尘器打扫
+invite friends (around)#2\75#приглашать друзей (к себе)#请朋友来家里
+iron#2\76#гладить#熨衣服
+lay the table#2\77#накрывать на стол#摆桌子
+make the bed#2\78#заправлять кровать#整理床铺
+tidy up#2\79#наводить порядок#收拾整齐
+use the Internet#2\80#пользоваться интернетом#上网
+walk the dog#2\81#гулять с собакой#遛狗
+take a walk#2\82#выйти на прогулку#去散步
+take out the garbage#2\83#выносить мусор#倒垃圾

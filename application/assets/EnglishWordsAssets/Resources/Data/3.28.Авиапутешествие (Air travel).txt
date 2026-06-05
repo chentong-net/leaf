@@ -1,29 +1,29 @@
-﻿arrivals#3\450#прибытия
-the late arrival (of)#3\451#позднее прибытие
-departures#3\452#отправления
-in the departure lounge#3\453#в зале ожидания
-a flight (to)#3\454#рейс (в/до)
-catch the flight (to)#3\455#взять рейс (до)
-during the flight#3\456#во время рейса
-cancelled#3\457#отменен
-delayed#3\458#отложен
-entrance#3\459#вход
-exit#3\460#выход
-head for the exit#3\461#направляться к выходу
-an exit (to)#3\462#выход в /на …
-an aisle seat#3\463#место у прохода
-a window seat#3\464#место у окна
-at the check-in#3\465#регистрация
-confirm#3\466#подтвердить
-land#3\467#приземляться
-reservation#3\468#бронирование
-make a reservation#3\469#забронировать
-take off#3\470#взлетать
-during the take-off#3\471#во время взлёта
-pay for excess baggage#3\472#заплатить за избыточный багаж
-gate#3\473#выход на посадку
-show the boarding pass#3\474#показать посадочную карточку
-flexible#3\475#гибкий
-unattended baggage#3\476#оставленный без присмотра багаж
-at the customs#3\477#на таможне
-go through the customs#3\478#пройти таможню
+﻿arrivals#3\450#прибытия#到达
+the late arrival (of)#3\451#позднее прибытие#延迟到达
+departures#3\452#отправления#出发
+in the departure lounge#3\453#в зале ожидания#在候机厅
+a flight (to)#3\454#рейс (в/до)#飞往…的航班
+catch the flight (to)#3\455#взять рейс (до)#赶上飞往…的航班
+during the flight#3\456#во время рейса#飞行途中
+cancelled#3\457#отменен#已取消
+delayed#3\458#отложен#已延误
+entrance#3\459#вход#入口
+exit#3\460#выход#出口
+head for the exit#3\461#направляться к выходу#朝出口走
+an exit (to)#3\462#выход в /на …#通往…的出口
+an aisle seat#3\463#место у прохода#靠过道座位
+a window seat#3\464#место у окна#靠窗座位
+at the check-in#3\465#регистрация#在值机处
+confirm#3\466#подтвердить#确认
+land#3\467#приземляться#着陆
+reservation#3\468#бронирование#预订
+make a reservation#3\469#забронировать#预订
+take off#3\470#взлетать#起飞
+during the take-off#3\471#во время взлёта#在起飞时
+pay for excess baggage#3\472#заплатить за избыточный багаж#支付超重行李费
+gate#3\473#выход на посадку#登机口
+show the boarding pass#3\474#показать посадочную карточку#出示登机牌
+flexible#3\475#гибкий#灵活的
+unattended baggage#3\476#оставленный без присмотра багаж#无人看管的行李
+at the customs#3\477#на таможне#在海关
+go through the customs#3\478#пройти таможню#通过海关

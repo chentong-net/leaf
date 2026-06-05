@@ -1,21 +1,21 @@
-﻿the bus fare#2\443#плата за проезд
-pay the full fare#2\444#платись полную стоимость
-by boat#2\445#(поплыть) на лодке
-by helicopter#2\446#(полететь) на вертолёте
-by ship#2\447#(поплыть) на корабле
-by taxi#2\448#(поехать) на такси
-by underground#2\449#(поехать) на метро
-embark (on)#2\450#садиться на корабль
-receive a fine (for)#2\451#получить штраф (за)
-packed#2\452#переполненный; забитый
-passengers (for London)#2\453#пассажиры (до Лондона)
-jump the queue#2\454#проскочить без очереди
-join the queue#2\455#встать в очередь
-wait in the queue#2\456#ждать в очереди
-during the rush-hour#2\457#в час пик
-according to the timetable#2\458#по расписанию
-in the timetable#2\459#в расписании
-train timetable#2\460#расписание поездов
-a one-way ticket#2\461#билет в один конец
-a return ticket#2\462#обратный билет; билет в оба конца
-a valid ticket#2\463#действующий билет
+﻿the bus fare#2\443#плата за проезд#公交车费
+pay the full fare#2\444#платись полную стоимость#付全价
+by boat#2\445#(поплыть) на лодке#乘船
+by helicopter#2\446#(полететь) на вертолёте#乘直升机
+by ship#2\447#(поплыть) на корабле#乘轮船
+by taxi#2\448#(поехать) на такси#乘出租车
+by underground#2\449#(поехать) на метро#乘地铁
+embark (on)#2\450#садиться на корабль#登船
+receive a fine (for)#2\451#получить штраф (за)#因…被罚款
+packed#2\452#переполненный; забитый#拥挤的
+passengers (for London)#2\453#пассажиры (до Лондона)#（去伦敦的）乘客
+jump the queue#2\454#проскочить без очереди#插队
+join the queue#2\455#встать в очередь#排队
+wait in the queue#2\456#ждать в очереди#排队等候
+during the rush-hour#2\457#в час пик#在高峰时段
+according to the timetable#2\458#по расписанию#按时刻表
+in the timetable#2\459#в расписании#在时刻表里
+train timetable#2\460#расписание поездов#列车时刻表
+a one-way ticket#2\461#билет в один конец#单程票
+a return ticket#2\462#обратный билет; билет в оба конца#往返票
+a valid ticket#2\463#действующий билет#有效车票

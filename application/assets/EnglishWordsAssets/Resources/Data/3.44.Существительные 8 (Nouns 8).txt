@@ -1,27 +1,27 @@
-﻿absence#3\758#отсутствие
-judge people by appearance#3\759#судить людей по внешности
-urgent appointment (with)#3\760#срочная встреча (с)
-schedule an appointment (with)#3\761#назначить встречу (с)
-congratulations (on)#3\762#поздравления (с)
-face challenges#3\763#столкнуться с трудностями
-tackle challenges#3\764#справляться с трудностями
-out of the question#3\765#не подлежит обсуждению
-definition#3\766#определение; формулировка
-satisfy (my) desire#3\767#удовлетворить (своё) желание
-suppress the desire#3\768#подавить желание
-distribution#3\769#распространение
-explanation#3\770#объяснение
-offer an explanation#3\771#предложить объяснение
-without explanation#3\772#без объяснения
-correction#3\773#исправление, внесение поправок
-use force#3\774#использовать силу; мощь
-the best intentions#3\775#наилучшие намерения
-offence#3\776#оскорбление
-take offence (at)#3\777#обидеться; оскорбиться (из-за)
-for pleasure#3\778#для развлечений; удовольствия
-gain recognition#3\779#заслужить признание
-make reductions#3\780#произвести сокращения
-(good) selection#3\781#(широкий; хороший) выбор
-keep silence#3\782#молчать
-silence#3\783#тишина
-unemployment#3\784#безработица
+﻿absence#3\758#отсутствие#缺席
+judge people by appearance#3\759#судить людей по внешности#以貌取人
+urgent appointment (with)#3\760#срочная встреча (с)#紧急约见
+schedule an appointment (with)#3\761#назначить встречу (с)#安排会面
+congratulations (on)#3\762#поздравления (с)#祝贺
+face challenges#3\763#столкнуться с трудностями#面对挑战
+tackle challenges#3\764#справляться с трудностями#应对挑战
+out of the question#3\765#не подлежит обсуждению#不可能
+definition#3\766#определение; формулировка#定义
+satisfy (my) desire#3\767#удовлетворить (своё) желание#满足（我的）愿望
+suppress the desire#3\768#подавить желание#抑制欲望
+distribution#3\769#распространение#分配
+explanation#3\770#объяснение#解释
+offer an explanation#3\771#предложить объяснение#给出解释
+without explanation#3\772#без объяснения#没有解释
+correction#3\773#исправление, внесение поправок#更正
+use force#3\774#использовать силу; мощь#使用武力
+the best intentions#3\775#наилучшие намерения#最好的意图
+offence#3\776#оскорбление#冒犯
+take offence (at)#3\777#обидеться; оскорбиться (из-за)#因…生气
+for pleasure#3\778#для развлечений; удовольствия#为了消遣
+gain recognition#3\779#заслужить признание#获得认可
+make reductions#3\780#произвести сокращения#削减
+(good) selection#3\781#(широкий; хороший) выбор#（好的）选择
+keep silence#3\782#молчать#保持沉默
+silence#3\783#тишина#安静
+unemployment#3\784#безработица#失业

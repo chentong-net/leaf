@@ -1,16 +1,16 @@
-﻿catch the ball#4\159#поймать мяч
-head the ball#4\160#ударить мяч головой
-kick the ball#4\161#ударить мяч ногой
-pass the ball#4\162#передать мяч
-throw the ball#4\163#бросить мяч
-score a goal#4\164#забить гол
-miss a penalty#4\165#пропустить пенальти
-strike a penalty#4\166#пробить пенальти
-serve an ace#4\167#сделать подачу
-finish in a draw#4\168#закончить вничью
-take the lead#4\169#идти впереди
-beat your rival#4\170#победить (своих) противников
-break the record#4\171#побить рекорд
-compete#4\172#соревноваться
-win on points#4\173#выиграть по очкам
-lose on points#4\174#проиграть по очкам
+﻿catch the ball#4\159#поймать мяч#接住球
+head the ball#4\160#ударить мяч головой#头球顶球
+kick the ball#4\161#ударить мяч ногой#踢球
+pass the ball#4\162#передать мяч#传球
+throw the ball#4\163#бросить мяч#扔球
+score a goal#4\164#забить гол#进球
+miss a penalty#4\165#пропустить пенальти#罚失点球
+strike a penalty#4\166#пробить пенальти#主罚点球
+serve an ace#4\167#сделать подачу#发出一记Ace球
+finish in a draw#4\168#закончить вничью#打成平局
+take the lead#4\169#идти впереди#领先
+beat your rival#4\170#победить (своих) противников#击败你的对手
+break the record#4\171#побить рекорд#打破纪录
+compete#4\172#соревноваться#比赛
+win on points#4\173#выиграть по очкам#点数获胜
+lose on points#4\174#проиграть по очкам#点数落败

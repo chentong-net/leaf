@@ -1,20 +1,20 @@
-﻿(I) have a break#3\112#(у меня) перерыв
-(they) have a class#3\113#(у них) занятия
-(I) have a cold#3\114#(я) простужен
-(I) have a cup of coffee#3\115#(я) пью чашку кофе
-(I) have a date#3\116#(у меня) свидание
-(I) have a drink#3\117#(я) беру, выпиваю напиток
-(I) have a good time#3\118#(я) хорошо провожу время
-(I) have a headache#3\119#(у меня) болит голова
-(I) have a meal#3\120#(я) ем
-(they) have a meeting#3\121#(у них) встреча
-(we) have a party#3\122#(у нас) вечеринка
-(I) have a snack#3\123#(я) легко поел; перекусил
-(I) have an appointment#3\124#(у меня) назначена встреча
-(they) have an argument#3\125#(у них) ссора; конфликт
-(I) have breakfast#3\126#(я) завтракаю
-(they) have dinner#3\127#(они) ужинают
-(I) have flu#3\128#(у меня) грипп
-(they) have lunch#3\129#(они) обедают
-(I) have the exam#3\130#(у меня) экзамен
-(they) have trouble#3\131#(у них) неприятности; проблемы
+﻿(I) have a break#3\112#(у меня) перерыв#（我）休息一下
+(they) have a class#3\113#(у них) занятия#（他们）上课
+(I) have a cold#3\114#(я) простужен#（我）感冒了
+(I) have a cup of coffee#3\115#(я) пью чашку кофе#（我）喝一杯咖啡
+(I) have a date#3\116#(у меня) свидание#（我）有约会
+(I) have a drink#3\117#(я) беру, выпиваю напиток#（我）喝点东西
+(I) have a good time#3\118#(я) хорошо провожу время#（我）玩得开心
+(I) have a headache#3\119#(у меня) болит голова#（我）头疼
+(I) have a meal#3\120#(я) ем#（我）吃饭
+(they) have a meeting#3\121#(у них) встреча#（他们）开会
+(we) have a party#3\122#(у нас) вечеринка#（我们）举办聚会
+(I) have a snack#3\123#(я) легко поел; перекусил#（我）吃点零食
+(I) have an appointment#3\124#(у меня) назначена встреча#（我）有预约
+(they) have an argument#3\125#(у них) ссора; конфликт#（他们）争吵
+(I) have breakfast#3\126#(я) завтракаю#（我）吃早餐
+(they) have dinner#3\127#(они) ужинают#（他们）吃晚饭
+(I) have flu#3\128#(у меня) грипп#（我）得了流感
+(they) have lunch#3\129#(они) обедают#（他们）吃午饭
+(I) have the exam#3\130#(у меня) экзамен#（我）有考试
+(they) have trouble#3\131#(у них) неприятности; проблемы#（他们）有麻烦

@@ -1,17 +1,17 @@
-﻿occasion#2\426#важное событие
-blow out candles#2\427#задуть свечи
-celebrate#2\428#праздновать
-celebrate the anniversary (of)#2\429#отмечать годовщину (чего-л./кого-л.)
-congratulate (on)#2\430#поздравлять (с)
-decorate with balloons#2\431#украшать шариками
-dress up (for)#2\432#наряжаться (для/к)
-prepare the wedding feast#2\433#подготовить свадебный банкет
-give presents#2\434#дарить подарки
-host a reception#2\435#организовать, устроить приём
-invite (her) to the party#2\436#пригласить (её) на вечеринку
-lit candles#2\437#зажечь свечи
-observe religious holidays#2\438#соблюдать религиозные праздники
-romantic candlelit dinner#2\439#романтический ужин при свечах
-serve drinks and snacks#2\440#подавать напитки и закуски
-set off fireworks#2\441#запускать фейерверки
-with best wishes (for)#2\442#с наилучшими пожеланиями (к/с)
+﻿occasion#2\426#важное событие#特别的日子
+blow out candles#2\427#задуть свечи#吹灭蜡烛
+celebrate#2\428#праздновать#庆祝
+celebrate the anniversary (of)#2\429#отмечать годовщину (чего-л./кого-л.)#庆祝…周年
+congratulate (on)#2\430#поздравлять (с)#祝贺
+decorate with balloons#2\431#украшать шариками#用气球装饰
+dress up (for)#2\432#наряжаться (для/к)#为…盛装打扮
+prepare the wedding feast#2\433#подготовить свадебный банкет#准备婚宴
+give presents#2\434#дарить подарки#送礼物
+host a reception#2\435#организовать, устроить приём#举办招待会
+invite (her) to the party#2\436#пригласить (её) на вечеринку#邀请（她）参加聚会
+lit candles#2\437#зажечь свечи#点蜡烛
+observe religious holidays#2\438#соблюдать религиозные праздники#过宗教节日
+romantic candlelit dinner#2\439#романтический ужин при свечах#浪漫烛光晚餐
+serve drinks and snacks#2\440#подавать напитки и закуски#供应饮料和小吃
+set off fireworks#2\441#запускать фейерверки#放烟花
+with best wishes (for)#2\442#с наилучшими пожеланиями (к/с)#致以最美好的祝愿

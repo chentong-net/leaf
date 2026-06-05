@@ -1,24 +1,24 @@
-﻿in the car park#2\84#на парковке
-at the embassy#2\85#в посольстве
-at kindergarten#2\86#в детском саду
-at the market#2\87#на рынке
-monument#2\88#памятник
-in the park#2\89#в парке
-along the pavement#2\90#по тротуару
-on the road#2\91#на дороге
-along the road#2\92#по дороге
-in the square#2\93#на площади
-along the street#2\94#по улице
-in the street#2\95#на улице
-in the suburbs#2\96#в пригороде
-at the subway station#2\97#на станции метро
-in the theatre#2\98#в театре
-tower#2\99#башня
-town hall#2\100#ратуша
-at the traffic lights#2\101#у светофоров
-at university#2\102#в университете
-viewpoint#2\103#смотровая площадка
-in the library#2\104#в библиотеке
-ask for directions#2\105#спрашивать направление/дорогу
-give (me) directions to …#2\106#объяснить (мне) дорогу до …
-in the downtown#2\107#в центре города
+﻿in the car park#2\84#на парковке#在停车场
+at the embassy#2\85#в посольстве#在大使馆
+at kindergarten#2\86#в детском саду#在幼儿园
+at the market#2\87#на рынке#在市场
+monument#2\88#памятник#纪念碑
+in the park#2\89#в парке#在公园里
+along the pavement#2\90#по тротуару#沿着人行道
+on the road#2\91#на дороге#在路上
+along the road#2\92#по дороге#沿着路
+in the square#2\93#на площади#在广场上
+along the street#2\94#по улице#沿着街道
+in the street#2\95#на улице#在街上
+in the suburbs#2\96#в пригороде#在郊区
+at the subway station#2\97#на станции метро#在地铁站
+in the theatre#2\98#в театре#在剧院里
+tower#2\99#башня#塔
+town hall#2\100#ратуша#市政厅
+at the traffic lights#2\101#у светофоров#在红绿灯处
+at university#2\102#в университете#在大学
+viewpoint#2\103#смотровая площадка#观景台
+in the library#2\104#в библиотеке#在图书馆里
+ask for directions#2\105#спрашивать направление/дорогу#问路
+give (me) directions to …#2\106#объяснить (мне) дорогу до …#给（我）指去…的路
+in the downtown#2\107#в центре города#在市中心

@@ -1,19 +1,19 @@
-﻿team#3\164#команда
-spectators#3\165#зрители
-champion#3\166#чемпион
-runner-up#3\167#занявший второе место
-face rivals#3\168#встретиться с противниками
-beat rivals#3\169#победить противников
-referee#3\170#рефери
-captain#3\171#капитан команды
-winner#3\172#победитель
-send in a substitute#3\173#выставить замену
-professional player#3\174#профессиональный игрок
-win the competition#3\175#выиграть соревнование
-match#3\176#матч
-race#3\177#гонка
-tournament#3\178#турнир
-game#3\179#игра
-championship#3\180#чемпионат
-in the final#3\181#в финале
-in the semi-final#3\182#в полуфинале
+﻿team#3\164#команда#队伍
+spectators#3\165#зрители#观众
+champion#3\166#чемпион#冠军
+runner-up#3\167#занявший второе место#亚军
+face rivals#3\168#встретиться с противниками#迎战对手
+beat rivals#3\169#победить противников#击败对手
+referee#3\170#рефери#裁判
+captain#3\171#капитан команды#队长
+winner#3\172#победитель#获胜者
+send in a substitute#3\173#выставить замену#派上替补
+professional player#3\174#профессиональный игрок#职业运动员
+win the competition#3\175#выиграть соревнование#赢得比赛
+match#3\176#матч#比赛
+race#3\177#гонка#比赛
+tournament#3\178#турнир#锦标赛
+game#3\179#игра#比赛
+championship#3\180#чемпионат#锦标赛
+in the final#3\181#в финале#在决赛中
+in the semi-final#3\182#в полуфинале#在半决赛中

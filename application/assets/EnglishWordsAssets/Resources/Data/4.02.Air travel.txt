@@ -1,17 +1,17 @@
-﻿altitude#4\367#высота
-baggage allowance#4\368#разрешенный вес багажа
-baggage reclaim#4\369#получение багажа
-boarding#4\370#посадка; идёт посадка
-book tickets#4\371#заказать билеты
-charter flight#4\372#чартерный рейс
-compensation#4\373#компенсация
-fasten seatbelts#4\374#пристегнуть ремни
-hand luggage#4\375#ручной багаж
-headphones#4\376#наушники
-leave unattended#4\377#оставлять без присмотра
-onboard#4\378#на борту
-overhead#4\379#над головой
-purpose#4\380#цель
-restricted items#4\381#запрещённые предметы
-return journey#4\382#обратный путь
-stopover#4\383#промежуточная пересадка
+﻿altitude#4\367#высота#高度
+baggage allowance#4\368#разрешенный вес багажа#行李限额
+baggage reclaim#4\369#получение багажа#行李提取处
+boarding#4\370#посадка; идёт посадка#登机
+book tickets#4\371#заказать билеты#订票
+charter flight#4\372#чартерный рейс#包机航班
+compensation#4\373#компенсация#赔偿
+fasten seatbelts#4\374#пристегнуть ремни#系好安全带
+hand luggage#4\375#ручной багаж#随身行李
+headphones#4\376#наушники#耳机
+leave unattended#4\377#оставлять без присмотра#无人看管
+onboard#4\378#на борту#在机上
+overhead#4\379#над головой#头顶上方的
+purpose#4\380#цель#目的
+restricted items#4\381#запрещённые предметы#受限物品
+return journey#4\382#обратный путь#返程
+stopover#4\383#промежуточная пересадка#中途停留

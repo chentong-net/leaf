@@ -1,22 +1,22 @@
-﻿provide alibi (for)#4\202#предоставить алиби (для)
-grant an amnesty (to)#4\203#объявит амнистию (для)
-grant (him) bail#4\204#выпустить (его) под залог
-capital punishment#4\205#смертная казнь
-corporal punishment#4\206#телесные наказания
-collect evidence#4\207#собирать доказательства
-suspend execution#4\208#отложить казнь
-await execution#4\209#ожидать казнь
-in custody#4\210#в заключении, под арестом
-escape justice#4\211#избежать правосудия
-bring (him) to justice#4\212#отдать (его) в руки правосудия
-a law-abiding citizen#4\213#законопослушней гражданин
-go to prison#4\214#отправится в тюрьму
-deserve punishment#4\215#заслужить наказание
-suffer punishment#4\216#понести наказание
-a suspect#4\217#подозреваемый
-suspended sentence#4\218#условное наказание
-give testimony#4\219#давать показания в суде
-come to trial#4\220#пойти под суд
-await trial#4\221#в ожидании суда
-bring (her) to trial#4\222#отдать (её) под суд
-offender#4\223#преступник, правонарушитель
+﻿provide alibi (for)#4\202#предоставить алиби (для)#提供（…的）不在场证明
+grant an amnesty (to)#4\203#объявит амнистию (для)#给予（…）大赦
+grant (him) bail#4\204#выпустить (его) под залог#准许（他）保释
+capital punishment#4\205#смертная казнь#死刑
+corporal punishment#4\206#телесные наказания#体罚
+collect evidence#4\207#собирать доказательства#收集证据
+suspend execution#4\208#отложить казнь#暂缓执行死刑
+await execution#4\209#ожидать казнь#等待处决
+in custody#4\210#в заключении, под арестом#被拘留
+escape justice#4\211#избежать правосудия#逃脱法律制裁
+bring (him) to justice#4\212#отдать (его) в руки правосудия#将（他）绳之以法
+a law-abiding citizen#4\213#законопослушней гражданин#守法公民
+go to prison#4\214#отправится в тюрьму#入狱
+deserve punishment#4\215#заслужить наказание#应受惩罚
+suffer punishment#4\216#понести наказание#受到惩罚
+a suspect#4\217#подозреваемый#嫌疑人
+suspended sentence#4\218#условное наказание#缓刑
+give testimony#4\219#давать показания в суде#出庭作证
+come to trial#4\220#пойти под суд#受审
+await trial#4\221#в ожидании суда#等待审判
+bring (her) to trial#4\222#отдать (её) под суд#将（她）送审
+offender#4\223#преступник, правонарушитель#违法者

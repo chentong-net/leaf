@@ -1,19 +1,19 @@
-﻿firefighter#2\587#пожарный
-hairdresser#2\588#парикмахер
-nurse#2\589#медицинская сестра
-security guard#2\590#охранник
-shop assistant#2\591#продавец, торговец
-worker#2\592#рабочий
-accountant#2\593#бухгалтер
-artist#2\594#художник
-engineer#2\595#инженер
-babysitter#2\596#няня
-bricklayer#2\597#каменщик
-carpenter#2\598#плотник
-chambermaid#2\599#горничная
-cleaner#2\600#уборщица
-labourer#2\601#подсобный рабочий
-plumber#2\602#водопроводчик
-welder#2\603#сварщик
-electrician#2\604#электрик
-operative#2\605#работник конвейера
+﻿firefighter#2\587#пожарный#消防员
+hairdresser#2\588#парикмахер#理发师
+nurse#2\589#медицинская сестра#护士
+security guard#2\590#охранник#保安
+shop assistant#2\591#продавец, торговец#店员
+worker#2\592#рабочий#工人
+accountant#2\593#бухгалтер#会计
+artist#2\594#художник#艺术家
+engineer#2\595#инженер#工程师
+babysitter#2\596#няня#保姆
+bricklayer#2\597#каменщик#泥瓦匠
+carpenter#2\598#плотник#木匠
+chambermaid#2\599#горничная#客房服务员
+cleaner#2\600#уборщица#清洁工
+labourer#2\601#подсобный рабочий#杂工
+plumber#2\602#водопроводчик#水管工
+welder#2\603#сварщик#焊工
+electrician#2\604#электрик#电工
+operative#2\605#работник конвейера#流水线工人

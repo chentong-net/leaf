@@ -1,23 +1,23 @@
-﻿financial aid#4\300#финансовая помощь
-get a reward (for)#4\301#получить награду; премию (за)
-get an allowance#4\302#получить пособие
-I can’t afford it#4\303#не могу это себе позволить
-live in luxury#4\304#жить в роскоши
-make a donation to#4\305#сделать пожертвование в …
-make payment#4\306#совершить платеж
-manage assets#4\307#управлять активами
-offer a bribe (to)#4\308#предложить взятку (кому-л.)
-on the dole#4\309#на пособии
-pay (him) a bonus#4\310#выплатить (ему) премию; бонус
-pay ransom#4\311#заплатить выкуп
-live in poverty#4\312#жить в нищете
-purchase#4\313#приобретать; покупать
-put (some money) aside#4\314#откладывать (деньги)
-receive an income#4\315#получать доход
-well-off#4\316#состоятельный, богатый
-expenses#4\317#расходы
-travel expenses#4\318#дорожные расходы
-cover the expense#4\319#покрыть расходы
-at your own expense#4\320#за свой счёт
-incidental expenses#4\321#неожиданные расходы
-foot the bill#4\322#оплатить счёт
+﻿financial aid#4\300#финансовая помощь#经济援助
+get a reward (for)#4\301#получить награду; премию (за)#获得奖励
+get an allowance#4\302#получить пособие#领取补贴
+I can’t afford it#4\303#не могу это себе позволить#我买不起
+live in luxury#4\304#жить в роскоши#过奢华生活
+make a donation to#4\305#сделать пожертвование в …#向…捐款
+make payment#4\306#совершить платеж#付款
+manage assets#4\307#управлять активами#管理资产
+offer a bribe (to)#4\308#предложить взятку (кому-л.)#向…行贿
+on the dole#4\309#на пособии#靠救济金生活
+pay (him) a bonus#4\310#выплатить (ему) премию; бонус#给（他）发奖金
+pay ransom#4\311#заплатить выкуп#支付赎金
+live in poverty#4\312#жить в нищете#生活在贫困中
+purchase#4\313#приобретать; покупать#购买
+put (some money) aside#4\314#откладывать (деньги)#存（一些钱）
+receive an income#4\315#получать доход#获得收入
+well-off#4\316#состоятельный, богатый#富裕的
+expenses#4\317#расходы#开支
+travel expenses#4\318#дорожные расходы#差旅费
+cover the expense#4\319#покрыть расходы#支付费用
+at your own expense#4\320#за свой счёт#自费
+incidental expenses#4\321#неожиданные расходы#杂费
+foot the bill#4\322#оплатить счёт#买单

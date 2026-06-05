@@ -1,24 +1,24 @@
-﻿adults#3\01#взрослые
-independent advisor#3\02#независимый советник, консультант
-gifted amateur#3\03#одарённый любитель
-law-abiding citizen#3\04#законопослушный гражданин
-mountain climber#3\05#альпинист
-avid collector#3\06#заядлый коллекционер
-average consumer#3\07#средний потребитель
-bitter enemy#3\08#заклятый враг
-qualified expert#3\09#квалифицированный эксперт
-chatterbox#3\10#болтун, болтушка
-feminist#3\11#феминистка
-foreigner#3\12#иностранец
-motorists#3\13#водители
-regular participant#3\14#постоянный участник
-passengers#3\15#пассажиры
-pedestrians#3\16#пешеходы
-distant relative#3\17#далёкий родственник
-residents#3\18#постоянные жители
-troublesome teenager#3\19#беспокойный подросток
-foreign tourists#3\20#иностранные туристы
-important visitor#3\21#важный посетитель
-enthusiastic volunteer#3\22#полный энтузиазма доброволец
-illegal immigrants#3\23#нелегальные иммигранты
-ordinary bloke#3\24#обычный парень
+﻿adults#3\01#взрослые#成年人
+independent advisor#3\02#независимый советник, консультант#独立顾问
+gifted amateur#3\03#одарённый любитель#有天赋的业余爱好者
+law-abiding citizen#3\04#законопослушный гражданин#守法公民
+mountain climber#3\05#альпинист#登山者
+avid collector#3\06#заядлый коллекционер#狂热的收藏家
+average consumer#3\07#средний потребитель#普通消费者
+bitter enemy#3\08#заклятый враг#死敌
+qualified expert#3\09#квалифицированный эксперт#合格的专家
+chatterbox#3\10#болтун, болтушка#话匣子
+feminist#3\11#феминистка#女权主义者
+foreigner#3\12#иностранец#外国人
+motorists#3\13#водители#驾车者
+regular participant#3\14#постоянный участник#固定参与者
+passengers#3\15#пассажиры#乘客
+pedestrians#3\16#пешеходы#行人
+distant relative#3\17#далёкий родственник#远亲
+residents#3\18#постоянные жители#居民
+troublesome teenager#3\19#беспокойный подросток#问题少年
+foreign tourists#3\20#иностранные туристы#外国游客
+important visitor#3\21#важный посетитель#重要访客
+enthusiastic volunteer#3\22#полный энтузиазма доброволец#热心的志愿者
+illegal immigrants#3\23#нелегальные иммигранты#非法移民
+ordinary bloke#3\24#обычный парень#普通小伙子

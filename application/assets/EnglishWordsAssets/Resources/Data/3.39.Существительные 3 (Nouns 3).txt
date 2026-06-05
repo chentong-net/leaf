@@ -1,22 +1,22 @@
-﻿argument#3\629#спор
-attract (her) attention#3\630#привлечь (её) внимание
-pay attention (to)#3\631#обращать внимание (на)
-behaviour#3\632#поведение
-character#3\633#характер
-couple (of minutes/people)#3\634#пара (минут/людей)
-in defence#3\635#в защиту; защищаясь
-on demand#3\636#по требованию; по необходимости
-difficulty#3\637#проблема; сложность
-in doubt#3\638#в сомнении
-environment#3\639#окружающая среда
-opportunity (for)#3\640#возможность (для)
-miss the opportunity#3\641#упустить возможность
-function#3\642#назначение, функция
-growth#3\643#рост; развитие
-provision#3\644#резерв; запас
-make provision (for)#3\645#подготовиться (к)
-resources#3\646#ресурсы, средства
-science#3\647#наука
-statement#3\648#заявление, утверждение
-step#3\649#шаг
-(special) treatment#3\650#(особое) обращение
+﻿argument#3\629#спор#争论
+attract (her) attention#3\630#привлечь (её) внимание#吸引（她的）注意
+pay attention (to)#3\631#обращать внимание (на)#注意
+behaviour#3\632#поведение#行为
+character#3\633#характер#性格
+couple (of minutes/people)#3\634#пара (минут/людей)#几个
+in defence#3\635#в защиту; защищаясь#为辩护
+on demand#3\636#по требованию; по необходимости#按要求
+difficulty#3\637#проблема; сложность#困难
+in doubt#3\638#в сомнении#有疑问
+environment#3\639#окружающая среда#环境
+opportunity (for)#3\640#возможность (для)#机会
+miss the opportunity#3\641#упустить возможность#错过机会
+function#3\642#назначение, функция#功能
+growth#3\643#рост; развитие#增长
+provision#3\644#резерв; запас#储备
+make provision (for)#3\645#подготовиться (к)#为…做准备
+resources#3\646#ресурсы, средства#资源
+science#3\647#наука#科学
+statement#3\648#заявление, утверждение#陈述
+step#3\649#шаг#步骤
+(special) treatment#3\650#(особое) обращение#（特殊）待遇

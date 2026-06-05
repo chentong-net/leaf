@@ -1,10 +1,10 @@
-﻿blood pressure#4\780#давление
-diarrhoea#4\781#расстройство желудка
-dislocation#4\782#вывих
-dizziness#4\783#головокружение
-fracture#4\784#перелом
-pneumonia#4\785#воспаление легких
-poisoning#4\786#отравление
-sore eyes#4\787#воспалены глаза
-strain#4\788#боль
-vomiting#4\789#рвота
+﻿blood pressure#4\780#давление#血压
+diarrhoea#4\781#расстройство желудка#腹泻
+dislocation#4\782#вывих#脱臼
+dizziness#4\783#головокружение#头晕
+fracture#4\784#перелом#骨折
+pneumonia#4\785#воспаление легких#肺炎
+poisoning#4\786#отравление#中毒
+sore eyes#4\787#воспалены глаза#眼睛疼
+strain#4\788#боль#拉伤
+vomiting#4\789#рвота#呕吐

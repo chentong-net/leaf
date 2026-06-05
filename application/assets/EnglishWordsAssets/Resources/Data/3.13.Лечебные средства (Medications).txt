@@ -1,19 +1,19 @@
-﻿put the bandage (on)#3\817#наложить повязку (на)
-cotton wool#3\818#вата
-follow the directions#3\819#следовать указаниям
-dropper#3\820#пипетка
-drops#3\821#капли
-wear glasses#3\822#носить очки
-take medicine#3\823#принимать лекарство
-painkillers#3\824#болеутоляющее
-paracetamol#3\825#парацетамол
-plaster#3\826#пластырь
-powder#3\827#порошок
-prescription (for)#3\828#рецепт (на)
-sedative#3\829#успокаивающее
-sleeping pills#3\830#снотворное
-syringe#3\831#шприц
-tablespoonful#3\832#принимать по столовой ложке
-teaspoonful#3\833#принимать по чайной ложке
-thermometer#3\834#градусник
-take vitamins#3\835#принимать витамины
+﻿put the bandage (on)#3\817#наложить повязку (на)#包扎
+cotton wool#3\818#вата#药棉
+follow the directions#3\819#следовать указаниям#遵照说明
+dropper#3\820#пипетка#滴管
+drops#3\821#капли#滴剂
+wear glasses#3\822#носить очки#戴眼镜
+take medicine#3\823#принимать лекарство#吃药
+painkillers#3\824#болеутоляющее#止痛药
+paracetamol#3\825#парацетамол#对乙酰氨基酚
+plaster#3\826#пластырь#创可贴
+powder#3\827#порошок#药粉
+prescription (for)#3\828#рецепт (на)#处方
+sedative#3\829#успокаивающее#镇静剂
+sleeping pills#3\830#снотворное#安眠药
+syringe#3\831#шприц#注射器
+tablespoonful#3\832#принимать по столовой ложке#一汤匙量
+teaspoonful#3\833#принимать по чайной ложке#一茶匙量
+thermometer#3\834#градусник#体温计
+take vitamins#3\835#принимать витамины#吃维生素
