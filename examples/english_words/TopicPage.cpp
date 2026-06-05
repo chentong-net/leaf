@@ -37,6 +37,16 @@ std::shared_ptr<LFImage> createImage(const std::string& src, float size) {
     return image;
 }
 
+std::string entryTranslationText(const EnglishWordEntry& entry) {
+    if (entry.russianTranslation.empty()) {
+        return entry.chineseTranslation;
+    }
+    if (entry.chineseTranslation.empty()) {
+        return entry.russianTranslation;
+    }
+    return entry.russianTranslation + "; " + entry.chineseTranslation;
+}
+
 class WordListItemView : public LFLinear {
 public:
     using Ptr = std::shared_ptr<WordListItemView>;
@@ -100,7 +110,7 @@ public:
         m_word->setText(entry.text);
         m_word->setTextHAlign(LFTextHAlign::Left);
         m_translation->setDisplay(YGDisplayFlex);
-        m_translation->setText(entry.translation);
+        m_translation->setText(entryTranslationText(entry));
         m_hint->setDisplay(entry.audioAssetPath.empty() ? YGDisplayNone : YGDisplayFlex);
     }
 
