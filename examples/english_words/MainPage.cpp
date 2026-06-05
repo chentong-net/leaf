@@ -1,6 +1,6 @@
 #include "MainPage.h"
 
-#include "LearningPage.h"
+#include "StudyPage.h"
 #include "TestPage.h"
 
 #include <array>
@@ -195,7 +195,7 @@ void MainPage::buildUI() {
 
             if (auto navigator = self->getNavigator()) {
                 if (destination == ShortcutDestination::Study) {
-                    navigator->push(LearningPage::create());
+                    navigator->push(StudyPage::create());
                     return;
                 }
                 if (destination == ShortcutDestination::Test) {

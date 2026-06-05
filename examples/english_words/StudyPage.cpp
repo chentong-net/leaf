@@ -1,4 +1,4 @@
-#include "LearningPage.h"
+#include "StudyPage.h"
 
 #include "TopicPage.h"
 
@@ -415,8 +415,8 @@ private:
 
 } // namespace
 
-std::shared_ptr<LearningPage> LearningPage::create() {
-    auto page = std::make_shared<LearningPage>();
+std::shared_ptr<StudyPage> StudyPage::create() {
+    auto page = std::make_shared<StudyPage>();
     page->m_dataManager = EnglishWordsDataManager::create();
     page->setBackgroundColor(kPageBackgroundColor);
     page->buildUI();
@@ -424,7 +424,7 @@ std::shared_ptr<LearningPage> LearningPage::create() {
     return page;
 }
 
-void LearningPage::buildUI() {
+void StudyPage::buildUI() {
     auto root = LFLinear::createVertical();
     root->matchParentWidth();
     root->matchParentHeight();
@@ -452,7 +452,7 @@ void LearningPage::buildUI() {
     backButton->addChild(createImage("EnglishWordsAssets/Images/icon-arrow-left.png", 18.0f));
     headerRow->addChild(backButton);
 
-    std::weak_ptr<LearningPage> weakSelf = std::static_pointer_cast<LearningPage>(shared_from_this());
+    std::weak_ptr<StudyPage> weakSelf = std::static_pointer_cast<StudyPage>(shared_from_this());
     backButton->setOnTap([weakSelf](const LFPoint&) {
         auto self = weakSelf.lock();
         if (!self) {
@@ -499,7 +499,7 @@ void LearningPage::buildUI() {
     scrollView->addChild(m_content);
 }
 
-void LearningPage::loadLevels() {
+void StudyPage::loadLevels() {
     showStatus("Loading topics...");
 
     if (!m_dataManager) {
@@ -507,7 +507,7 @@ void LearningPage::loadLevels() {
         return;
     }
 
-    std::weak_ptr<LearningPage> weakSelf = std::static_pointer_cast<LearningPage>(shared_from_this());
+    std::weak_ptr<StudyPage> weakSelf = std::static_pointer_cast<StudyPage>(shared_from_this());
     m_dataManager->loadLevels([weakSelf](bool ok, std::vector<EnglishWordLevel> levels, const std::string&) {
         auto self = weakSelf.lock();
         if (!self) {
@@ -524,7 +524,7 @@ void LearningPage::loadLevels() {
     });
 }
 
-void LearningPage::renderLevels() {
+void StudyPage::renderLevels() {
     if (!m_content) {
         return;
     }
@@ -537,7 +537,7 @@ void LearningPage::renderLevels() {
 
     auto expandedIndex = std::make_shared<int>(0);
     auto sections = std::make_shared<std::vector<LevelSectionView::Ptr>>();
-    std::weak_ptr<LearningPage> weakSelf = std::static_pointer_cast<LearningPage>(shared_from_this());
+    std::weak_ptr<StudyPage> weakSelf = std::static_pointer_cast<StudyPage>(shared_from_this());
 
     for (int index = 0; index < static_cast<int>(m_levels.size()); ++index) {
         auto section = LevelSectionView::create();
@@ -572,7 +572,7 @@ void LearningPage::renderLevels() {
     }
 }
 
-void LearningPage::showStatus(const std::string& text) {
+void StudyPage::showStatus(const std::string& text) {
     if (!m_content) {
         return;
     }

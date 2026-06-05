@@ -1,9 +1,9 @@
 //
-// EnglishWords learning page.
+// EnglishWords study page.
 //
 
-#ifndef ENGLISHWORDS_LEARNINGPAGE_H
-#define ENGLISHWORDS_LEARNINGPAGE_H
+#ifndef ENGLISHWORDS_STUDYPAGE_H
+#define ENGLISHWORDS_STUDYPAGE_H
 
 #include "EnglishWordsDataManager.h"
 #include "LFEngine.h"
@@ -11,9 +11,9 @@
 #include <string>
 #include <vector>
 
-class LearningPage : public LFPage {
+class StudyPage : public LFPage {
 public:
-    static std::shared_ptr<LearningPage> create();
+    static std::shared_ptr<StudyPage> create();
 
 private:
     void buildUI();
@@ -26,4 +26,4 @@ private:
     std::shared_ptr<LFLinear> m_content;
 };
 
-#endif // ENGLISHWORDS_LEARNINGPAGE_H
+#endif // ENGLISHWORDS_STUDYPAGE_H
