@@ -19,8 +19,8 @@ constexpr uint32_t kSurfaceBorderColor = 0xFFDDE7F1;
 constexpr uint32_t kCardBorderColor = 0xFFDCE6F2;
 constexpr uint32_t kCardShadowColor = 0x12233B53;
 
-constexpr float kItemExtent = 132.0f;
-constexpr float kItemRowHeight = 132.0f;
+constexpr float kItemExtent = 144.0f;
+constexpr float kItemContentHeight = 132.0f;
 
 std::shared_ptr<LFText> createText(const std::string& text, float size, uint32_t color) {
     auto node = std::make_shared<LFText>();
@@ -82,7 +82,7 @@ public:
 
         m_baseLayer = LFBox::create();
         m_baseLayer->matchParentWidth();
-        m_baseLayer->setHeight(kItemRowHeight);
+        m_baseLayer->setHeight(kItemContentHeight);
         addChild(m_baseLayer);
 
         m_verticalLinear = LFLinear::createVertical();
@@ -308,7 +308,7 @@ void ResultPage::buildUI() {
     title->setMaxLines(1);
     titleWrap->addChild(title);
 
-    auto selectButton = LFButton::create("选择");
+    auto selectButton = LFButton::create("Options");
     selectButton->setWidth(78.0f);
     selectButton->setHeight(46.0f);
     selectButton->setBorderRadius(16.0f);
