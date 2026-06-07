@@ -35,6 +35,7 @@ dependencies {
     implementation project(':leaf-plugin')
     implementation project(':file-picker')
     implementation project(':i18n')
+    implementation project(':local-time')
     implementation project(':path-provider')
     implementation project(':audio-player')
 }
