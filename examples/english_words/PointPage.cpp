@@ -1,5 +1,7 @@
 #include "PointPage.h"
 
+#include "EnglishWordsI18n.h"
+
 #include <cmath>
 #include <iomanip>
 #include <sstream>
@@ -42,20 +44,6 @@ std::string formatScore(double score) {
     return stream.str();
 }
 
-std::string modeLabel(EnglishWordsTestMode mode) {
-    switch (mode) {
-        case EnglishWordsTestMode::ChineseToEnglish: return "Chinese -> English";
-        case EnglishWordsTestMode::RussianToEnglish: return "Russian -> English";
-        case EnglishWordsTestMode::EnglishToChinese: return "English -> Chinese";
-        case EnglishWordsTestMode::EnglishToRussian: return "English -> Russian";
-        case EnglishWordsTestMode::AudioToChinese: return "Audio -> Chinese";
-        case EnglishWordsTestMode::AudioToRussian: return "Audio -> Russian";
-        case EnglishWordsTestMode::AudioToEnglish: return "Audio -> English";
-    }
-
-    return "Exam";
-}
-
 std::string questionPrompt(const EnglishWordsQuestionResult& result) {
     switch (result.mode) {
         case EnglishWordsTestMode::ChineseToEnglish:
@@ -68,7 +56,7 @@ std::string questionPrompt(const EnglishWordsQuestionResult& result) {
         case EnglishWordsTestMode::AudioToChinese:
         case EnglishWordsTestMode::AudioToRussian:
         case EnglishWordsTestMode::AudioToEnglish:
-            return "Audio: " + result.entry.text;
+            return EnglishWordsI18n::audioPrompt(result.entry.text);
     }
 
     return result.entry.text;
@@ -76,12 +64,12 @@ std::string questionPrompt(const EnglishWordsQuestionResult& result) {
 
 std::string questionStatus(double score) {
     if (score >= 0.99) {
-        return "True";
+        return EnglishWordsI18n::tr("english_words.point.true");
     }
     if (score > 0.0) {
-        return "Half";
+        return EnglishWordsI18n::tr("english_words.point.half");
     }
-    return "False";
+    return EnglishWordsI18n::tr("english_words.point.false");
 }
 
 } // namespace
@@ -137,7 +125,7 @@ void PointPage::buildUI() {
     titleWrap->wrapContentHeight();
     headerRow->addChild(titleWrap);
 
-    auto title = createText("Result", 22.0f, kTitleColor);
+    auto title = createText(EnglishWordsI18n::tr("english_words.point.title"), 22.0f, kTitleColor);
     title->matchParentWidth();
     title->setTextHAlign(LFTextHAlign::Center);
     title->setMaxLines(1);
@@ -175,7 +163,7 @@ void PointPage::buildUI() {
     summaryCard->setShadow(0.0f, 12.0f, 28.0f, 0.0f, kCardShadowColor);
     content->addChild(summaryCard);
 
-    auto scoreTitle = createText("Score", 16.0f, kSubtitleColor);
+    auto scoreTitle = createText(EnglishWordsI18n::tr("english_words.common.score"), 16.0f, kSubtitleColor);
     scoreTitle->matchParentWidth();
     scoreTitle->setTextHAlign(LFTextHAlign::Center);
     summaryCard->addChild(scoreTitle);
@@ -190,7 +178,7 @@ void PointPage::buildUI() {
     summaryCard->addChild(scoreValue);
 
     auto summaryMeta = createText(
-        m_result.topic.title + "  " + modeLabel(m_result.mode),
+        m_result.topic.title + "  " + EnglishWordsI18n::modeLabel(m_result.mode),
         13.0f,
         kSubtitleColor
     );
@@ -223,7 +211,11 @@ void PointPage::buildUI() {
         listCard->addChild(rowCard);
 
         auto line = createText(
-            std::to_string(index + 1) + ". " + questionPrompt(question) + " - " + questionStatus(question.score),
+            EnglishWordsI18n::questionResultLine(
+                static_cast<int>(index + 1),
+                questionPrompt(question),
+                questionStatus(question.score)
+            ),
             14.0f,
             kTitleColor
         );
@@ -232,7 +224,11 @@ void PointPage::buildUI() {
 
         if (question.score < 0.99) {
             auto answer = createText(
-                "Your answer: " + (question.userAnswer.empty() ? "(empty)" : question.userAnswer),
+                EnglishWordsI18n::yourAnswer(
+                    question.userAnswer.empty()
+                        ? EnglishWordsI18n::tr("english_words.point.empty_answer")
+                        : question.userAnswer
+                ),
                 12.0f,
                 kSubtitleColor
             );
@@ -241,7 +237,7 @@ void PointPage::buildUI() {
         }
     }
 
-    auto homeButton = LFButton::create("Back");
+    auto homeButton = LFButton::create(EnglishWordsI18n::tr("english_words.point.back"));
     homeButton->matchParentWidth();
     homeButton->setHeight(56.0f);
     homeButton->setBorderRadius(22.0f);

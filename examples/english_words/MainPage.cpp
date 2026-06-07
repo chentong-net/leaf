@@ -1,5 +1,6 @@
 #include "MainPage.h"
 
+#include "EnglishWordsI18n.h"
 #include "ResultPage.h"
 #include "StudyPage.h"
 #include "TestPage.h"
@@ -19,7 +20,7 @@ enum class ShortcutDestination {
 };
 
 struct ShortcutSpec {
-    const char* title;
+    const char* titleKey;
     const char* iconPath;
     uint32_t iconSurfaceColor;
     uint32_t pressedColor;
@@ -27,10 +28,10 @@ struct ShortcutSpec {
 };
 
 const std::array<ShortcutSpec, 4> kShortcuts = {{
-    {"Study", "EnglishWordsAssets/Images/icon-study.png", 0xFFEAF3FF, 0xFFF2F7FF, ShortcutDestination::Study},
-    {"Quick Test", "EnglishWordsAssets/Images/icon-test.png", 0xFFFFF1D6, 0xFFFFF6E6, ShortcutDestination::Test},
-    {"Results", "EnglishWordsAssets/Images/icon-result.png", 0xFFE6F4EA, 0xFFEEF8F1, ShortcutDestination::Results},
-    {"Help", "EnglishWordsAssets/Images/icon-help.png", 0xFFE6FFFB, 0xFFEEFFFC, ShortcutDestination::None},
+    {"english_words.main.shortcut.study", "EnglishWordsAssets/Images/icon-study.png", 0xFFEAF3FF, 0xFFF2F7FF, ShortcutDestination::Study},
+    {"english_words.main.shortcut.quick_test", "EnglishWordsAssets/Images/icon-test.png", 0xFFFFF1D6, 0xFFFFF6E6, ShortcutDestination::Test},
+    {"english_words.main.shortcut.results", "EnglishWordsAssets/Images/icon-result.png", 0xFFE6F4EA, 0xFFEEF8F1, ShortcutDestination::Results},
+    {"english_words.main.shortcut.help", "EnglishWordsAssets/Images/icon-help.png", 0xFFE6FFFB, 0xFFEEFFFC, ShortcutDestination::None},
 }};
 
 std::shared_ptr<LFText> createText(const std::string& text, float size, uint32_t color) {
@@ -121,21 +122,21 @@ void MainPage::buildUI() {
     heroCard->setShadow(0.0f, 14.0f, 30.0f, 0.0f, 0x183567A3);
     content->addChild(heroCard);
 
-    auto heroTitle = createText("Home", 21.0f, 0xFFFFFFFF);
+    auto heroTitle = createText(EnglishWordsI18n::tr("english_words.main.home"), 21.0f, 0xFFFFFFFF);
     heroTitle->matchParentWidth();
     heroCard->addChild(heroTitle);
 
-    auto heroSubtitle = createText("Study English words by topic and level.", 13.0f, 0xFFDDEBFF);
+    auto heroSubtitle = createText(EnglishWordsI18n::tr("english_words.main.hero_subtitle"), 13.0f, 0xFFDDEBFF);
     heroSubtitle->matchParentWidth();
     heroSubtitle->setMaxLines(1);
     heroCard->addChild(heroSubtitle);
 
-    auto heroAction = createText("Choose a module and continue today.", 13.0f, 0xFFFFFFFF);
+    auto heroAction = createText(EnglishWordsI18n::tr("english_words.main.hero_action"), 13.0f, 0xFFFFFFFF);
     heroAction->matchParentWidth();
     heroAction->setMaxLines(1);
     heroCard->addChild(heroAction);
 
-    auto sectionLabel = createText("Quick Access", 14.0f, 0xFF516174);
+    auto sectionLabel = createText(EnglishWordsI18n::tr("english_words.main.quick_access"), 14.0f, 0xFF516174);
     sectionLabel->matchParentWidth();
     content->addChild(sectionLabel);
 
@@ -181,7 +182,7 @@ void MainPage::buildUI() {
         iconBubble->addChild(createImage(shortcut.iconPath, 24.0f), LFBoxAlign::Center);
         vl->addChild(iconBubble);
 
-        auto title = createText(shortcut.title, 17.0f, 0xFF142033);
+        auto title = createText(EnglishWordsI18n::tr(shortcut.titleKey), 17.0f, 0xFF142033);
         title->matchParentWidth();
         title->setTextHAlign(LFTextHAlign::Center);
         title->setMaxLines(1);

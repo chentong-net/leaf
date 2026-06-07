@@ -4,6 +4,7 @@
 
 #include "EnglishWordsDataManager.h"
 
+#include "EnglishWordsI18n.h"
 #include "LFJSONParser.h"
 #include "LFLocalTime.h"
 #include "LFPathProvider.h"
@@ -447,7 +448,7 @@ std::string extractLevelIdFromTopicId(const std::string& topicId) {
 }
 
 std::string fallbackLevelTitle(const std::string& levelId) {
-    return levelId.empty() ? "" : ("Level " + levelId);
+    return EnglishWordsI18n::levelTitle(levelId);
 }
 
 void populateLevelMetadata(EnglishWordsExamResult& result) {

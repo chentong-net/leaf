@@ -1,5 +1,6 @@
 #include "TestPage.h"
 
+#include "EnglishWordsI18n.h"
 #include "ExamPage.h"
 #include "view/wrapped/LFDropdown.h"
 
@@ -78,17 +79,16 @@ LevelStyle resolveLevelStyle(const std::string& levelId, int index) {
     return kFallback[static_cast<size_t>(index % static_cast<int>(kFallback.size()))];
 }
 
-const std::vector<std::string>& testModeLabels() {
-    static const std::vector<std::string> kLabels = {
-        "Chinese -> English",
-        "Russian -> English",
-        "English -> Chinese",
-        "English -> Russian",
-        "Audio -> Chinese",
-        "Audio -> Russian",
-        "Audio -> English",
+std::vector<std::string> buildTestModeLabels() {
+    return {
+        EnglishWordsI18n::tr("english_words.mode.chinese_to_english"),
+        EnglishWordsI18n::tr("english_words.mode.russian_to_english"),
+        EnglishWordsI18n::tr("english_words.mode.english_to_chinese"),
+        EnglishWordsI18n::tr("english_words.mode.english_to_russian"),
+        EnglishWordsI18n::tr("english_words.mode.audio_to_chinese"),
+        EnglishWordsI18n::tr("english_words.mode.audio_to_russian"),
+        EnglishWordsI18n::tr("english_words.mode.audio_to_english"),
     };
-    return kLabels;
 }
 
 EnglishWordsTestMode testModeFromIndex(int index) {
@@ -308,7 +308,7 @@ public:
         m_onToggle = std::move(onToggle);
 
         m_title->setText(level.title);
-        m_meta->setText(std::to_string(level.topics.size()) + " topics");
+        m_meta->setText(EnglishWordsI18n::topicsCount(level.topics.size()));
         m_topicListHeight = static_cast<float>(level.topics.size()) * kTopicItemExtent;
         m_topicList->setHeight(m_topicListHeight);
         m_topicList->setAdapter(std::make_shared<TopicListAdapter>(level, std::move(onTopicTap)));
@@ -510,7 +510,7 @@ void TestPage::buildUI() {
     titleWrap->wrapContentHeight();
     headerRow->addChild(titleWrap);
 
-    auto title = createText("Test", 22.0f, kTitleColor);
+    auto title = createText(EnglishWordsI18n::tr("english_words.test.title"), 22.0f, kTitleColor);
     title->matchParentWidth();
     title->setTextHAlign(LFTextHAlign::Center);
     title->setMaxLines(1);
@@ -521,7 +521,7 @@ void TestPage::buildUI() {
     spacer->setHeight(46.0f);
     headerRow->addChild(spacer);
 
-    m_modeDropdown = LFDropdown::create(testModeLabels());
+    m_modeDropdown = LFDropdown::create(buildTestModeLabels());
     m_modeDropdown->matchParentWidth();
     m_modeDropdown->setDisplayMode(LFDropdownDisplayMode::Popup);
     m_modeDropdown->setOptionHeight(46.0f);
@@ -566,10 +566,10 @@ void TestPage::buildUI() {
 }
 
 void TestPage::loadLevels() {
-    showStatus("Loading topics...");
+    showStatus(EnglishWordsI18n::tr("english_words.common.loading_topics"));
 
     if (!m_dataManager) {
-        showStatus("Failed to load topics.");
+        showStatus(EnglishWordsI18n::tr("english_words.common.failed_load_topics"));
         return;
     }
 
@@ -581,7 +581,7 @@ void TestPage::loadLevels() {
         }
 
         if (!ok) {
-            self->showStatus("Failed to load topics.");
+            self->showStatus(EnglishWordsI18n::tr("english_words.common.failed_load_topics"));
             return;
         }
 
@@ -595,7 +595,7 @@ void TestPage::renderLevels() {
         return;
     }
     if (m_levels.empty()) {
-        showStatus("No levels available.");
+        showStatus(EnglishWordsI18n::tr("english_words.common.no_levels_available"));
         return;
     }
 

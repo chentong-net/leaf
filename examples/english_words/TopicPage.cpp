@@ -1,5 +1,7 @@
 #include "TopicPage.h"
 
+#include "EnglishWordsI18n.h"
+
 #include <functional>
 #include <string>
 #include <utility>
@@ -97,7 +99,7 @@ public:
         m_translation->setMaxLines(1);
         m_copy->addChild(m_translation);
 
-        m_hint = createText("Play", 12.0f, kHintColor);
+        m_hint = createText(EnglishWordsI18n::tr("english_words.topic.play"), 12.0f, kHintColor);
         m_hint->setMaxLines(1);
         m_row->addChild(m_hint);
     }
@@ -163,7 +165,9 @@ public:
         const auto* entries = m_entriesProvider ? m_entriesProvider() : nullptr;
         if (!entries || entries->empty() || index < 0 || index >= static_cast<int>(entries->size())) {
             item->setMargin(YGEdgeBottom, 0.0f);
-            item->bindMessage(m_statusProvider ? m_statusProvider() : "No words available.");
+            item->bindMessage(m_statusProvider
+                ? m_statusProvider()
+                : EnglishWordsI18n::tr("english_words.common.no_words_available"));
             return;
         }
 
@@ -279,10 +283,10 @@ void TopicPage::buildUI() {
 }
 
 void TopicPage::loadEntries() {
-    showStatus("Loading words...");
+    showStatus(EnglishWordsI18n::tr("english_words.common.loading_words"));
 
     if (!m_dataManager) {
-        showStatus("Failed to load words.");
+        showStatus(EnglishWordsI18n::tr("english_words.common.failed_load_words"));
         return;
     }
 
@@ -294,12 +298,14 @@ void TopicPage::loadEntries() {
         }
 
         if (!ok) {
-            self->showStatus("Failed to load words.");
+            self->showStatus(EnglishWordsI18n::tr("english_words.common.failed_load_words"));
             return;
         }
 
         self->m_entries = std::move(entries);
-        self->m_statusMessage = self->m_entries.empty() ? "No words available." : "";
+        self->m_statusMessage = self->m_entries.empty()
+            ? EnglishWordsI18n::tr("english_words.common.no_words_available")
+            : "";
         self->refreshList();
     });
 }

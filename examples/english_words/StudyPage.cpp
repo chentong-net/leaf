@@ -1,5 +1,6 @@
 #include "StudyPage.h"
 
+#include "EnglishWordsI18n.h"
 #include "TopicPage.h"
 
 #include <algorithm>
@@ -267,7 +268,7 @@ public:
         m_onToggle = std::move(onToggle);
 
         m_title->setText(level.title);
-        m_meta->setText(std::to_string(level.topics.size()) + " topics");
+        m_meta->setText(EnglishWordsI18n::topicsCount(level.topics.size()));
         m_topicListHeight = static_cast<float>(level.topics.size()) * kTopicItemExtent;
         m_topicList->setHeight(m_topicListHeight);
         m_topicList->setAdapter(std::make_shared<TopicListAdapter>(level, std::move(onTopicTap)));
@@ -469,7 +470,7 @@ void StudyPage::buildUI() {
     titleWrap->wrapContentHeight();
     headerRow->addChild(titleWrap);
 
-    auto title = createText("Study", 22.0f, kTitleColor);
+    auto title = createText(EnglishWordsI18n::tr("english_words.study.title"), 22.0f, kTitleColor);
     title->matchParentWidth();
     title->setTextHAlign(LFTextHAlign::Center);
     titleWrap->addChild(title);
@@ -500,10 +501,10 @@ void StudyPage::buildUI() {
 }
 
 void StudyPage::loadLevels() {
-    showStatus("Loading topics...");
+    showStatus(EnglishWordsI18n::tr("english_words.common.loading_topics"));
 
     if (!m_dataManager) {
-        showStatus("Failed to load topics.");
+        showStatus(EnglishWordsI18n::tr("english_words.common.failed_load_topics"));
         return;
     }
 
@@ -515,7 +516,7 @@ void StudyPage::loadLevels() {
         }
 
         if (!ok) {
-            self->showStatus("Failed to load topics.");
+            self->showStatus(EnglishWordsI18n::tr("english_words.common.failed_load_topics"));
             return;
         }
 
@@ -529,7 +530,7 @@ void StudyPage::renderLevels() {
         return;
     }
     if (m_levels.empty()) {
-        showStatus("No levels available.");
+        showStatus(EnglishWordsI18n::tr("english_words.common.no_levels_available"));
         return;
     }
 

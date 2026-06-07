@@ -22,7 +22,7 @@ private:
     void showStatus(const std::string& text);
     void openResult(const EnglishWordsSavedResultSummary& summary);
 
-    std::string m_statusMessage = "Loading...";
+    std::string m_statusMessage;
     EnglishWordsDataManager::Ptr m_dataManager;
     std::vector<EnglishWordsSavedResultSummary> m_results;
     std::shared_ptr<LFListView> m_listView;

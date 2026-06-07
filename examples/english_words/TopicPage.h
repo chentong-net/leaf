@@ -26,7 +26,7 @@ private:
     void playEntryAudio(const EnglishWordEntry& entry);
 
     EnglishWordTopic m_topic;
-    std::string m_statusMessage = "Loading...";
+    std::string m_statusMessage;
     EnglishWordsDataManager::Ptr m_dataManager;
     std::vector<EnglishWordEntry> m_entries;
     std::shared_ptr<LFListView> m_listView;

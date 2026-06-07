@@ -32,7 +32,7 @@ private:
 
     EnglishWordTopic m_topic;
     EnglishWordsTestMode m_mode = EnglishWordsTestMode::AudioToEnglish;
-    std::string m_statusMessage = "Loading...";
+    std::string m_statusMessage;
     EnglishWordsDataManager::Ptr m_dataManager;
     std::vector<EnglishWordEntry> m_entries;
     std::vector<std::string> m_userAnswers;

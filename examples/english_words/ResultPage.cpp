@@ -1,5 +1,6 @@
 #include "ResultPage.h"
 
+#include "EnglishWordsI18n.h"
 #include "PointPage.h"
 
 #include <cmath>
@@ -49,20 +50,6 @@ std::string formatScore(double score) {
     std::ostringstream stream;
     stream << std::fixed << std::setprecision(1) << rounded;
     return stream.str();
-}
-
-std::string modeLabel(EnglishWordsTestMode mode) {
-    switch (mode) {
-        case EnglishWordsTestMode::ChineseToEnglish: return "Chinese -> English";
-        case EnglishWordsTestMode::RussianToEnglish: return "Russian -> English";
-        case EnglishWordsTestMode::EnglishToChinese: return "English -> Chinese";
-        case EnglishWordsTestMode::EnglishToRussian: return "English -> Russian";
-        case EnglishWordsTestMode::AudioToChinese: return "Audio -> Chinese";
-        case EnglishWordsTestMode::AudioToRussian: return "Audio -> Russian";
-        case EnglishWordsTestMode::AudioToEnglish: return "Audio -> English";
-    }
-
-    return "Exam";
 }
 
 class ResultListItemView : public LFLinear {
@@ -149,11 +136,14 @@ public:
 
         m_verticalLinear->setBackgroundColor(0xFFFFFFFF);
         m_timeText->setText(summary.createdAt);
-        m_scoreText->setText("Score " + formatScore(summary.totalScore) + "/" + std::to_string(summary.questionCount));
+        m_scoreText->setText(EnglishWordsI18n::scoreRow(
+            formatScore(summary.totalScore),
+            summary.questionCount
+        ));
         m_levelText->setText(summary.levelTitle.empty() ? fallbackLevelText(summary.levelId) : summary.levelTitle);
         m_topicText->setText(summary.topic.title);
         m_topicText->setTextHAlign(LFTextHAlign::Left);
-        m_modeText->setText(modeLabel(summary.mode));
+        m_modeText->setText(EnglishWordsI18n::modeLabel(summary.mode));
 
         m_timeText->setDisplay(YGDisplayFlex);
         m_scorePill->setDisplay(YGDisplayFlex);
@@ -178,7 +168,9 @@ public:
 
 private:
     static std::string fallbackLevelText(const std::string& levelId) {
-        return levelId.empty() ? "Unknown level" : ("Level " + levelId);
+        return levelId.empty()
+            ? EnglishWordsI18n::tr("english_words.result.unknown_level")
+            : EnglishWordsI18n::levelTitle(levelId);
     }
 
     EnglishWordsSavedResultSummary m_summary;
@@ -221,7 +213,7 @@ public:
         const auto* results = m_resultsProvider ? m_resultsProvider() : nullptr;
         if (!results || results->empty() || index < 0 || index >= static_cast<int>(results->size())) {
             item->setMargin(YGEdgeBottom, 0.0f);
-            item->bindMessage(m_statusProvider ? m_statusProvider() : "No test results yet.");
+            item->bindMessage(m_statusProvider ? m_statusProvider() : EnglishWordsI18n::tr("english_words.result.empty"));
             return;
         }
 
@@ -302,13 +294,13 @@ void ResultPage::buildUI() {
     titleWrap->wrapContentHeight();
     headerRow->addChild(titleWrap);
 
-    auto title = createText("Results", 22.0f, kTitleColor);
+    auto title = createText(EnglishWordsI18n::tr("english_words.result.title"), 22.0f, kTitleColor);
     title->matchParentWidth();
     title->setTextHAlign(LFTextHAlign::Center);
     title->setMaxLines(1);
     titleWrap->addChild(title);
 
-    auto selectButton = LFButton::create("Options");
+    auto selectButton = LFButton::create(EnglishWordsI18n::tr("english_words.result.options"));
     selectButton->setWidth(78.0f);
     selectButton->setHeight(46.0f);
     selectButton->setBorderRadius(16.0f);
@@ -342,10 +334,10 @@ void ResultPage::buildUI() {
 }
 
 void ResultPage::loadResults() {
-    showStatus("Loading results...");
+    showStatus(EnglishWordsI18n::tr("english_words.result.loading"));
 
     if (!m_dataManager) {
-        showStatus("Failed to load results.");
+        showStatus(EnglishWordsI18n::tr("english_words.result.failed"));
         return;
     }
 
@@ -359,12 +351,14 @@ void ResultPage::loadResults() {
         }
 
         if (!ok) {
-            self->showStatus("Failed to load results.");
+            self->showStatus(EnglishWordsI18n::tr("english_words.result.failed"));
             return;
         }
 
         self->m_results = std::move(results);
-        self->m_statusMessage = self->m_results.empty() ? "No test results yet." : "";
+        self->m_statusMessage = self->m_results.empty()
+            ? EnglishWordsI18n::tr("english_words.result.empty")
+            : "";
         self->refreshList();
     });
 }

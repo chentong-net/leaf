@@ -1,5 +1,6 @@
 #include "ExamPage.h"
 
+#include "EnglishWordsI18n.h"
 #include "PointPage.h"
 #include "view/base/LFInput.h"
 
@@ -164,34 +165,16 @@ std::string answerPlaceholder(EnglishWordsTestMode mode) {
         case EnglishWordsTestMode::ChineseToEnglish:
         case EnglishWordsTestMode::RussianToEnglish:
         case EnglishWordsTestMode::AudioToEnglish:
-            return "Enter English answer";
+            return EnglishWordsI18n::tr("english_words.exam.enter_english_answer");
         case EnglishWordsTestMode::EnglishToChinese:
         case EnglishWordsTestMode::AudioToChinese:
-            return "Enter Chinese answer";
+            return EnglishWordsI18n::tr("english_words.exam.enter_chinese_answer");
         case EnglishWordsTestMode::EnglishToRussian:
         case EnglishWordsTestMode::AudioToRussian:
-            return "Enter Russian answer";
+            return EnglishWordsI18n::tr("english_words.exam.enter_russian_answer");
     }
 
-    return "Enter answer";
-}
-
-std::string resultPromptText(const EnglishWordEntry& entry, EnglishWordsTestMode mode) {
-    switch (mode) {
-        case EnglishWordsTestMode::ChineseToEnglish:
-            return !entry.chineseTranslation.empty() ? entry.chineseTranslation : entry.text;
-        case EnglishWordsTestMode::RussianToEnglish:
-            return !entry.russianTranslation.empty() ? entry.russianTranslation : entry.text;
-        case EnglishWordsTestMode::AudioToChinese:
-        case EnglishWordsTestMode::AudioToRussian:
-        case EnglishWordsTestMode::AudioToEnglish:
-            return "Audio: " + entry.text;
-        case EnglishWordsTestMode::EnglishToChinese:
-        case EnglishWordsTestMode::EnglishToRussian:
-            return entry.text;
-    }
-
-    return entry.text;
+    return EnglishWordsI18n::tr("english_words.exam.enter_answer");
 }
 
 std::string questionPromptText(const EnglishWordEntry& entry, EnglishWordsTestMode mode) {
@@ -375,7 +358,7 @@ void ExamPage::buildUI() {
     m_promptText->setTextHAlign(LFTextHAlign::Center);
     m_questionContainer->addChild(m_promptText);
 
-    m_audioButton = LFButton::create("Play Audio");
+    m_audioButton = LFButton::create(EnglishWordsI18n::tr("english_words.exam.play_audio"));
     m_audioButton->matchParentWidth();
     m_audioButton->setHeight(64.0f);
     m_audioButton->setBorderRadius(22.0f);
@@ -393,7 +376,7 @@ void ExamPage::buildUI() {
     });
     m_questionContainer->addChild(m_audioButton);
 
-    m_answerHintText = createText("Use - to join multiple meanings.", 12.0f, kSubtitleColor);
+    m_answerHintText = createText(EnglishWordsI18n::tr("english_words.exam.answer_hint"), 12.0f, kSubtitleColor);
     m_answerHintText->matchParentWidth();
     m_questionContainer->addChild(m_answerHintText);
 
@@ -435,7 +418,7 @@ void ExamPage::buildUI() {
     m_actionRow->setSpacing(12.0f);
     m_questionContainer->addChild(m_actionRow);
 
-    m_previousButton = LFButton::create("Previous");
+    m_previousButton = LFButton::create(EnglishWordsI18n::tr("english_words.exam.previous"));
     m_previousButton->setFlexGrow(1.0f);
     m_previousButton->setHeight(52.0f);
     m_previousButton->setBorderRadius(18.0f);
@@ -453,7 +436,7 @@ void ExamPage::buildUI() {
     });
     m_actionRow->addChild(m_previousButton);
 
-    m_nextButton = LFButton::create("Next");
+    m_nextButton = LFButton::create(EnglishWordsI18n::tr("english_words.exam.next"));
     m_nextButton->setFlexGrow(1.0f);
     m_nextButton->setHeight(52.0f);
     m_nextButton->setBorderRadius(18.0f);
@@ -477,10 +460,10 @@ void ExamPage::buildUI() {
 }
 
 void ExamPage::loadEntries() {
-    showStatus("Loading exam...");
+    showStatus(EnglishWordsI18n::tr("english_words.exam.loading"));
 
     if (!m_dataManager) {
-        showStatus("Failed to load words.");
+        showStatus(EnglishWordsI18n::tr("english_words.common.failed_load_words"));
         return;
     }
 
@@ -492,7 +475,7 @@ void ExamPage::loadEntries() {
         }
 
         if (!ok) {
-            self->showStatus("Failed to load words.");
+            self->showStatus(EnglishWordsI18n::tr("english_words.common.failed_load_words"));
             return;
         }
 
@@ -501,7 +484,7 @@ void ExamPage::loadEntries() {
         self->m_currentIndex = 0;
 
         if (self->m_entries.empty()) {
-            self->showStatus("No words available.");
+            self->showStatus(EnglishWordsI18n::tr("english_words.common.no_words_available"));
             return;
         }
 
@@ -540,7 +523,7 @@ void ExamPage::showStatus(const std::string& text) {
 
 void ExamPage::refreshQuestion() {
     if (m_entries.empty() || m_currentIndex < 0 || m_currentIndex >= static_cast<int>(m_entries.size())) {
-        showStatus("No words available.");
+        showStatus(EnglishWordsI18n::tr("english_words.common.no_words_available"));
         return;
     }
 
@@ -549,9 +532,10 @@ void ExamPage::refreshQuestion() {
 
     if (m_progressText) {
         m_progressText->setDisplay(YGDisplayFlex);
-        m_progressText->setText(
-            "Question " + std::to_string(m_currentIndex + 1) + " of " + std::to_string(m_entries.size())
-        );
+        m_progressText->setText(EnglishWordsI18n::questionProgress(
+            m_currentIndex + 1,
+            static_cast<int>(m_entries.size())
+        ));
     }
 
     if (m_promptText) {
@@ -563,7 +547,9 @@ void ExamPage::refreshQuestion() {
     if (m_audioButton) {
         m_audioButton->setDisplay(audioMode ? YGDisplayFlex : YGDisplayNone);
         m_audioButton->setEnabled(!entry.audioAssetPath.empty());
-        m_audioButton->setText(entry.audioAssetPath.empty() ? "Audio unavailable" : "Play Audio");
+        m_audioButton->setText(entry.audioAssetPath.empty()
+            ? EnglishWordsI18n::tr("english_words.exam.audio_unavailable")
+            : EnglishWordsI18n::tr("english_words.exam.play_audio"));
     }
 
     if (m_answerHintText) {
@@ -584,7 +570,9 @@ void ExamPage::refreshQuestion() {
     }
     if (m_nextButton) {
         m_nextButton->setDisplay(YGDisplayFlex);
-        m_nextButton->setText(m_currentIndex >= static_cast<int>(m_entries.size()) - 1 ? "Submit" : "Next");
+        m_nextButton->setText(m_currentIndex >= static_cast<int>(m_entries.size()) - 1
+            ? EnglishWordsI18n::tr("english_words.exam.submit")
+            : EnglishWordsI18n::tr("english_words.exam.next"));
     }
 }
 
