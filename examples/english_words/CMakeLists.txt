@@ -25,5 +25,6 @@ target_link_libraries(english-words
         PUBLIC
         leaf-core
         audio-player
+        local-time
         path-provider
 )

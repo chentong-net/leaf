@@ -5,12 +5,11 @@
 #include "EnglishWordsDataManager.h"
 
 #include "LFJSONParser.h"
+#include "LFLocalTime.h"
 #include "LFPathProvider.h"
 #include "LFResourceProvider.h"
 
-#include <chrono>
 #include <cctype>
-#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -479,47 +478,67 @@ void populateLevelMetadata(EnglishWordsExamResult& result) {
     result.levelTitle = fallbackLevelTitle(result.levelId);
 }
 
-std::string formatTimestamp(const std::chrono::system_clock::time_point& timePoint) {
-    const std::time_t timeValue = std::chrono::system_clock::to_time_t(timePoint);
-    std::tm localTime{};
-#if defined(_WIN32)
-    localtime_s(&localTime, &timeValue);
-#else
-    localtime_r(&timeValue, &localTime);
-#endif
+bool hasValidLocalTime(const LFLocalTimeValue& value) {
+    return value.year > 0 &&
+           value.month > 0 &&
+           value.day > 0 &&
+           value.hour >= 0 &&
+           value.minute >= 0 &&
+           value.second >= 0;
+}
+
+std::string formatTimestamp(const LFLocalTimeValue& value) {
+    if (!hasValidLocalTime(value)) {
+        return "";
+    }
 
     std::ostringstream stream;
-    stream << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S");
+    stream << std::setw(4) << std::setfill('0') << value.year
+           << "-"
+           << std::setw(2) << std::setfill('0') << value.month
+           << "-"
+           << std::setw(2) << std::setfill('0') << value.day
+           << " "
+           << std::setw(2) << std::setfill('0') << value.hour
+           << ":"
+           << std::setw(2) << std::setfill('0') << value.minute
+           << ":"
+           << std::setw(2) << std::setfill('0') << value.second;
     return stream.str();
 }
 
-std::string buildResultId(const std::chrono::system_clock::time_point& timePoint) {
-    const std::time_t timeValue = std::chrono::system_clock::to_time_t(timePoint);
-    std::tm localTime{};
-#if defined(_WIN32)
-    localtime_s(&localTime, &timeValue);
-#else
-    localtime_r(&timeValue, &localTime);
-#endif
-
-    const auto milliseconds =
-        std::chrono::duration_cast<std::chrono::milliseconds>(timePoint.time_since_epoch()).count() % 1000;
+std::string buildResultId(const LFLocalTimeValue& value) {
+    if (!hasValidLocalTime(value)) {
+        return value.epochMillis > 0 ? std::to_string(value.epochMillis) : "";
+    }
 
     std::ostringstream stream;
-    stream << std::put_time(&localTime, "%Y%m%d_%H%M%S")
+    stream << std::setw(4) << std::setfill('0') << value.year
+           << std::setw(2) << std::setfill('0') << value.month
+           << std::setw(2) << std::setfill('0') << value.day
            << "_"
-           << std::setw(3) << std::setfill('0') << milliseconds;
+           << std::setw(2) << std::setfill('0') << value.hour
+           << std::setw(2) << std::setfill('0') << value.minute
+           << std::setw(2) << std::setfill('0') << value.second
+           << "_"
+           << std::setw(3) << std::setfill('0') << value.millisecond;
     return stream.str();
 }
 
 void prepareExamResultForSave(EnglishWordsExamResult& result) {
     if (result.createdAt.empty() || result.resultId.empty()) {
-        const auto now = std::chrono::system_clock::now();
+        const LFLocalTimeValue now = LFLocalTime::now();
         if (result.createdAt.empty()) {
             result.createdAt = formatTimestamp(now);
+            if (result.createdAt.empty()) {
+                result.createdAt = std::to_string(now.epochMillis);
+            }
         }
         if (result.resultId.empty()) {
             result.resultId = buildResultId(now);
+            if (result.resultId.empty()) {
+                result.resultId = std::to_string(LFLocalTime::nowMillis());
+            }
         }
     }
 
