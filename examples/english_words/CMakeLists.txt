@@ -9,6 +9,7 @@ add_library(english-words STATIC
         MainPage.cpp
         PointPage.cpp
         ResultPage.cpp
+        SettingsPage.cpp
         StudyPage.cpp
         TestPage.cpp
         TopicPage.cpp

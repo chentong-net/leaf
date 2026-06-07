@@ -2,6 +2,7 @@
 
 #include "EnglishWordsI18n.h"
 #include "ResultPage.h"
+#include "SettingsPage.h"
 #include "StudyPage.h"
 #include "TestPage.h"
 
@@ -110,7 +111,17 @@ void MainPage::buildUI() {
     appName->matchParentWidth();
     headerLeft->addChild(appName);
 
-    headerRow->addChild(createHeaderButton("EnglishWordsAssets/Images/icon-settings.png", {}));
+    std::weak_ptr<MainPage> weakSelf = std::static_pointer_cast<MainPage>(shared_from_this());
+    headerRow->addChild(createHeaderButton("EnglishWordsAssets/Images/icon-settings.png", [weakSelf]() {
+        auto self = weakSelf.lock();
+        if (!self) {
+            return;
+        }
+
+        if (auto navigator = self->getNavigator()) {
+            navigator->push(SettingsPage::create());
+        }
+    }));
 
     auto heroCard = LFLinear::createVertical();
     heroCard->matchParentWidth();
@@ -153,8 +164,6 @@ void MainPage::buildUI() {
     grid->matchParentWidth();
     grid->wrapContentHeight();
     gridSurface->addChild(grid);
-
-    std::weak_ptr<MainPage> weakSelf = std::static_pointer_cast<MainPage>(shared_from_this());
 
     for (const auto& shortcut : kShortcuts) {
         auto button = LFButton::create();

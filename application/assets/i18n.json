@@ -17,8 +17,8 @@
       "english_words.main.hero_subtitle": "按主题和级别学习英语单词。",
       "english_words.main.hero_action": "选择一个模块，继续今天的学习。",
       "english_words.main.quick_access": "快捷入口",
-      "english_words.main.shortcut.study": "单词学习",
-      "english_words.main.shortcut.quick_test": "单词测试",
+      "english_words.main.shortcut.study": "学习",
+      "english_words.main.shortcut.quick_test": "测试",
       "english_words.main.shortcut.results": "测试结果",
       "english_words.main.shortcut.help": "帮助",
       "english_words.study.title": "学习",
@@ -68,7 +68,10 @@
       "english_words.result.failed": "加载结果失败。",
       "english_words.result.empty": "暂无测试结果。",
       "english_words.result.score_row": "得分 {score}/{total}",
-      "english_words.result.unknown_level": "未知 Level"
+      "english_words.result.unknown_level": "未知 Level",
+      "english_words.settings.title": "设置",
+      "english_words.settings.restart_required": "重启 App 后生效",
+      "english_words.settings.confirm": "确认"
     },
     "en-US": {
       "i18n.demo.title": "Internationalization Test Area",
@@ -135,7 +138,10 @@
       "english_words.result.failed": "Failed to load results.",
       "english_words.result.empty": "No test results yet.",
       "english_words.result.score_row": "Score {score}/{total}",
-      "english_words.result.unknown_level": "Unknown level"
+      "english_words.result.unknown_level": "Unknown level",
+      "english_words.settings.title": "Settings",
+      "english_words.settings.restart_required": "Takes effect after restarting the app.",
+      "english_words.settings.confirm": "Confirm"
     },
     "ru-RU": {
       "i18n.demo.title": "Зона тестирования i18n",
@@ -202,7 +208,10 @@
       "english_words.result.failed": "Не удалось загрузить результаты.",
       "english_words.result.empty": "Пока нет результатов тестов.",
       "english_words.result.score_row": "Результат {score}/{total}",
-      "english_words.result.unknown_level": "Неизвестный уровень"
+      "english_words.result.unknown_level": "Неизвестный уровень",
+      "english_words.settings.title": "Настройки",
+      "english_words.settings.restart_required": "Изменения вступят в силу после перезапуска приложения.",
+      "english_words.settings.confirm": "Подтвердить"
     }
   }
 }
