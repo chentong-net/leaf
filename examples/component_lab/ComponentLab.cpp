@@ -3,6 +3,7 @@
 #include "LFAudioPlayer.h"
 #include "LFCheckbox.h"
 #include "LFI18n.h"
+#include "LFLocalTime.h"
 #include "LFPathProvider.h"
 #include "LFRadioGroup.h"
 #include "ProfilePage.h"
@@ -157,6 +158,64 @@ std::string describeLocale(const LFLocale& locale, const char* fallback = "Unava
         return tag;
     }
     return fallback ? fallback : "";
+}
+
+std::string formatLocalTimeValue(const LFLocalTimeValue& value) {
+    if (value.year <= 0 || value.month <= 0 || value.day <= 0) {
+        return "Unavailable";
+    }
+
+    char buffer[64];
+    std::snprintf(
+        buffer,
+        sizeof(buffer),
+        "%04d-%02d-%02d %02d:%02d:%02d.%03d",
+        value.year,
+        value.month,
+        value.day,
+        value.hour,
+        value.minute,
+        value.second,
+        value.millisecond
+    );
+    return buffer;
+}
+
+std::string formatUtcOffsetMinutes(int offsetMinutes) {
+    const int absoluteMinutes = std::abs(offsetMinutes);
+    const int hours = absoluteMinutes / 60;
+    const int minutes = absoluteMinutes % 60;
+
+    char buffer[24];
+    std::snprintf(
+        buffer,
+        sizeof(buffer),
+        "UTC%c%02d:%02d",
+        offsetMinutes >= 0 ? '+' : '-',
+        hours,
+        minutes
+    );
+    return buffer;
+}
+
+void updateLocalTimeDemo(
+        const std::shared_ptr<LFText>& currentTimeValue,
+        const std::shared_ptr<LFText>& epochMillisValue,
+        const std::shared_ptr<LFText>& utcOffsetValue,
+        const std::shared_ptr<LFText>& timezoneValue) {
+    const LFLocalTimeValue snapshot = LFLocalTime::now();
+    currentTimeValue->setText(formatLocalTimeValue(snapshot));
+    epochMillisValue->setText(std::to_string(LFLocalTime::nowMillis()));
+    utcOffsetValue->setText(formatUtcOffsetMinutes(LFLocalTime::utcOffsetMinutes()));
+
+    const std::string timezone = LFLocalTime::timezone();
+    if (!timezone.empty()) {
+        timezoneValue->setText(timezone);
+    } else if (!snapshot.timezone.empty()) {
+        timezoneValue->setText(snapshot.timezone);
+    } else {
+        timezoneValue->setText("Unavailable");
+    }
 }
 
 bool writeBinaryFile(const std::filesystem::path& path, const std::shared_ptr<LFData>& data) {
@@ -811,6 +870,87 @@ LFLinear::Ptr buildFunctionDemoPage() {
     refreshI18nPreview();
 
     page->addChild(i18nCard);
+
+    auto localTimeCard = makeSectionCard(
+        "LFLocalTime",
+        "Reads the current local clock, epoch milliseconds, UTC offset, and timezone on Desktop and Android."
+    );
+
+    auto localTimeStatus = makeText("Local time: auto updates every second.", 13.0f, 0xFF475569);
+    localTimeStatus->matchParentWidth();
+    localTimeCard->addChild(localTimeStatus);
+
+    auto currentTimeRow = makeRow();
+    auto currentTimeLabel = makeText("Current time", 14.0f, 0xFF334155);
+    currentTimeLabel->setFlexGrow(1.0f);
+    auto currentTimeValue = makeText("...", 14.0f, 0xFF0F5B99);
+    currentTimeRow->addChild(currentTimeLabel);
+    currentTimeRow->addChild(currentTimeValue);
+    localTimeCard->addChild(currentTimeRow);
+
+    auto epochMillisRow = makeRow();
+    auto epochMillisLabel = makeText("Epoch millis", 14.0f, 0xFF334155);
+    epochMillisLabel->setFlexGrow(1.0f);
+    auto epochMillisValue = makeText("...", 14.0f, 0xFF0F5B99);
+    epochMillisRow->addChild(epochMillisLabel);
+    epochMillisRow->addChild(epochMillisValue);
+    localTimeCard->addChild(epochMillisRow);
+
+    auto utcOffsetRow = makeRow();
+    auto utcOffsetLabel = makeText("UTC offset", 14.0f, 0xFF334155);
+    utcOffsetLabel->setFlexGrow(1.0f);
+    auto utcOffsetValue = makeText("...", 14.0f, 0xFF0F5B99);
+    utcOffsetRow->addChild(utcOffsetLabel);
+    utcOffsetRow->addChild(utcOffsetValue);
+    localTimeCard->addChild(utcOffsetRow);
+
+    auto timezoneRow = makeRow();
+    auto timezoneLabel = makeText("Timezone", 14.0f, 0xFF334155);
+    timezoneLabel->setFlexGrow(1.0f);
+    auto timezoneValue = makeText("...", 14.0f, 0xFF0F5B99);
+    timezoneRow->addChild(timezoneLabel);
+    timezoneRow->addChild(timezoneValue);
+    localTimeCard->addChild(timezoneRow);
+
+    auto localTimeRefreshButton = makeActionButton("Refresh Snapshot", [currentTimeValue, epochMillisValue, utcOffsetValue, timezoneValue](LFButton*) {
+        updateLocalTimeDemo(currentTimeValue, epochMillisValue, utcOffsetValue, timezoneValue);
+    });
+    localTimeCard->addChild(localTimeRefreshButton);
+
+    updateLocalTimeDemo(currentTimeValue, epochMillisValue, utcOffsetValue, timezoneValue);
+
+    auto localTimeLastSecond = std::make_shared<int64_t>(-1);
+    std::weak_ptr<LFText> weakCurrentTimeValue = currentTimeValue;
+    std::weak_ptr<LFText> weakEpochMillisValue = epochMillisValue;
+    std::weak_ptr<LFText> weakUtcOffsetValue = utcOffsetValue;
+    std::weak_ptr<LFText> weakTimezoneValue = timezoneValue;
+
+    LFEngine::getInstance().addFrameTask([
+        weakCurrentTimeValue,
+        weakEpochMillisValue,
+        weakUtcOffsetValue,
+        weakTimezoneValue,
+        localTimeLastSecond
+    ]() mutable {
+        auto currentTimeText = weakCurrentTimeValue.lock();
+        auto epochMillisText = weakEpochMillisValue.lock();
+        auto utcOffsetText = weakUtcOffsetValue.lock();
+        auto timezoneText = weakTimezoneValue.lock();
+        if (!currentTimeText || !epochMillisText || !utcOffsetText || !timezoneText) {
+            return false;
+        }
+
+        const int64_t currentSecond = LFLocalTime::nowMillis() / 1000;
+        if (currentSecond == *localTimeLastSecond) {
+            return true;
+        }
+
+        *localTimeLastSecond = currentSecond;
+        updateLocalTimeDemo(currentTimeText, epochMillisText, utcOffsetText, timezoneText);
+        return true;
+    });
+
+    page->addChild(localTimeCard);
 
     auto overlayCard = makeSectionCard(
         "LFOverlay",

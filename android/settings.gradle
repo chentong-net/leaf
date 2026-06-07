@@ -25,9 +25,11 @@ include ':leaf-android'
 include ':leaf-plugin'
 include ':file-picker'
 include ':i18n'
+include ':local-time'
 include ':path-provider'
 include ':audio-player'
 project(':file-picker').projectDir = new File('../plugins/file_picker/android/module')
 project(':i18n').projectDir = new File('../plugins/i18n/android/module')
+project(':local-time').projectDir = new File('../plugins/local_time/android/module')
 project(':path-provider').projectDir = new File('../plugins/path_provider/android/module')
 project(':audio-player').projectDir = new File('../plugins/audio_player/android/module')

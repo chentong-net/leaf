@@ -24,6 +24,7 @@ target_link_libraries(component-lab
         checkbox
         audio-player
         i18n
+        local-time
         path-provider
         radio-group
 )

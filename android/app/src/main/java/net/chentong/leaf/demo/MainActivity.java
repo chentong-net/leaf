@@ -9,6 +9,7 @@ import net.chentong.leaf.android.PluginRegistry;
 import net.chentong.leaf.android.plugin.audioplayer.AudioPlayerPlugin;
 import net.chentong.leaf.android.plugin.filepicker.FilePickerPlugin;
 import net.chentong.leaf.android.plugin.i18n.I18nPlugin;
+import net.chentong.leaf.android.plugin.localtime.LocalTimePlugin;
 import net.chentong.leaf.android.plugin.pathprovider.PathProviderPlugin;
 
 public class MainActivity extends Activity {
@@ -16,6 +17,7 @@ public class MainActivity extends Activity {
     private PathProviderPlugin pathProviderPlugin;
     private AudioPlayerPlugin audioPlayerPlugin;
     private I18nPlugin i18nPlugin;
+    private LocalTimePlugin localTimePlugin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,10 +29,12 @@ public class MainActivity extends Activity {
         pathProviderPlugin = new PathProviderPlugin(this);
         audioPlayerPlugin = new AudioPlayerPlugin(this);
         i18nPlugin = new I18nPlugin(this);
+        localTimePlugin = new LocalTimePlugin();
         PluginRegistry.getInstance().register(filePickerPlugin);
         PluginRegistry.getInstance().register(pathProviderPlugin);
         PluginRegistry.getInstance().register(audioPlayerPlugin);
         PluginRegistry.getInstance().register(i18nPlugin);
+        PluginRegistry.getInstance().register(localTimePlugin);
     }
 
     @Override
