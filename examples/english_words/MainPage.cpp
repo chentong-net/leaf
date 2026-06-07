@@ -1,5 +1,6 @@
 #include "MainPage.h"
 
+#include "ResultPage.h"
 #include "StudyPage.h"
 #include "TestPage.h"
 
@@ -14,6 +15,7 @@ enum class ShortcutDestination {
     None,
     Study,
     Test,
+    Results,
 };
 
 struct ShortcutSpec {
@@ -27,7 +29,7 @@ struct ShortcutSpec {
 const std::array<ShortcutSpec, 4> kShortcuts = {{
     {"Study", "EnglishWordsAssets/Images/icon-study.png", 0xFFEAF3FF, 0xFFF2F7FF, ShortcutDestination::Study},
     {"Quick Test", "EnglishWordsAssets/Images/icon-test.png", 0xFFFFF1D6, 0xFFFFF6E6, ShortcutDestination::Test},
-    {"Results", "EnglishWordsAssets/Images/icon-result.png", 0xFFE6F4EA, 0xFFEEF8F1, ShortcutDestination::None},
+    {"Results", "EnglishWordsAssets/Images/icon-result.png", 0xFFE6F4EA, 0xFFEEF8F1, ShortcutDestination::Results},
     {"Help", "EnglishWordsAssets/Images/icon-help.png", 0xFFE6FFFB, 0xFFEEFFFC, ShortcutDestination::None},
 }};
 
@@ -200,6 +202,10 @@ void MainPage::buildUI() {
                 }
                 if (destination == ShortcutDestination::Test) {
                     navigator->push(TestPage::create());
+                    return;
+                }
+                if (destination == ShortcutDestination::Results) {
+                    navigator->push(ResultPage::create());
                     return;
                 }
             }

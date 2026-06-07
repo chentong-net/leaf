@@ -14,6 +14,7 @@ public:
 
 private:
     void buildUI();
+    void goHome();
 
     EnglishWordsExamResult m_result;
 };

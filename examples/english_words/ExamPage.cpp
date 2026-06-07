@@ -625,7 +625,7 @@ void ExamPage::goToIndex(int index) {
 }
 
 void ExamPage::submitExam() {
-    if (m_entries.empty()) {
+    if (m_entries.empty() || !m_dataManager) {
         return;
     }
 
@@ -645,7 +645,18 @@ void ExamPage::submitExam() {
         result.questions.push_back(std::move(question));
     }
 
-    if (auto navigator = getNavigator()) {
-        navigator->replace(PointPage::create(result));
-    }
+    const EnglishWordsExamResult fallbackResult = result;
+    std::weak_ptr<ExamPage> weakSelf = std::static_pointer_cast<ExamPage>(shared_from_this());
+    m_dataManager->saveExamResult(std::move(result), [weakSelf, fallbackResult](bool ok,
+                                                                               EnglishWordsExamResult savedResult,
+                                                                               const std::string&) mutable {
+        auto self = weakSelf.lock();
+        if (!self) {
+            return;
+        }
+
+        if (auto navigator = self->getNavigator()) {
+            navigator->replace(PointPage::create(ok ? savedResult : fallbackResult));
+        }
+    });
 }

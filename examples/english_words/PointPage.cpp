@@ -1,7 +1,5 @@
 #include "PointPage.h"
 
-#include "MainPage.h"
-
 #include <cmath>
 #include <iomanip>
 #include <sstream>
@@ -22,6 +20,15 @@ std::shared_ptr<LFText> createText(const std::string& text, float size, uint32_t
     node->setTextColor(color);
     node->setLineHeight(1.3f);
     return node;
+}
+
+std::shared_ptr<LFImage> createImage(const std::string& src, float size) {
+    auto image = std::make_shared<LFImage>();
+    image->setWidth(size);
+    image->setHeight(size);
+    image->setFit(LFImageFit::Contain);
+    image->setSrc(src);
+    return image;
 }
 
 std::string formatScore(double score) {
@@ -88,18 +95,73 @@ std::shared_ptr<PointPage> PointPage::create(const EnglishWordsExamResult& resul
 }
 
 void PointPage::buildUI() {
+    auto root = LFLinear::createVertical();
+    root->matchParentWidth();
+    root->matchParentHeight();
+    root->setPadding(YGEdgeTop, 20.0f);
+    root->setPadding(YGEdgeLeft, 20.0f);
+    root->setPadding(YGEdgeRight, 20.0f);
+    root->setSpacing(16.0f);
+    addChild(root);
+
+    auto headerRow = LFLinear::createHorizontal();
+    headerRow->matchParentWidth();
+    headerRow->wrapContentHeight();
+    headerRow->setAlignItems(YGAlignCenter);
+    headerRow->setSpacing(12.0f);
+    root->addChild(headerRow);
+
+    auto backButton = LFLinear::createHorizontal();
+    backButton->setWidth(46.0f);
+    backButton->setHeight(46.0f);
+    backButton->setBorderRadius(16.0f);
+    backButton->setBorder(1.0f, 0xFFD8E4F1);
+    backButton->setBackgroundColor(0xFFFFFFFF);
+    backButton->setShadow(0.0f, 6.0f, 18.0f, 0.0f, 0x10233B53);
+    backButton->setGravity(LFAlignment::Center, LFAlignment::Center);
+    backButton->addChild(createImage("EnglishWordsAssets/Images/icon-arrow-left.png", 18.0f));
+    headerRow->addChild(backButton);
+
+    std::weak_ptr<PointPage> weakSelf = std::static_pointer_cast<PointPage>(shared_from_this());
+    backButton->setOnTap([weakSelf](const LFPoint&) {
+        auto self = weakSelf.lock();
+        if (!self) {
+            return;
+        }
+        self->goHome();
+    });
+
+    auto titleWrap = LFLinear::createVertical();
+    titleWrap->setFlexGrow(1.0f);
+    titleWrap->setFlexBasis(0.0f);
+    titleWrap->wrapContentHeight();
+    headerRow->addChild(titleWrap);
+
+    auto title = createText("Result", 22.0f, kTitleColor);
+    title->matchParentWidth();
+    title->setTextHAlign(LFTextHAlign::Center);
+    title->setMaxLines(1);
+    titleWrap->addChild(title);
+
+    auto spacer = LFBox::create();
+    spacer->setWidth(46.0f);
+    spacer->setHeight(46.0f);
+    headerRow->addChild(spacer);
+
     auto scrollView = LFScrollView::createVertical();
     scrollView->matchParentWidth();
-    scrollView->matchParentHeight();
+    scrollView->setFlexGrow(1.0f);
+    scrollView->setFlexBasis(0.0f);
     scrollView->setBounces(false);
     scrollView->setScrollBarEnabled(false);
-    addChild(scrollView);
+    root->addChild(scrollView);
 
     auto content = LFLinear::createVertical();
     content->matchParentWidth();
     content->wrapContentHeight();
     content->setPadding(YGEdgeAll, 24.0f);
     content->setSpacing(16.0f);
+    content->setMargin(YGEdgeBottom, 20.0f);
     scrollView->addChild(content);
 
     auto summaryCard = LFLinear::createVertical();
@@ -188,17 +250,20 @@ void PointPage::buildUI() {
     homeButton->setTextColor(0xFFFFFFFF);
     homeButton->setBackgroundColor(LFButtonState::Normal, 0xFF3567A3);
     homeButton->setBackgroundColor(LFButtonState::Pressed, 0xFF2C598F);
-    std::weak_ptr<PointPage> weakSelf = std::static_pointer_cast<PointPage>(shared_from_this());
     homeButton->setOnClick([weakSelf](LFButton*) {
         auto self = weakSelf.lock();
         if (!self) {
             return;
         }
-        if (auto navigator = self->getNavigator()) {
-            while (navigator->getStackSize() > 1) {
-                navigator->pop(false);
-            }
-        }
+        self->goHome();
     });
     content->addChild(homeButton);
+}
+
+void PointPage::goHome() {
+    if (auto navigator = getNavigator()) {
+        while (navigator->getStackSize() > 1) {
+            navigator->pop(false);
+        }
+    }
 }
