@@ -128,7 +128,7 @@ void PointPage::buildUI() {
         if (!self) {
             return;
         }
-        self->goHome();
+        self->goBack();
     });
 
     auto titleWrap = LFLinear::createVertical();
@@ -241,7 +241,7 @@ void PointPage::buildUI() {
         }
     }
 
-    auto homeButton = LFButton::create("Back Home");
+    auto homeButton = LFButton::create("Back");
     homeButton->matchParentWidth();
     homeButton->setHeight(56.0f);
     homeButton->setBorderRadius(22.0f);
@@ -255,15 +255,13 @@ void PointPage::buildUI() {
         if (!self) {
             return;
         }
-        self->goHome();
+        self->goBack();
     });
     content->addChild(homeButton);
 }
 
-void PointPage::goHome() {
+void PointPage::goBack() {
     if (auto navigator = getNavigator()) {
-        while (navigator->getStackSize() > 1) {
-            navigator->pop(false);
-        }
+        navigator->pop();
     }
 }
