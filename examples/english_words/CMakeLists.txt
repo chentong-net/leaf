@@ -6,6 +6,7 @@ add_library(english-words STATIC
         EnglishWordsApp.cpp
         EnglishWordsDataManager.cpp
         ExamPage.cpp
+        HelpPage.cpp
         MainPage.cpp
         PointPage.cpp
         ResultPage.cpp

@@ -1,6 +1,7 @@
 #include "MainPage.h"
 
 #include "EnglishWordsI18n.h"
+#include "HelpPage.h"
 #include "ResultPage.h"
 #include "SettingsPage.h"
 #include "StudyPage.h"
@@ -18,6 +19,7 @@ enum class ShortcutDestination {
     Study,
     Test,
     Results,
+    Help,
 };
 
 struct ShortcutSpec {
@@ -32,7 +34,7 @@ const std::array<ShortcutSpec, 4> kShortcuts = {{
     {"english_words.main.shortcut.study", "EnglishWordsAssets/Images/icon-study.png", 0xFFEAF3FF, 0xFFF2F7FF, ShortcutDestination::Study},
     {"english_words.main.shortcut.quick_test", "EnglishWordsAssets/Images/icon-test.png", 0xFFFFF1D6, 0xFFFFF6E6, ShortcutDestination::Test},
     {"english_words.main.shortcut.results", "EnglishWordsAssets/Images/icon-result.png", 0xFFE6F4EA, 0xFFEEF8F1, ShortcutDestination::Results},
-    {"english_words.main.shortcut.help", "EnglishWordsAssets/Images/icon-help.png", 0xFFE6FFFB, 0xFFEEFFFC, ShortcutDestination::None},
+    {"english_words.main.shortcut.help", "EnglishWordsAssets/Images/icon-help.png", 0xFFE6FFFB, 0xFFEEFFFC, ShortcutDestination::Help},
 }};
 
 std::shared_ptr<LFText> createText(const std::string& text, float size, uint32_t color) {
@@ -216,6 +218,10 @@ void MainPage::buildUI() {
                 }
                 if (destination == ShortcutDestination::Results) {
                     navigator->push(ResultPage::create());
+                    return;
+                }
+                if (destination == ShortcutDestination::Help) {
+                    navigator->push(HelpPage::create());
                     return;
                 }
             }
