@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <set>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -981,6 +982,59 @@ void EnglishWordsDataManager::loadExamResult(const std::string& fileName, LoadEx
             }
 
             callback(true, std::move(result), "");
+        }
+    );
+}
+
+void EnglishWordsDataManager::deleteSavedResults(const std::vector<std::string>& resultIds, DeleteSavedResultsCallback callback) {
+    if (!callback) {
+        return;
+    }
+
+    if (resultIds.empty()) {
+        callback(true, "");
+        return;
+    }
+
+    auto manager = shared_from_this();
+    resolveApplicationSupportDirectory(
+        [manager, resultIds, callback = std::move(callback)](const std::string& directory) mutable {
+            (void)manager;
+            if (directory.empty()) {
+                callback(false, "app_support_path_unavailable");
+                return;
+            }
+
+            const auto indexPath = resultsIndexFilePath(directory);
+            const std::string content = readTextFile(indexPath);
+            if (content.empty()) {
+                callback(true, "");
+                return;
+            }
+
+            std::vector<EnglishWordsSavedResultSummary> savedResults;
+            std::string parseError;
+            if (!parseSavedResultsIndexJson(content, savedResults, parseError)) {
+                callback(false, parseError.empty() ? "test_results_parse_failed" : parseError);
+                return;
+            }
+
+            const std::set<std::string> deletedIds(resultIds.begin(), resultIds.end());
+            std::vector<EnglishWordsSavedResultSummary> filteredResults;
+            filteredResults.reserve(savedResults.size());
+            for (const auto& summary : savedResults) {
+                if (!summary.resultId.empty() && deletedIds.find(summary.resultId) != deletedIds.end()) {
+                    continue;
+                }
+                filteredResults.push_back(summary);
+            }
+
+            if (!writeTextFile(indexPath, serializeSavedResultsIndexJson(filteredResults))) {
+                callback(false, "test_results_write_failed");
+                return;
+            }
+
+            callback(true, "");
         }
     );
 }

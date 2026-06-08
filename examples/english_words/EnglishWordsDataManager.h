@@ -82,6 +82,7 @@ public:
     using SaveExamResultCallback = std::function<void(bool ok, EnglishWordsExamResult result, const std::string& error)>;
     using LoadSavedResultsCallback = std::function<void(bool ok, std::vector<EnglishWordsSavedResultSummary> results, const std::string& error)>;
     using LoadExamResultCallback = std::function<void(bool ok, EnglishWordsExamResult result, const std::string& error)>;
+    using DeleteSavedResultsCallback = std::function<void(bool ok, const std::string& error)>;
 
     static Ptr create();
     static void preloadLevels();
@@ -92,6 +93,7 @@ public:
     void saveExamResult(EnglishWordsExamResult result, SaveExamResultCallback callback);
     void loadSavedResults(LoadSavedResultsCallback callback);
     void loadExamResult(const std::string& fileName, LoadExamResultCallback callback);
+    void deleteSavedResults(const std::vector<std::string>& resultIds, DeleteSavedResultsCallback callback);
 
 private:
     using DirectoryCallback = std::function<void(const std::string&)>;
