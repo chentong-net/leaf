@@ -216,7 +216,7 @@ public:
         m_copy->addChild(m_title);
 
         m_metaPill = LFLinear::createHorizontal();
-        m_metaPill->setWidth(70);
+        m_metaPill->setWidth(80);
         m_metaPill->wrapContentHeight();
         m_metaPill->setPadding(YGEdgeLeft, 10.0f);
         m_metaPill->setPadding(YGEdgeRight, 10.0f);
