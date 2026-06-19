@@ -1,5 +1,6 @@
 //
 // Created by Chen Tong on 2026/6/2.
+// Windows desktop audio player implementation using MCI
 //
 
 #include "LFAudioPlayer.h"
@@ -12,13 +13,8 @@
 #include <sstream>
 #include <thread>
 
-#if defined(_WIN32)
 #include <windows.h>
 #include <mmsystem.h>
-#endif
-
-// Desktop backend is currently implemented for Windows only.
-// macOS is intentionally left unsupported until we have a test device.
 
 struct LFAudioPlayer::PlatformState {
     std::string alias;
@@ -27,8 +23,6 @@ struct LFAudioPlayer::PlatformState {
 };
 
 namespace {
-
-#if defined(_WIN32)
 
 std::wstring utf8ToWide(const std::string& utf8) {
     if (utf8.empty()) return L"";
@@ -158,8 +152,6 @@ bool queryMciPlaying(const std::string& alias) {
     return queryMci("status " + alias + " mode") == "playing";
 }
 
-#endif
-
 void dispatchComplete(const LFAudioPlayerCompletionCallback& callback, const LFAudioPlayerEvent& event) {
     if (!callback) return;
     LFPluginCenter::dispatchToMain([callback, event]() {
@@ -204,12 +196,10 @@ LFAudioPlayer::Ptr LFAudioPlayer::create() {
 LFAudioPlayer::LFAudioPlayer(std::string playerId)
     : m_playerId(playerId.empty() ? generatePlayerId() : std::move(playerId)),
       m_platform(std::make_unique<PlatformState>()) {
-#if defined(_WIN32)
     m_platform->alias = "leaf_audio_" + m_playerId;
     for (char& c : m_platform->alias) {
         if (c == '-') c = '_';
     }
-#endif
 }
 
 LFAudioPlayer::~LFAudioPlayer() {
@@ -218,11 +208,9 @@ LFAudioPlayer::~LFAudioPlayer() {
         if (m_platform->monitorThread.joinable()) {
             m_platform->monitorThread.join();
         }
-#if defined(_WIN32)
         if (!m_platform->alias.empty()) {
             sendMci("close " + m_platform->alias);
         }
-#endif
     }
 }
 
@@ -236,7 +224,6 @@ void LFAudioPlayer::setSource(const std::string& source) {
         m_playing = false;
     }
 
-#if defined(_WIN32)
     if (source.empty()) {
         return;
     }
@@ -266,22 +253,9 @@ void LFAudioPlayer::setSource(const std::string& source) {
         m_durationSeconds = duration;
     }
     setVolume(m_volume);
-#else
-    LFAudioPlayerErrorCallback callback;
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        callback = m_onError;
-    }
-    LFAudioPlayerEvent event;
-    event.playerId = m_playerId;
-    event.ok = false;
-    event.error = "desktop_audio_windows_only";
-    dispatchError(callback, event);
-#endif
 }
 
 void LFAudioPlayer::play() {
-#if defined(_WIN32)
     if (!m_platform || m_platform->alias.empty()) return;
 
     std::string command = "play " + m_platform->alias;
@@ -310,14 +284,9 @@ void LFAudioPlayer::play() {
     }
 
     startEventListening();
-#else
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_playing = false;
-#endif
 }
 
 void LFAudioPlayer::pause() {
-#if defined(_WIN32)
     if (!m_platform || m_platform->alias.empty()) return;
     sendMci("pause " + m_platform->alias);
     {
@@ -325,18 +294,12 @@ void LFAudioPlayer::pause() {
         m_positionSeconds = queryMciSeconds(m_platform->alias, "position");
         m_playing = false;
     }
-#else
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_playing = false;
-#endif
 }
 
 void LFAudioPlayer::stop() {
-#if defined(_WIN32)
     if (!m_platform || m_platform->alias.empty()) return;
     sendMci("stop " + m_platform->alias);
     sendMci("seek " + m_platform->alias + " to start");
-#endif
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_positionSeconds = 0.0;
@@ -346,23 +309,20 @@ void LFAudioPlayer::stop() {
 
 void LFAudioPlayer::seek(double positionSeconds) {
     if (positionSeconds < 0.0) positionSeconds = 0.0;
-#if defined(_WIN32)
+
     bool shouldResumePlayback = false;
     bool seekSucceeded = true;
     if (m_platform && !m_platform->alias.empty()) {
         shouldResumePlayback = queryMciPlaying(m_platform->alias);
         seekSucceeded = sendMci("seek " + m_platform->alias + " to " + std::to_string(static_cast<int>(positionSeconds * 1000.0)));
     }
-#endif
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_positionSeconds = positionSeconds;
     }
-#if defined(_WIN32)
     if (seekSucceeded && shouldResumePlayback) {
         play();
     }
-#endif
 }
 
 void LFAudioPlayer::setLooping(bool looping) {
@@ -377,49 +337,41 @@ void LFAudioPlayer::setVolume(float volume) {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_volume = volume;
     }
-#if defined(_WIN32)
     if (m_platform && !m_platform->alias.empty()) {
         const int mciVolume = static_cast<int>(volume * 1000.0f);
         sendMci("setaudio " + m_platform->alias + " volume to " + std::to_string(mciVolume));
     }
-#endif
 }
 
 double LFAudioPlayer::getDuration() const {
-#if defined(_WIN32)
     if (m_platform && !m_platform->alias.empty()) {
         const double duration = queryMciSeconds(m_platform->alias, "length");
         std::lock_guard<std::mutex> lock(m_mutex);
         m_durationSeconds = duration;
         return duration;
     }
-#endif
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_durationSeconds < 0.0 ? 0.0 : m_durationSeconds;
 }
 
 double LFAudioPlayer::getPosition() const {
-#if defined(_WIN32)
     if (m_platform && !m_platform->alias.empty()) {
         const double position = queryMciSeconds(m_platform->alias, "position");
         std::lock_guard<std::mutex> lock(m_mutex);
         m_positionSeconds = position;
         return position;
     }
-#endif
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_positionSeconds;
 }
 
 bool LFAudioPlayer::isPlaying() const {
-#if defined(_WIN32)
     if (m_platform && !m_platform->alias.empty()) {
         const bool playing = queryMciPlaying(m_platform->alias);
         std::lock_guard<std::mutex> lock(m_mutex);
         m_playing = playing;
         return playing;
     }
-#endif
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_playing;
 }
@@ -435,7 +387,6 @@ void LFAudioPlayer::setOnError(LFAudioPlayerErrorCallback callback) {
 }
 
 void LFAudioPlayer::startEventListening() {
-#if defined(_WIN32)
     if (!m_platform || m_platform->monitorRunning) {
         return;
     }
@@ -487,5 +438,4 @@ void LFAudioPlayer::startEventListening() {
             }
         }
     });
-#endif
 }
