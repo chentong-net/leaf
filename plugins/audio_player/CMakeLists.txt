@@ -3,9 +3,15 @@ if (NOT TARGET leaf-core)
 endif()
 
 if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP")
-    add_library(audio-player STATIC
-            desktop/LFAudioPlayerDesktop.cpp
-    )
+    if (WIN32)
+        add_library(audio-player STATIC
+                desktop/LFAudioPlayerDesktop.cpp
+        )
+    elseif (APPLE)
+        add_library(audio-player STATIC
+                desktop/LFAudioPlayerDesktopMac.mm
+        )
+    endif()
 elseif (LEAF_PLATFORM_DEF STREQUAL "ANDROID")
     add_library(audio-player STATIC
             LFAudioPlayer.cpp
@@ -34,5 +40,16 @@ if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP" AND WIN32)
             winmm
             ole32
             uuid
+    )
+endif()
+
+if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP" AND APPLE)
+    set_target_properties(audio-player PROPERTIES
+            COMPILE_FLAGS "-fobjc-arc"
+    )
+    target_link_libraries(audio-player
+            PRIVATE
+            "-framework AVFoundation"
+            "-framework Foundation"
     )
 endif()
