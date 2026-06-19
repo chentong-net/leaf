@@ -45,8 +45,18 @@ static const int32_t REQUEST_ERROR_LISTEN_IN_PROGRESS = -11;
     self = [super init];
     if (self) {
         _players = [NSMutableDictionary dictionary];
+        [self configureAudioSession];
     }
     return self;
+}
+
+- (void)configureAudioSession {
+    AVAudioSession *session = [AVAudioSession sharedInstance];
+    NSError *error = nil;
+    [session setCategory:AVAudioSessionCategoryPlayback error:&error];
+    if (!error) {
+        [session setActive:YES error:nil];
+    }
 }
 
 #pragma mark - LeafPlugin
