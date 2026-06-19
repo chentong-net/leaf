@@ -10,11 +10,17 @@
 #import <Leaf_iOS/LFPluginRegistry.h>
 #import <File_Picker/FilePickerPlugin.h>
 #import <Path_Provider/PathProviderPlugin.h>
+#import <I18n/I18nPlugin.h>
+#import <Local_Time/LocalTimePlugin.h>
+#import <Audio_Player/AudioPlayerPlugin.h>
 
 @interface ViewController ()
 @property (nonatomic, strong) LeafView *leafView;
 @property (nonatomic, strong) FilePickerPlugin *filePickerPlugin;
 @property (nonatomic, strong) PathProviderPlugin *pathProviderPlugin;
+@property (nonatomic, strong) I18nPlugin *i18nPlugin;
+@property (nonatomic, strong) LocalTimePlugin *localTimePlugin;
+@property (nonatomic, strong) AudioPlayerPlugin *audioPlayerPlugin;
 
 @end
 
@@ -25,8 +31,14 @@
 
     self.filePickerPlugin = [[FilePickerPlugin alloc] initWithPresentingViewController:self];
     self.pathProviderPlugin = [[PathProviderPlugin alloc] init];
+    self.i18nPlugin = [[I18nPlugin alloc] init];
+    self.localTimePlugin = [[LocalTimePlugin alloc] init];
+    self.audioPlayerPlugin = [[AudioPlayerPlugin alloc] init];
     [[LFPluginRegistry sharedInstance] registerPlugin:self.filePickerPlugin];
     [[LFPluginRegistry sharedInstance] registerPlugin:self.pathProviderPlugin];
+    [[LFPluginRegistry sharedInstance] registerPlugin:self.i18nPlugin];
+    [[LFPluginRegistry sharedInstance] registerPlugin:self.localTimePlugin];
+    [[LFPluginRegistry sharedInstance] registerPlugin:self.audioPlayerPlugin];
 
     self.leafView = [[LeafView alloc] initWithFrame:CGRectZero];
     self.leafView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -48,6 +60,9 @@
 - (void)dealloc {
     [[LFPluginRegistry sharedInstance] unregisterPlugin:@"FilePickerPlugin"];
     [[LFPluginRegistry sharedInstance] unregisterPlugin:@"PathProviderPlugin"];
+    [[LFPluginRegistry sharedInstance] unregisterPlugin:@"I18nPlugin"];
+    [[LFPluginRegistry sharedInstance] unregisterPlugin:@"LocalTimePlugin"];
+    [[LFPluginRegistry sharedInstance] unregisterPlugin:@"AudioPlayerPlugin"];
 }
 
 - (void)viewWillAppear:(BOOL)animated {

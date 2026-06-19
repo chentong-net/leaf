@@ -27,13 +27,19 @@ void dispatchMethodCallToObjC(const LFMethodCall& call) {
     const std::string method = call.method;
     const std::string args = call.args;
 
-    dispatch_async(dispatch_get_main_queue(), ^{
+    auto block = ^{
         @autoreleasepool {
             [[LFPluginDispatcher sharedInstance] dispatchWithMethod:toNSString(method)
                                                           requestId:requestId
                                                                args:toNSString(args)];
         }
-    });
+    };
+
+    if ([NSThread isMainThread]) {
+        block();
+    } else {
+        dispatch_async(dispatch_get_main_queue(), block);
+    }
 }
 
 } // namespace

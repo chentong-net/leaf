@@ -19,7 +19,7 @@ Leaf path provider plugin for iOS. Implements path_provider path query methods.
   s.source_files        = 'Classes/**/*.{h,m,mm}'
   s.public_header_files = 'Classes/**/*.h'
   s.frameworks          = 'Foundation'
-  s.dependency 'Leaf_Plugin', '0.1.0'
+  s.dependency 'Leaf_Plugin', '1.0.0'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES'
