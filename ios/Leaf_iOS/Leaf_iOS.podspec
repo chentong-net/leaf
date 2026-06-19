@@ -19,7 +19,7 @@ Leaf iOS SDK module with LeafView/LeafRenderer, plugin dispatcher, and prebuilt 
   s.public_header_files  = 'Classes/**/*.h'
   s.vendored_frameworks  = 'Frameworks/LeafNative.xcframework'
   s.resource_bundles     = {
-    'Leaf_iOS_Assets' => ['Assets/**/*']
+    'Leaf_iOS_Assets' => ['Assets/**']
   }
 
   s.frameworks = 'Foundation', 'UIKit', 'CoreGraphics', 'QuartzCore', 'OpenGLES'
