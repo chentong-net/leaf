@@ -13,6 +13,7 @@ target 'App' do
   pod 'Path_Provider', :path => '../../plugins/path_provider/ios/module'
   pod 'I18n', :path => '../../plugins/i18n/ios/module'
   pod 'Local_Time', :path => '../../plugins/local_time/ios/module'
+  pod 'Audio_Player', :path => '../../plugins/audio_player/ios/module'
   pod 'Leaf_Plugin', :path => '../Leaf_Plugin'
   pod 'Leaf_iOS', :path => '../Leaf_iOS'
 end
