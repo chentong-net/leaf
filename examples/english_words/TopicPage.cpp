@@ -1,6 +1,7 @@
 #include "TopicPage.h"
 
 #include "EnglishWordsI18n.h"
+#include "ExamPage.h"
 
 #include <functional>
 #include <string>
@@ -256,10 +257,31 @@ void TopicPage::buildUI() {
     title->setMaxLines(1);
     titleWrap->addChild(title);
 
-    auto spacer = LFBox::create();
-    spacer->setWidth(46.0f);
-    spacer->setHeight(46.0f);
-    headerRow->addChild(spacer);
+    auto quickTestButton = LFLinear::createHorizontal();
+    quickTestButton->wrapContentWidth();
+    quickTestButton->setHeight(46.0f);
+    quickTestButton->setBorderRadius(16.0f);
+    quickTestButton->setBorder(1.0f, 0xFFD8E4F1);
+    quickTestButton->setBackgroundColor(0xFFFFFFFF);
+    quickTestButton->setShadow(0.0f, 6.0f, 18.0f, 0.0f, 0x10233B53);
+    quickTestButton->setGravity(LFAlignment::Center, LFAlignment::Center);
+    quickTestButton->setPadding(YGEdgeLeft, 16.0f);
+    quickTestButton->setPadding(YGEdgeRight, 16.0f);
+    auto quickTestLabel = createText(EnglishWordsI18n::tr("english_words.main.shortcut.quick_test"), 14.0f, kTitleColor);
+    quickTestLabel->setTextHAlign(LFTextHAlign::Center);
+    quickTestLabel->setTextVAlign(LFTextVAlign::Center);
+    quickTestLabel->setMaxLines(1);
+    quickTestButton->addChild(quickTestLabel);
+    quickTestButton->setOnTap([weakSelf](const LFPoint&) {
+        auto self = weakSelf.lock();
+        if (!self) {
+            return;
+        }
+        if (auto navigator = self->getNavigator()) {
+            navigator->push(ExamPage::create(self->m_topic, EnglishWordsTestMode::AudioToEnglish));
+        }
+    });
+    headerRow->addChild(quickTestButton);
 
     m_listView = LFListView::createVertical();
     m_listView->matchParentWidth();
