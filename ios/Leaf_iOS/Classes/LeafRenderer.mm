@@ -1,11 +1,12 @@
-#define NANOVG_GLES3_IMPLEMENTATION
+//
+// Created by Chen Tong on 2026/2/7.
+//
 
 #import "LeafRenderer.h"
 #import "LFNativePluginBridge.h"
 
-#import <OpenGLES/EAGL.h>
-#import <OpenGLES/ES3/gl.h>
-#import <QuartzCore/CAEAGLLayer.h>
+#import <Metal/Metal.h>
+#import <QuartzCore/CAMetalLayer.h>
 #import <QuartzCore/CADisplayLink.h>
 
 #include "LFEngine.h"
@@ -96,9 +97,8 @@ struct NativeKeyEvent {
 
 @interface LeafRenderer ()
 @property (nonatomic, weak) UIView* view;
-- (void)setupOpenGLESContext;
-- (void)setupRenderBuffers;
-- (void)destroyRenderBuffers;
+@property (nonatomic, strong) CAMetalLayer* metalLayer;
+@property (nonatomic, strong) CADisplayLink* displayLink;
 - (void)initializeEngineIfNeeded;
 - (void)drawFrame;
 - (void)processKeyInputEvents;
@@ -109,16 +109,6 @@ struct NativeKeyEvent {
 @end
 
 @implementation LeafRenderer {
-    EAGLContext* _glContext;
-    CADisplayLink* _displayLink;
-
-    GLuint _frameBuffer;
-    GLuint _colorBuffer;
-    GLuint _depthStencilBuffer;
-
-    GLint _backingWidth;
-    GLint _backingHeight;
-
     NVGcontext* _vg;
     BOOL _engineInitialized;
     CFTimeInterval _lastFrameTimestamp;
@@ -136,19 +126,17 @@ struct NativeKeyEvent {
     if (!self) return nil;
 
     _view = view;
-    _frameBuffer = 0;
-    _colorBuffer = 0;
-    _depthStencilBuffer = 0;
-    _backingWidth = 0;
-    _backingHeight = 0;
     _vg = nullptr;
     _engineInitialized = NO;
     _lastFrameTimestamp = 0;
     _nextTouchId = 1;
     _lastTextInputFocused = NO;
 
-    [self setupOpenGLESContext];
-    [self setupRenderBuffers];
+    _metalLayer = (CAMetalLayer *)view.layer;
+    _metalLayer.device = MTLCreateSystemDefaultDevice();
+    _metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    _metalLayer.opaque = YES;
+
     [self initializeEngineIfNeeded];
     [self resizeIfNeeded];
 
@@ -157,97 +145,30 @@ struct NativeKeyEvent {
 
 - (void)dealloc {
     [self stop];
-    if (_glContext) {
-        [EAGLContext setCurrentContext:_glContext];
-    }
 
     if (_vg) {
-        nvgDeleteGLES3(_vg);
+        nvgDeleteMTL(_vg);
         _vg = nullptr;
-    }
-
-    [self destroyRenderBuffers];
-    if ([EAGLContext currentContext] == _glContext) {
-        [EAGLContext setCurrentContext:nil];
     }
 
     [LFNativePluginBridge uninstall];
 }
 
-- (void)setupOpenGLESContext {
-    CAEAGLLayer* glLayer = (CAEAGLLayer*)self.view.layer;
-    glLayer.opaque = YES;
-    glLayer.drawableProperties = @{
-        kEAGLDrawablePropertyRetainedBacking : @NO,
-        kEAGLDrawablePropertyColorFormat : kEAGLColorFormatRGBA8
-    };
-
-    _glContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
-    if (!_glContext) {
-        LF_LOGI("LeafRenderer: failed to create OpenGLES3 context");
-        return;
-    }
-    [EAGLContext setCurrentContext:_glContext];
-}
-
-- (void)setupRenderBuffers {
-    if (!_glContext) return;
-    [EAGLContext setCurrentContext:_glContext];
-
-    [self destroyRenderBuffers];
-
-    glGenFramebuffers(1, &_frameBuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, _frameBuffer);
-
-    glGenRenderbuffers(1, &_colorBuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, _colorBuffer);
-    [_glContext renderbufferStorage:GL_RENDERBUFFER fromDrawable:(CAEAGLLayer*)self.view.layer];
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, _colorBuffer);
-
-    glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &_backingWidth);
-    glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &_backingHeight);
-
-    glGenRenderbuffers(1, &_depthStencilBuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, _depthStencilBuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, _backingWidth, _backingHeight);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depthStencilBuffer);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _depthStencilBuffer);
-
-    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE) {
-        LF_LOGI("LeafRenderer: incomplete framebuffer status=%u", status);
-    }
-
-    glBindRenderbuffer(GL_RENDERBUFFER, _colorBuffer);
-}
-
-- (void)destroyRenderBuffers {
-    if (_depthStencilBuffer) {
-        glDeleteRenderbuffers(1, &_depthStencilBuffer);
-        _depthStencilBuffer = 0;
-    }
-    if (_colorBuffer) {
-        glDeleteRenderbuffers(1, &_colorBuffer);
-        _colorBuffer = 0;
-    }
-    if (_frameBuffer) {
-        glDeleteFramebuffers(1, &_frameBuffer);
-        _frameBuffer = 0;
-    }
-}
-
 - (void)initializeEngineIfNeeded {
-    if (_engineInitialized || !_glContext) return;
-    [EAGLContext setCurrentContext:_glContext];
+    if (_engineInitialized) return;
 
     int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES;
-    _vg = nvgCreateGLES3(flags);
+    _vg = nvgCreateMTL((__bridge void*)_metalLayer, flags);
     if (!_vg) {
-        LF_LOGI("LeafRenderer: failed to create NanoVG GLES3 context");
+        LF_LOGI("LeafRenderer: failed to create NanoVG Metal context");
         return;
     }
 
     LFEngine::getInstance().init(_vg);
+    LFEngine::getInstance().setBeginFrameCallback([](NVGcontext* vg) {
+        mnvgClearWithColor(vg, nvgRGBA(0, 0, 0, 0));
+    });
+
     [LFNativePluginBridge install];
     LFResourceProvider::getInstance().setAssetLoader(
         [](const std::string& path, std::function<void(std::shared_ptr<LFData>)> callback) {
@@ -290,25 +211,20 @@ struct NativeKeyEvent {
 }
 
 - (void)resizeIfNeeded {
-    if (!_glContext || CGRectIsEmpty(self.view.bounds)) return;
-    [EAGLContext setCurrentContext:_glContext];
+    if (!_engineInitialized || CGRectIsEmpty(self.view.bounds)) return;
 
-    [self setupRenderBuffers];
     CGFloat scale = self.view.window.screen.scale ?: UIScreen.mainScreen.scale;
     CGFloat logicalWidth = self.view.bounds.size.width;
     CGFloat logicalHeight = self.view.bounds.size.height;
+
+    CGSize drawableSize = CGSizeMake(logicalWidth * scale, logicalHeight * scale);
+    _metalLayer.drawableSize = drawableSize;
+
     LFEngine::getInstance().setWindowSize(logicalWidth, logicalHeight, scale);
 }
 
 - (void)drawFrame {
-    if (!_engineInitialized || !_glContext || _frameBuffer == 0) return;
-
-    [EAGLContext setCurrentContext:_glContext];
-
-    glBindFramebuffer(GL_FRAMEBUFFER, _frameBuffer);
-    glViewport(0, 0, _backingWidth, _backingHeight);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (!_engineInitialized || !_vg) return;
 
     CFTimeInterval now = CACurrentMediaTime();
     float dt = _lastFrameTimestamp > 0 ? static_cast<float>(now - _lastFrameTimestamp) : (1.0f / 60.0f);
@@ -318,9 +234,6 @@ struct NativeKeyEvent {
     LFEngine::getInstance().update(dt);
     LFEngine::getInstance().render();
     [self syncTextInputFocusState];
-
-    glBindRenderbuffer(GL_RENDERBUFFER, _colorBuffer);
-    [_glContext presentRenderbuffer:GL_RENDERBUFFER];
 }
 
 - (void)processKeyInputEvents {
@@ -466,59 +379,42 @@ struct NativeKeyEvent {
 }
 
 - (int)mapIOSHidKeyCode:(NSInteger)hidUsage {
-    // USB HID usage values for keyboard keys.
     switch (hidUsage) {
-        case 0x28:
-            return LF_KEY_ENTER;
-        case 0x2B:
-            return LF_KEY_TAB;
-        case 0x2A:
-            return LF_KEY_BACKSPACE;
-        case 0x29:
-            return LF_KEY_ESCAPE;
-        case 0x4C:
-            return LF_KEY_DELETE;
-        case 0x50:
-            return LF_KEY_LEFT;
-        case 0x4F:
-            return LF_KEY_RIGHT;
-        case 0x52:
-            return LF_KEY_UP;
-        case 0x51:
-            return LF_KEY_DOWN;
-        case 0x4A:
-            return LF_KEY_HOME;
-        case 0x4D:
-            return LF_KEY_END;
-        default:
-            return LF_KEY_UNKNOWN;
+        case 0x28: return LF_KEY_ENTER;
+        case 0x2B: return LF_KEY_TAB;
+        case 0x2A: return LF_KEY_BACKSPACE;
+        case 0x29: return LF_KEY_ESCAPE;
+        case 0x4C: return LF_KEY_DELETE;
+        case 0x50: return LF_KEY_LEFT;
+        case 0x4F: return LF_KEY_RIGHT;
+        case 0x52: return LF_KEY_UP;
+        case 0x51: return LF_KEY_DOWN;
+        case 0x4A: return LF_KEY_HOME;
+        case 0x4D: return LF_KEY_END;
+        default: return LF_KEY_UNKNOWN;
     }
 }
 
-- (int)mapIOSInputKey:(NSString *)input {
-    if (!input || input.length == 0) {
-        return LF_KEY_UNKNOWN;
+- (int)mapIOSInputKey:(NSString *_Nullable)input {
+    if (!input || input.length == 0) return LF_KEY_UNKNOWN;
+    unichar ch = [input characterAtIndex:0];
+    switch (ch) {
+        case '\n':
+        case '\r': return LF_KEY_ENTER;
+        case '\t': return LF_KEY_TAB;
+        case 0x08: return LF_KEY_BACKSPACE;
+        case 0x1B: return LF_KEY_ESCAPE;
+        case 0x7F: return LF_KEY_DELETE;
+        default: return LF_KEY_UNKNOWN;
     }
-    if ([input isEqualToString:@"\r"] || [input isEqualToString:@"\n"]) return LF_KEY_ENTER;
-    if ([input isEqualToString:@"\t"]) return LF_KEY_TAB;
-    if ([input isEqualToString:@"\b"]) return LF_KEY_BACKSPACE;
-    if ([input isEqualToString:@"\x7F"]) return LF_KEY_DELETE;
-    if ([input isEqualToString:UIKeyInputUpArrow]) return LF_KEY_UP;
-    if ([input isEqualToString:UIKeyInputDownArrow]) return LF_KEY_DOWN;
-    if ([input isEqualToString:UIKeyInputLeftArrow]) return LF_KEY_LEFT;
-    if ([input isEqualToString:UIKeyInputRightArrow]) return LF_KEY_RIGHT;
-    if (@available(iOS 13.4, *)) {
-        if ([input isEqualToString:UIKeyInputEscape]) return LF_KEY_ESCAPE;
-    }
-    return LF_KEY_UNKNOWN;
 }
 
 - (uint32_t)mapIOSModifierFlags:(UIKeyModifierFlags)modifierFlags {
     uint32_t mods = LF_MOD_NONE;
-    if ((modifierFlags & UIKeyModifierShift) != 0) mods |= LF_MOD_SHIFT;
-    if ((modifierFlags & UIKeyModifierControl) != 0) mods |= LF_MOD_CTRL;
-    if ((modifierFlags & UIKeyModifierAlternate) != 0) mods |= LF_MOD_ALT;
-    if ((modifierFlags & UIKeyModifierCommand) != 0) mods |= LF_MOD_SUPER;
+    if (modifierFlags & UIKeyModifierShift) mods |= LF_MOD_SHIFT;
+    if (modifierFlags & UIKeyModifierControl) mods |= LF_MOD_CTRL;
+    if (modifierFlags & UIKeyModifierAlternate) mods |= LF_MOD_ALT;
+    if (modifierFlags & UIKeyModifierCommand) mods |= LF_MOD_SUPER;
     return mods;
 }
 

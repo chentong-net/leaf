@@ -28,13 +28,21 @@ The following notices are provided for attribution and compliance.
    Local modifications:
    - None in current distributed snapshot.
 
-3) glad
+3) MetalNanoVG
+   Path: third_party/MetalNanoVG
+   Upstream: https://github.com/ollix/MetalNanoVG
+   License: MIT
+   License file: third_party/MetalNanoVG/LICENSE
+   Local modifications:
+   - None in current distributed snapshot.
+
+4) glad
    Path: third_party/glad
    Upstream: https://github.com/Dav1dde/glad
    License: MIT (glad source) + Khronos component licenses
    License file: third_party/glad/LICENSE.txt
 
-4) Yoga
+5) Yoga
    Path: third_party/yoga
    Upstream: https://github.com/facebook/yoga
    License: MIT

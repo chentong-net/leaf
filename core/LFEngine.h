@@ -8,7 +8,6 @@
 #include "LFDef.h"
 #include "view/base/LFNode.h"
 #include "view/base/LFImage.h"
-#include "view/base/LFTexture.h"
 #include "view/base/LFText.h"
 #include "view/base/LFInput.h"
 #include "view/base/LFNavigator.h"
@@ -42,6 +41,7 @@
  */
 using LFFrameTask = std::function<bool()>;
 using LFTextInputCursorCallback = std::function<void(float x, float y, float lineHeight)>;
+using LFBeginFrameCallback = std::function<void(NVGcontext*)>;
 
 /**
  * Leaf 引擎的核心驱动器
@@ -125,6 +125,9 @@ public:
     void setTextInputCursorCallback(LFTextInputCursorCallback callback);
     void updateTextInputCursor(float x, float y, float lineHeight);
 
+    // 每帧 nvgBeginFrame 之后、绘制 UI 树之前调用（Metal 后端用于清屏）
+    void setBeginFrameCallback(LFBeginFrameCallback callback);
+
 private:
     LFEngine() = default;
 
@@ -151,6 +154,7 @@ private:
     std::mutex m_taskMutex; // 保证任务注册的线程安全
 
     LFTextInputCursorCallback m_textInputCursorCallback;
+    LFBeginFrameCallback m_beginFrameCallback;
 };
 
 #endif // LEAF_LFENGINE_H

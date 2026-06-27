@@ -29,7 +29,6 @@ set(LEAF_CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFNode.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFText.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFImage.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFTexture.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFInput.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFNavigator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFPage.cpp
@@ -66,6 +65,19 @@ if(LEAF_PLATFORM_DEF STREQUAL "DESKTOP")
     )
 endif()
 
+if (LEAF_USE_METAL)
+    set(METALNANOVG_DIR ${DEPS_DIR}/MetalNanoVG/src)
+    list(APPEND LEAF_CORE_SOURCES
+            ${METALNANOVG_DIR}/nanovg_mtl.m
+    )
+endif()
+
+if (LEAF_USE_METAL)
+    # nanovg_mtl.m 需要 Objective-C ARC
+    set_source_files_properties(${METALNANOVG_DIR}/nanovg_mtl.m
+            PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+endif()
+
 add_library(leaf-core ${LEAF_CORE_SOURCES})
 set_target_properties(leaf-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
@@ -79,5 +91,11 @@ target_include_directories(leaf-core
 if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP")
     target_include_directories(leaf-core PUBLIC
             ${GLAD_DIR}
+    )
+endif()
+
+if (LEAF_USE_METAL)
+    target_include_directories(leaf-core PUBLIC
+            ${METALNANOVG_DIR}
     )
 endif()

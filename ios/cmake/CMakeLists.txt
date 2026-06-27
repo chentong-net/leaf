@@ -16,6 +16,8 @@ set(APPLICATION_DIR ${LEAF_ROOT_DIR}/application)
 
 # Reuse the same C++ module graph as other platforms.
 set(LEAF_PLATFORM_DEF "IOS")
+set(LEAF_USE_METAL ON)
+add_compile_definitions(LEAF_USE_METAL=1)
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
 add_subdirectory(${APPLICATION_DIR} application_build)
 
