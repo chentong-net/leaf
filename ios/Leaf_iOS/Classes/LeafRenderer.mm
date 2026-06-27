@@ -197,7 +197,7 @@ struct NativeKeyEvent {
 
     _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(drawFrame)];
     if (@available(iOS 15.0, *)) {
-        _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(30, 60, 60);
+        _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(30, 120, 120);
     } else {
         _displayLink.preferredFramesPerSecond = 60;
     }
