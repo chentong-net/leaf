@@ -16,8 +16,12 @@
 #if defined(__APPLE__) && !defined(__DESKTOP__)
 #include <TargetConditionals.h>
 #if TARGET_OS_IPHONE
+#ifdef LEAF_USE_METAL
+#include "nanovg_mtl.h"
+#else
 #include <OpenGLES/ES3/gl.h>
 #include <OpenGLES/ES3/glext.h>
+#endif
 #include <cstdio>
 #define LF_LOGI(...) printf("[Leaf]: " __VA_ARGS__); printf("\n")
 #endif
@@ -37,8 +41,11 @@
 #define LF_LOGI(...) ((void)OH_LOG_Print(LOG_APP, LOG_INFO, 0x0000, "Leaf", __VA_ARGS__))
 #endif
 
+#if !(defined(__APPLE__) && !defined(__DESKTOP__) && defined(LEAF_USE_METAL))
 #include "nanovg.h"
 #include "nanovg_gl.h"
+#endif
+
 #include "Yoga.h"
 #include <string>
 #include <vector>

@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
   s.name             = 'Leaf_iOS'
   s.version          = '1.0.0'
-  s.summary          = 'Leaf iOS SDK with OpenGL ES renderer.'
+  s.summary          = 'Leaf iOS SDK with Metal renderer.'
   s.description      = <<-DESC
 Leaf iOS SDK module with LeafView/LeafRenderer, plugin dispatcher, and prebuilt native runtime.
   DESC
@@ -22,15 +22,15 @@ Leaf iOS SDK module with LeafView/LeafRenderer, plugin dispatcher, and prebuilt 
     'Leaf_iOS_Assets' => ['Assets/**']
   }
 
-  s.frameworks = 'Foundation', 'UIKit', 'CoreGraphics', 'QuartzCore', 'OpenGLES'
+  s.frameworks = 'Foundation', 'UIKit', 'CoreGraphics', 'QuartzCore', 'Metal'
   s.libraries  = 'c++', 'z'
   s.dependency 'Leaf_Plugin', s.version.to_s
 
   s.pod_target_xcconfig = {
-    'CLANG_CXX_LANGUAGE_STANDARD' => 'gnu++17',
-    'CLANG_CXX_LIBRARY' => 'libc++',
-    'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
-    'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) __APPLE__=1',
-    'DEFINES_MODULE' => 'YES'
+      'CLANG_CXX_LANGUAGE_STANDARD' => 'gnu++17',
+      'CLANG_CXX_LIBRARY' => 'libc++',
+      'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
+      'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) __APPLE__=1 LEAF_USE_METAL=1',
+      'DEFINES_MODULE' => 'YES'
   }
 end

@@ -74,7 +74,9 @@ void LFEngine::render() {
 
     int phyWidth = (int)(m_windowWidth * m_pixelRatio);
     int phyHeight = (int)(m_windowHeight * m_pixelRatio);
+#if !defined(__APPLE__) || defined(__DESKTOP__)
     glViewport(0, 0, phyWidth, phyHeight);
+#endif
 
     // 布局
     // Yoga内部有缓存机制，如果根节点没有markDirty，calculateLayout几乎无消耗
@@ -83,6 +85,10 @@ void LFEngine::render() {
 
     // 绘制
     nvgBeginFrame(m_vg, m_windowWidth, m_windowHeight, m_pixelRatio);
+
+    if (m_beginFrameCallback) {
+        m_beginFrameCallback(m_vg);
+    }
 
     m_rootNode->render(m_vg);
 
@@ -132,4 +138,8 @@ void LFEngine::updateTextInputCursor(float x, float y, float lineHeight) {
     if (m_textInputCursorCallback) {
         m_textInputCursorCallback(x, y, lineHeight);
     }
+}
+
+void LFEngine::setBeginFrameCallback(LFBeginFrameCallback callback) {
+    m_beginFrameCallback = std::move(callback);
 }
