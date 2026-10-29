@@ -13,7 +13,8 @@
 **/cmake-build-debug
 **/cmake-build-wasm
 **/BuildProfile.ets
-**/build-desktop
+**/build-windows
+**/build-macos
 **/cmake-build-debug-llvm
 /tests/
 # CocoaPods
