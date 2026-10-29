@@ -15,6 +15,7 @@
 **/BuildProfile.ets
 **/build-desktop
 **/cmake-build-debug-llvm
+/tests/
 # CocoaPods
 **/Pods/
 **/Podfile.lock
