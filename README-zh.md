@@ -33,8 +33,10 @@
 │   ├── entry # 启动模块
 │   ├── leaf_plugin # 插件接口定义
 │   └── leaf_ohos # 平台适配层
-├── desktop # 桌面端（Windows/macOS）
-│   └── desktop_main.cpp # 平台适配层及入口函数
+├── windows # Windows端
+│   └── main.cpp # 平台适配层及入口函数
+├── macos # macOS端
+│   └── main.cpp # 平台适配层及入口函数
 ├── web # Web端
 │   ├── web_main.cpp # 平台适配层及入口函数
 │   └── shell.html # HTML模版
@@ -57,7 +59,8 @@ xxx # 插件名（如：file_picker）
 ├── ios # iOS端原生层实现（标准CocoaPods依赖模块）
 ├── android # Android端原生层实现（标准Android依赖模块，可打包为aar）
 ├── ohos # 鸿蒙端原生层实现（标准鸿蒙依赖模块，可打包为har）
-├── desktop # 桌面端原生层实现
+├── windows # Windows端原生层实现
+├── macos # macOS端原生层实现
 └── web # Web端原生层实现
 ```
 
@@ -81,7 +84,8 @@ xxx # 插件名（如：file_picker）
 - [ ] 局部重绘
 - [ ] 纹理清理（释放）
 - [x] 适配iOS
-- [x] 适配桌面端
+- [x] 适配Windows
+- [x] 适配macOS
 - [x] 适配鸿蒙
 - [ ] Android setEGLConfigChooser问题修复
 - [ ] LFListView支持嵌套

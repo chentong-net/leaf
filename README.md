@@ -33,8 +33,10 @@ English | [中文](README-zh.md)
 │   ├── entry # launch module
 │   ├── leaf_plugin # plugin interface definitions
 │   └── leaf_ohos # platform adapter layer
-├── desktop # Desktop (Windows/macOS)
-│   └── desktop_main.cpp # platform adapter layer and entrypoint
+├── windows # Windows
+│   └── main.cpp # platform adapter layer and entrypoint
+├── macos # macOS
+│   └── main.cpp # platform adapter layer and entrypoint
 ├── web # Web
 │   ├── web_main.cpp # platform adapter layer and entrypoint
 │   └── shell.html # HTML template
@@ -57,7 +59,8 @@ xxx # plugin name (e.g., file_picker)
 ├── ios # iOS native implementation (standard CocoaPods module)
 ├── android # Android native implementation (standard Android module, can be packaged as AAR)
 ├── ohos # HarmonyOS native implementation (standard HarmonyOS module, can be packaged as HAR)
-├── desktop # Desktop native implementation
+├── windows # Windows native implementation
+├── macos # macOS native implementation
 └── web # Web native implementation
 ```
 
@@ -81,7 +84,8 @@ xxx # plugin name (e.g., file_picker)
 - [ ] Partial repaint
 - [ ] Texture cleanup (release)
 - [x] iOS support
-- [x] Desktop support
+- [x] Windows support
+- [x] macOS support
 - [x] HarmonyOS support
 - [ ] Fix Android `setEGLConfigChooser` issue
 - [ ] LFListView supports nesting

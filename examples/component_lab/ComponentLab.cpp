@@ -873,7 +873,7 @@ LFLinear::Ptr buildFunctionDemoPage() {
 
     auto localTimeCard = makeSectionCard(
         "LFLocalTime",
-        "Reads the current local clock, epoch milliseconds, UTC offset, and timezone on Desktop and Android."
+        "Reads the current local clock, epoch milliseconds, UTC offset, and timezone on Windows, macOS, and Android."
     );
 
     auto localTimeStatus = makeText("Local time: auto updates every second.", 13.0f, 0xFF475569);
