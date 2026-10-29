@@ -44,3 +44,6 @@ target_link_libraries(leaf-desktop PRIVATE
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/leaf-assets.cmake)
 leaf_configure_desktop_assets(leaf-desktop ${APPLICATION_DIR}/assets)
+
+enable_testing()
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../tests tests_build)
