@@ -4,11 +4,11 @@ endif()
 
 if (LEAF_PLATFORM_DEF STREQUAL "WINDOWS")
     add_library(audio-player STATIC
-            desktop/LFAudioPlayerDesktop.cpp
+            windows/LFAudioPlayerWindows.cpp
     )
 elseif (LEAF_PLATFORM_DEF STREQUAL "MACOS")
     add_library(audio-player STATIC
-            desktop/LFAudioPlayerDesktopMac.mm
+            macos/LFAudioPlayerMacOS.mm
     )
 elseif (LEAF_PLATFORM_DEF STREQUAL "ANDROID")
     add_library(audio-player STATIC
