@@ -7,36 +7,27 @@
 #include <atomic>
 #include <cctype>
 #include <chrono>
-#include <cstdio>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <sys/stat.h>
 
-#if defined(__APPLE__)
-#include <unistd.h>
-#endif
-
-#if defined(_WIN32)
-#include <windows.h>
 #include <shobjidl.h>
-#endif
+#include <windows.h>
 
 namespace {
 
 std::atomic<uint64_t> g_fileIdCounter{1};
 
-#if defined(_WIN32)
 std::wstring utf8ToWide(const std::string& utf8) {
     if (utf8.empty()) return L"";
 
     const int wideCount = MultiByteToWideChar(
-        CP_UTF8,
-        MB_ERR_INVALID_CHARS,
-        utf8.c_str(),
-        static_cast<int>(utf8.size()),
-        nullptr,
-        0
+            CP_UTF8,
+            MB_ERR_INVALID_CHARS,
+            utf8.c_str(),
+            static_cast<int>(utf8.size()),
+            nullptr,
+            0
     );
     if (wideCount <= 0) {
         return L"";
@@ -44,12 +35,12 @@ std::wstring utf8ToWide(const std::string& utf8) {
 
     std::wstring wide(static_cast<size_t>(wideCount), L'\0');
     const int converted = MultiByteToWideChar(
-        CP_UTF8,
-        MB_ERR_INVALID_CHARS,
-        utf8.c_str(),
-        static_cast<int>(utf8.size()),
-        wide.data(),
-        wideCount
+            CP_UTF8,
+            MB_ERR_INVALID_CHARS,
+            utf8.c_str(),
+            static_cast<int>(utf8.size()),
+            wide.data(),
+            wideCount
     );
     if (converted <= 0) {
         return L"";
@@ -61,14 +52,14 @@ std::string wideToUtf8(const std::wstring& wide) {
     if (wide.empty()) return "";
 
     const int utf8Count = WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        wide.c_str(),
-        static_cast<int>(wide.size()),
-        nullptr,
-        0,
-        nullptr,
-        nullptr
+            CP_UTF8,
+            0,
+            wide.c_str(),
+            static_cast<int>(wide.size()),
+            nullptr,
+            0,
+            nullptr,
+            nullptr
     );
     if (utf8Count <= 0) {
         return "";
@@ -76,14 +67,14 @@ std::string wideToUtf8(const std::wstring& wide) {
 
     std::string utf8(static_cast<size_t>(utf8Count), '\0');
     const int converted = WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        wide.c_str(),
-        static_cast<int>(wide.size()),
-        utf8.data(),
-        utf8Count,
-        nullptr,
-        nullptr
+            CP_UTF8,
+            0,
+            wide.c_str(),
+            static_cast<int>(wide.size()),
+            utf8.data(),
+            utf8Count,
+            nullptr,
+            nullptr
     );
     if (converted <= 0) {
         return "";
@@ -91,12 +82,17 @@ std::string wideToUtf8(const std::wstring& wide) {
     return utf8;
 }
 
-bool pickWindowsFilePath(LFFilePickerMediaType mediaType, std::string* outPath, bool* canceled, std::string* error) {
+bool pickWindowsFilePath(
+        LFFilePickerMediaType mediaType,
+        std::string* outPath,
+        bool* canceled,
+        std::string* error) {
     if (outPath) outPath->clear();
     if (canceled) *canceled = false;
     if (error) error->clear();
 
-    const HRESULT initHr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    const HRESULT initHr =
+            CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     const bool shouldUninit = SUCCEEDED(initHr);
     if (FAILED(initHr) && initHr != RPC_E_CHANGED_MODE) {
         if (error) *error = "com_initialize_failed";
@@ -104,7 +100,12 @@ bool pickWindowsFilePath(LFFilePickerMediaType mediaType, std::string* outPath, 
     }
 
     IFileOpenDialog* dialog = nullptr;
-    HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog));
+    HRESULT hr = CoCreateInstance(
+            CLSID_FileOpenDialog,
+            nullptr,
+            CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(&dialog)
+    );
     if (FAILED(hr) || dialog == nullptr) {
         if (shouldUninit) CoUninitialize();
         if (error) *error = "create_file_dialog_failed";
@@ -131,7 +132,11 @@ bool pickWindowsFilePath(LFFilePickerMediaType mediaType, std::string* outPath, 
             filterCount = 2;
             break;
         case LFFilePickerMediaType::ImageOrVideo:
-            filters[0] = {L"Media", L"*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.heif;*.mp4;*.mov;*.mkv;*.avi;*.m4v;*.3gp;*.webm"};
+            filters[0] = {
+                    L"Media",
+                    L"*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.heif;"
+                    L"*.mp4;*.mov;*.mkv;*.avi;*.m4v;*.3gp;*.webm"
+            };
             filters[1] = {L"All Files", L"*.*"};
             filterCount = 2;
             break;
@@ -194,39 +199,6 @@ bool pickWindowsFilePath(LFFilePickerMediaType mediaType, std::string* outPath, 
     if (outPath) *outPath = pathUtf8;
     return true;
 }
-#endif
-
-std::string stripTrailingNewlines(const std::string& input) {
-    size_t end = input.size();
-    while (end > 0 && (input[end - 1] == '\n' || input[end - 1] == '\r')) {
-        --end;
-    }
-    return input.substr(0, end);
-}
-
-std::string runCommand(const std::string& command) {
-#if defined(_WIN32)
-    FILE* pipe = _popen(command.c_str(), "r");
-#else
-    FILE* pipe = popen(command.c_str(), "r");
-#endif
-    if (!pipe) {
-        return "";
-    }
-
-    char buffer[512];
-    std::string output;
-    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-        output += buffer;
-    }
-
-#if defined(_WIN32)
-    _pclose(pipe);
-#else
-    pclose(pipe);
-#endif
-    return stripTrailingNewlines(output);
-}
 
 std::string getMimeType(const std::string& fileName) {
     std::string lowerName;
@@ -271,7 +243,7 @@ std::string getMimeType(const std::string& fileName) {
 }
 
 std::string getFileName(const std::string& path) {
-    size_t pos = path.find_last_of("/\\");
+    const size_t pos = path.find_last_of("/\\");
     if (pos == std::string::npos) {
         return path;
     }
@@ -279,7 +251,6 @@ std::string getFileName(const std::string& path) {
 }
 
 int64_t getFileSize(const std::string& path) {
-#if defined(_WIN32)
     const std::wstring widePath = utf8ToWide(path);
     if (widePath.empty()) {
         return 0;
@@ -290,17 +261,11 @@ int64_t getFileSize(const std::string& path) {
         return st.st_size;
     }
     return 0;
-#else
-    struct stat st;
-    if (stat(path.c_str(), &st) == 0) {
-        return st.st_size;
-    }
-    return 0;
-#endif
 }
 
 std::string sanitizeFileName(const std::string& name) {
     if (name.empty()) return "";
+
     std::string result;
     result.reserve(name.size());
     for (char c : name) {
@@ -322,31 +287,17 @@ std::string buildUniqueIdSuffix() {
 
 std::string createSandboxCopyPath(const std::string& selectedPath, bool* ok) {
     if (ok) *ok = false;
-    namespace fs = std::filesystem;
 
-    fs::path tempRoot;
-#if defined(__APPLE__)
-    char tempDir[512];
-    if (confstr(_CS_DARWIN_USER_TEMP_DIR, tempDir, sizeof(tempDir)) > 0) {
-        tempRoot = fs::path(tempDir);
-    } else {
-        tempRoot = fs::temp_directory_path();
-    }
-#elif defined(_WIN32)
     wchar_t tempDir[MAX_PATH];
-    DWORD len = GetTempPathW(MAX_PATH, tempDir);
-    if (len > 0) {
-        tempRoot = fs::path(tempDir);
-    } else {
-        tempRoot = fs::temp_directory_path();
+    const DWORD len = GetTempPathW(MAX_PATH, tempDir);
+    if (len == 0) {
+        return "";
     }
-#else
-    tempRoot = fs::temp_directory_path();
-#endif
 
     std::error_code ec;
-    fs::path sandboxDir = tempRoot / "leaf_file_picker";
-    fs::create_directories(sandboxDir, ec);
+    const std::filesystem::path sandboxDir =
+            std::filesystem::path(tempDir) / "leaf_file_picker";
+    std::filesystem::create_directories(sandboxDir, ec);
     if (ec) {
         return "";
     }
@@ -356,136 +307,31 @@ std::string createSandboxCopyPath(const std::string& selectedPath, bool* ok) {
         safeName = "picked_file";
     }
 
-#if defined(_WIN32)
     const std::wstring sourceWide = utf8ToWide(selectedPath);
     const std::wstring destNameWide = utf8ToWide(buildUniqueIdSuffix() + "_" + safeName);
     if (sourceWide.empty() || destNameWide.empty()) {
         return "";
     }
 
-    fs::path sourcePath(sourceWide);
-    fs::path destPath = sandboxDir / fs::path(destNameWide);
-    fs::copy_file(sourcePath, destPath, fs::copy_options::overwrite_existing, ec);
+    const std::filesystem::path destPath = sandboxDir / std::filesystem::path(destNameWide);
+    std::filesystem::copy_file(
+            std::filesystem::path(sourceWide),
+            destPath,
+            std::filesystem::copy_options::overwrite_existing,
+            ec
+    );
     if (ec) {
         return "";
     }
 
     if (ok) *ok = true;
     return wideToUtf8(destPath.wstring());
-#else
-    fs::path destPath = sandboxDir / (buildUniqueIdSuffix() + "_" + safeName);
-    fs::copy_file(fs::path(selectedPath), destPath, fs::copy_options::overwrite_existing, ec);
-    if (ec) {
-        return "";
-    }
-
-    if (ok) *ok = true;
-    return destPath.string();
-#endif
 }
 
-} // namespace
-
-void LFFilePicker::pickFile(LFFilePickCallback callback) {
-    pickFile(LFFilePickerOptions{}, std::move(callback));
-}
-
-void LFFilePicker::pickFile(const LFFilePickerOptions& options, LFFilePickCallback callback) {
-    if (!callback) return;
-
-    std::string selectedPath;
-
-#if defined(__APPLE__)
-    std::string command;
-    command = "osascript -e 'try' ";
-    switch (options.mediaType) {
-        case LFFilePickerMediaType::Image:
-            command += "-e 'POSIX path of (choose file with prompt \"Select an image\" of type {\"public.image\"})' ";
-            break;
-        case LFFilePickerMediaType::Video:
-            command += "-e 'POSIX path of (choose file with prompt \"Select a video\" of type {\"public.movie\"})' ";
-            break;
-        case LFFilePickerMediaType::ImageOrVideo:
-            command += "-e 'POSIX path of (choose file with prompt \"Select a media\" of type {\"public.image\", \"public.movie\"})' ";
-            break;
-        case LFFilePickerMediaType::Any:
-        default:
-            command += "-e 'POSIX path of (choose file with prompt \"Select a file\")' ";
-            break;
-    }
-    command += "-e 'on error number -128' ";
-    command += "-e 'return \"\"' ";
-    command += "-e 'end try'";
-
-    selectedPath = runCommand(command);
-    if (selectedPath.empty()) {
-        LFFilePickResult result;
-        result.ok = true;
-        result.canceled = true;
-        callback(result);
-        return;
-    }
-#elif defined(_WIN32)
-    bool canceled = false;
-    std::string pickError;
-    if (!pickWindowsFilePath(options.mediaType, &selectedPath, &canceled, &pickError)) {
-        LFFilePickResult result;
-        result.ok = false;
-        result.error = pickError.empty() ? "pick_failed" : pickError;
-        callback(result);
-        return;
-    }
-
-    if (canceled || selectedPath.empty()) {
-        LFFilePickResult result;
-        result.ok = true;
-        result.canceled = true;
-        callback(result);
-        return;
-    }
-#else
-    LFFilePickResult result;
-    result.ok = false;
-    result.error = "platform_not_supported";
-    callback(result);
-    return;
-#endif
-
-    std::string finalPath = selectedPath;
-    if (options.copyToSandbox) {
-        bool copyOk = false;
-        std::string copiedPath = createSandboxCopyPath(selectedPath, &copyOk);
-        if (!copyOk || copiedPath.empty()) {
-            LFFilePickResult result;
-            result.ok = false;
-            result.error = "copy_to_sandbox_failed";
-            callback(result);
-            return;
-        }
-        finalPath = copiedPath;
-    }
-
-    LFFileInfo fileInfo;
-    fileInfo.path = finalPath;
-    fileInfo.name = getFileName(selectedPath);
-    fileInfo.mimeType = getMimeType(fileInfo.name);
-    fileInfo.size = getFileSize(finalPath);
-
-    const uint64_t fileId = g_fileIdCounter.fetch_add(1);
-    fileInfo.fileId = "fp_" + std::to_string(fileId);
-
-    LFFilePickResult result;
-    result.ok = true;
-    result.file = fileInfo;
-    callback(result);
-}
-
-LFFileReadResult readChunkFromPath(const std::string& path, const LFFileReadOptions& options) {
-#if defined(_WIN32)
+LFFileReadResult readChunkFromPath(
+        const std::string& path,
+        const LFFileReadOptions& options) {
     std::ifstream file(std::filesystem::path(utf8ToWide(path)), std::ios::binary);
-#else
-    std::ifstream file(path, std::ios::binary);
-#endif
     if (!file.is_open()) {
         LFFileReadResult result;
         result.ok = false;
@@ -517,39 +363,93 @@ LFFileReadResult readChunkFromPath(const std::string& path, const LFFileReadOpti
     file.read(reinterpret_cast<char*>(result.bytes.data()), static_cast<std::streamsize>(length));
     const std::streamsize bytesRead = file.gcount();
     if (bytesRead < 0) {
-        LFFileReadResult result;
-        result.ok = false;
-        result.error = "read_path_failed";
-        return result;
+        return {false, false, {}, "read_path_failed"};
     }
     result.bytes.resize(static_cast<size_t>(bytesRead));
     result.eof = static_cast<std::streamoff>(offset + result.bytes.size()) >= totalSize;
     return result;
 }
 
-void LFFilePicker::readFile(const LFFileInfo& file, LFFileReadCallback callback) {
+} // namespace
+
+void LFFilePicker::pickFile(LFFilePickCallback callback) {
+    pickFile(LFFilePickerOptions{}, std::move(callback));
+}
+
+void LFFilePicker::pickFile(
+        const LFFilePickerOptions& options,
+        LFFilePickCallback callback) {
+    if (!callback) return;
+
+    bool canceled = false;
+    std::string pickError;
+    std::string selectedPath;
+    if (!pickWindowsFilePath(options.mediaType, &selectedPath, &canceled, &pickError)) {
+        LFFilePickResult result;
+        result.ok = false;
+        result.error = pickError.empty() ? "pick_failed" : pickError;
+        callback(result);
+        return;
+    }
+
+    if (canceled || selectedPath.empty()) {
+        LFFilePickResult result;
+        result.ok = true;
+        result.canceled = true;
+        callback(result);
+        return;
+    }
+
+    std::string finalPath = selectedPath;
+    if (options.copyToSandbox) {
+        bool copyOk = false;
+        std::string copiedPath = createSandboxCopyPath(selectedPath, &copyOk);
+        if (!copyOk || copiedPath.empty()) {
+            LFFilePickResult result;
+            result.ok = false;
+            result.error = "copy_to_sandbox_failed";
+            callback(result);
+            return;
+        }
+        finalPath = std::move(copiedPath);
+    }
+
+    LFFileInfo fileInfo;
+    fileInfo.path = finalPath;
+    fileInfo.name = getFileName(selectedPath);
+    fileInfo.mimeType = getMimeType(fileInfo.name);
+    fileInfo.size = getFileSize(finalPath);
+
+    const uint64_t fileId = g_fileIdCounter.fetch_add(1);
+    fileInfo.fileId = "fp_" + std::to_string(fileId);
+
+    LFFilePickResult result;
+    result.ok = true;
+    result.file = std::move(fileInfo);
+    callback(result);
+}
+
+void LFFilePicker::readFile(
+        const LFFileInfo& file,
+        LFFileReadCallback callback) {
     readFile(file, LFFileReadOptions{}, std::move(callback));
 }
 
-void LFFilePicker::readFile(const LFFileInfo& file, const LFFileReadOptions& options, LFFileReadCallback callback) {
+void LFFilePicker::readFile(
+        const LFFileInfo& file,
+        const LFFileReadOptions& options,
+        LFFileReadCallback callback) {
     if (!callback) return;
 
     if (!file.path.empty()) {
-        LFFileReadResult result = readChunkFromPath(file.path, options);
-        callback(result);
+        callback(readChunkFromPath(file.path, options));
         return;
     }
 
     if (file.fileId.empty()) {
-        LFFileReadResult result;
-        result.ok = false;
-        result.error = "read_source_unavailable";
-        callback(result);
+        callback({false, false, {}, "read_source_unavailable"});
         return;
     }
 
-    LFFileReadResult result;
-    result.ok = false;
-    result.error = "file_id_not_supported_on_desktop";
-    callback(result);
+    callback({false, false, {}, "file_id_not_supported_on_windows"});
 }

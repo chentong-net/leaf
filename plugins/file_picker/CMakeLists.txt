@@ -2,9 +2,13 @@ if (NOT TARGET leaf-core)
     message(FATAL_ERROR "file-picker requires leaf-core target")
 endif()
 
-if (LEAF_PLATFORM_DEF STREQUAL "WINDOWS" OR LEAF_PLATFORM_DEF STREQUAL "MACOS")
+if (LEAF_PLATFORM_DEF STREQUAL "WINDOWS")
     add_library(file-picker STATIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/desktop/LFFilePickerDesktop.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/windows/LFFilePickerWindows.cpp
+    )
+elseif (LEAF_PLATFORM_DEF STREQUAL "MACOS")
+    add_library(file-picker STATIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/macos/LFFilePickerMacOS.cpp
     )
 elseif (LEAF_PLATFORM_DEF STREQUAL "WEB")
     add_library(file-picker STATIC
