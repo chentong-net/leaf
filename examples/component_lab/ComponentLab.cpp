@@ -1234,7 +1234,7 @@ LFLinear::Ptr buildFunctionDemoPage() {
             state->player->setVolume(1.0f);
             state->player->setSource(tempAudioPath.u8string());
 
-#if defined(__DESKTOP__)
+#if defined(_WIN32) || (defined(__APPLE__) && TARGET_OS_OSX)
             state->durationSeconds = state->player->getDuration();
             state->durationResolved = state->durationSeconds > 0.0;
             if (state->durationSeconds <= 0.0) {
