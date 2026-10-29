@@ -524,6 +524,14 @@ LFTextLayout LFTextLayoutBuilder::build(std::string_view text,
         std::isfinite(options.lineAdvance) && options.lineAdvance > 0.0f
             ? options.lineAdvance
             : 1.0f;
+    const float naturalLineHeight =
+        std::isfinite(options.naturalLineHeight) && options.naturalLineHeight > 0.0f
+            ? options.naturalLineHeight
+            : lineAdvance;
+    const float firstBaseline =
+        std::isfinite(options.firstBaseline) && options.firstBaseline > 0.0f
+            ? options.firstBaseline
+            : naturalLineHeight;
     const float wrapWidth =
         std::isfinite(options.wrapWidth)
             ? std::max(0.0f, options.wrapWidth)
@@ -531,13 +539,13 @@ LFTextLayout LFTextLayoutBuilder::build(std::string_view text,
     const int maxLines = std::max(0, options.maxLines);
     const std::vector<GraphemeUnit> units = buildGraphemeUnits(text);
     layout.lineAdvance = lineAdvance;
+    layout.firstBaseline = firstBaseline;
 
-    const auto appendEmptyLine = [&layout, lineAdvance](size_t offset) {
+    const auto appendEmptyLine = [&layout](size_t offset) {
         LFTextLine line;
         line.begin = offset;
         line.end = offset;
         layout.lines.push_back(line);
-        layout.height += lineAdvance;
     };
 
     size_t unitIndex = 0;
@@ -642,7 +650,6 @@ LFTextLayout LFTextLayoutBuilder::build(std::string_view text,
 
             layout.lines.push_back(chosenLine);
             layout.width = std::max(layout.width, chosenLine.advance);
-            layout.height += lineAdvance;
             cursor = chosenRawEnd;
         }
 
@@ -656,6 +663,12 @@ LFTextLayout LFTextLayoutBuilder::build(std::string_view text,
         if (unitIndex < units.size() && units[unitIndex].newline) {
             ++unitIndex;
         }
+    }
+
+    if (!layout.lines.empty()) {
+        layout.height =
+            naturalLineHeight +
+            static_cast<float>(layout.lines.size() - 1) * lineAdvance;
     }
     return layout;
 }

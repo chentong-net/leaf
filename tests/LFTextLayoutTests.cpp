@@ -42,6 +42,8 @@ LFTextLayout buildLayout(std::string_view text, float wrapWidth, int maxLines = 
     options.wrapWidth = wrapWidth;
     options.maxLines = maxLines;
     options.lineAdvance = 20.0f;
+    options.naturalLineHeight = 14.0f;
+    options.firstBaseline = 11.0f;
     return LFTextLayoutBuilder::build(text, options, fixedMeasure);
 }
 
@@ -58,6 +60,10 @@ void testLatinWordWrapping() {
         expect(lineText(text, layout.lines[0]) == "alpha", "first Latin line");
         expect(lineText(text, layout.lines[1]) == "beta", "second Latin line");
         expect(lineText(text, layout.lines[2]) == "gamma", "third Latin line");
+        expect(std::fabs(layout.height - 54.0f) < 0.001f,
+               "trimmed height keeps inter-line advance only");
+        expect(std::fabs(layout.firstBaseline - 11.0f) < 0.001f,
+               "layout exposes the first baseline");
     }
 }
 
@@ -116,6 +122,8 @@ void testExplicitEmptyLines() {
         expect(lineText(text, layout.lines[0]) == "a", "first explicit line");
         expect(layout.lines[1].begin == layout.lines[1].end, "blank line offsets");
         expect(lineText(text, layout.lines[2]) == "b", "last explicit line");
+        expect(std::fabs(layout.height - 54.0f) < 0.001f,
+               "empty lines retain inter-line advance");
     }
 }
 
@@ -125,6 +133,8 @@ void testMaxLinesAndTruncation() {
 
     expect(layout.lines.size() == 2, "maxLines should limit line count");
     expect(layout.truncated, "maxLines should report truncation");
+    expect(std::fabs(layout.height - 34.0f) < 0.001f,
+           "maxLines excludes trailing external leading");
 }
 
 void testLongWordEmergencyWrap() {

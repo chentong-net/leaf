@@ -35,6 +35,8 @@ struct LFTextLayoutOptions {
     float wrapWidth = std::numeric_limits<float>::infinity();
     int maxLines = 0;
     float lineAdvance = 1.0f;
+    float naturalLineHeight = 0.0f;
+    float firstBaseline = 0.0f;
 };
 
 /**
@@ -65,6 +67,7 @@ struct LFTextLayout {
     float width = 0.0f;
     float height = 0.0f;
     float lineAdvance = 0.0f;
+    float firstBaseline = 0.0f;
     bool truncated = false;
 
     bool empty() const { return lines.empty(); }

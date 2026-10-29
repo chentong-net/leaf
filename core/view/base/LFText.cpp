@@ -233,16 +233,26 @@ std::shared_ptr<const LFTextLayout> getTextLayout(
     nvgTextLineHeight(vg, key.lineHeight);
     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
 
+    float ascender = 0.0f;
+    float descender = 0.0f;
     float naturalLineHeight = 0.0f;
-    nvgTextMetrics(vg, nullptr, nullptr, &naturalLineHeight);
+    nvgTextMetrics(vg, &ascender, &descender, &naturalLineHeight);
     if (!std::isfinite(naturalLineHeight) || naturalLineHeight <= 0.0f) {
         naturalLineHeight = std::max(1.0f, fontSize);
+    }
+    if (!std::isfinite(ascender) || ascender <= 0.0f) {
+        ascender = naturalLineHeight;
+    }
+    if (!std::isfinite(descender) || descender > 0.0f) {
+        descender = ascender - naturalLineHeight;
     }
 
     LFTextLayoutOptions options;
     options.wrapWidth = effectiveWrapWidth;
     options.maxLines = key.maxLines;
     options.lineAdvance = std::max(1.0f, naturalLineHeight * key.lineHeight);
+    options.naturalLineHeight = naturalLineHeight;
+    options.firstBaseline = ascender;
 
     auto layout = std::make_shared<LFTextLayout>(
         LFTextLayoutBuilder::build(
@@ -438,9 +448,10 @@ void LFText::onDrawContent(NVGcontext* vg) {
     nvgFontFace(vg, resolvedFontFamily);
     nvgFontSize(vg, m_fontSize);
     nvgTextLineHeight(vg, m_lineHeight);
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
     nvgFillColor(vg, colorToNVG(m_textColor));
 
+    const float firstBaseline = drawY + layout->firstBaseline;
     const float pixelRatio = std::max(0.01f, LFEngine::getInstance().getPixelRatio());
     const LFTextLayoutAlign layoutAlign = toLayoutAlign(m_textHAlign);
     for (size_t index = 0; index < layout->lines.size(); ++index) {
@@ -453,7 +464,8 @@ void LFText::onDrawContent(NVGcontext* vg) {
             line.resolveOriginX(contentX, contentWidth, layoutAlign),
             pixelRatio
         );
-        const float lineY = drawY + static_cast<float>(index) * layout->lineAdvance;
+        const float lineY =
+            firstBaseline + static_cast<float>(index) * layout->lineAdvance;
         nvgText(
             vg,
             originX,
