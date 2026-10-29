@@ -6,7 +6,7 @@ if (NOT TARGET path-provider)
     message(FATAL_ERROR "i18n requires path-provider target")
 endif()
 
-if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP")
+if (LEAF_PLATFORM_DEF STREQUAL "WINDOWS" OR LEAF_PLATFORM_DEF STREQUAL "MACOS")
     add_library(i18n STATIC
             LFI18n.cpp
             LFI18nManager.cpp

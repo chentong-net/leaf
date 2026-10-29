@@ -2,16 +2,14 @@ if (NOT TARGET leaf-core)
     message(FATAL_ERROR "audio-player requires leaf-core target")
 endif()
 
-if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP")
-    if (WIN32)
-        add_library(audio-player STATIC
-                desktop/LFAudioPlayerDesktop.cpp
-        )
-    elseif (APPLE)
-        add_library(audio-player STATIC
-                desktop/LFAudioPlayerDesktopMac.mm
-        )
-    endif()
+if (LEAF_PLATFORM_DEF STREQUAL "WINDOWS")
+    add_library(audio-player STATIC
+            desktop/LFAudioPlayerDesktop.cpp
+    )
+elseif (LEAF_PLATFORM_DEF STREQUAL "MACOS")
+    add_library(audio-player STATIC
+            desktop/LFAudioPlayerDesktopMac.mm
+    )
 elseif (LEAF_PLATFORM_DEF STREQUAL "ANDROID")
     add_library(audio-player STATIC
             LFAudioPlayer.cpp
@@ -34,7 +32,7 @@ target_link_libraries(audio-player
         leaf-core
 )
 
-if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP" AND WIN32)
+if (LEAF_PLATFORM_DEF STREQUAL "WINDOWS")
     target_link_libraries(audio-player
             PRIVATE
             winmm
@@ -43,7 +41,7 @@ if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP" AND WIN32)
     )
 endif()
 
-if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP" AND APPLE)
+if (LEAF_PLATFORM_DEF STREQUAL "MACOS")
     set_target_properties(audio-player PROPERTIES
             COMPILE_FLAGS "-fobjc-arc"
     )
