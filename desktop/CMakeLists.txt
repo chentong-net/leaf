@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project("leaf-desktop")
 
-add_compile_definitions(__DESKTOP__)
+add_compile_definitions(LEAF_USE_GL3)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
@@ -19,6 +19,7 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(${GLFW_DIR} glfw_build)
 
 set(LEAF_PLATFORM_DEF "DESKTOP")
+set(LEAF_USE_GL3 ON)
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
 add_subdirectory(${APPLICATION_DIR} application_build)
 

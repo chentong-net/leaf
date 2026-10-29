@@ -61,7 +61,7 @@ set(LEAF_CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/LFEngine.cpp
 )
 
-if(LEAF_PLATFORM_DEF STREQUAL "DESKTOP")
+if(LEAF_USE_GL3)
     list(APPEND LEAF_CORE_SOURCES
             ${GLAD_DIR}/glad.c
     )
@@ -77,7 +77,7 @@ target_include_directories(leaf-core
         ${YOGA_DIR}
 )
 
-if (LEAF_PLATFORM_DEF STREQUAL "DESKTOP")
+if(LEAF_USE_GL3)
     target_include_directories(leaf-core PUBLIC
             ${GLAD_DIR}
     )

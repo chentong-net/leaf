@@ -13,7 +13,7 @@
 #define LF_LOGI(...) emscripten_log(EM_LOG_CONSOLE, "[Leaf]: " __VA_ARGS__)
 #endif
 
-#if defined(__APPLE__) && !defined(__DESKTOP__)
+#if defined(__APPLE__)
 #include <TargetConditionals.h>
 #if TARGET_OS_IPHONE
 #include <OpenGLES/ES3/gl.h>
@@ -23,7 +23,7 @@
 #endif
 #endif
 
-#ifdef __DESKTOP__
+#ifdef LEAF_USE_GL3
 #include "glad.h"
 #include <cstdio>
 #define LF_LOGI(...) printf("[Leaf]: " __VA_ARGS__); printf("\n")

@@ -6,7 +6,7 @@
 #include "LFEngine.h"
 
 extern "C" {
-#if defined(__DESKTOP__)
+#if defined(LEAF_USE_GL3)
 int nvglCreateImageFromHandleGL3(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
 #else
 int nvglCreateImageFromHandleGLES3(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
@@ -97,7 +97,7 @@ void LFTexture::ensureTexture(NVGcontext* vg) {
     }
 
     int imageHandle = 0;
-#if defined(__DESKTOP__)
+#if defined(LEAF_USE_GL3)
     imageHandle = nvglCreateImageFromHandleGL3(vg, texture, m_textureWidth, m_textureHeight, 0);
 #else
     imageHandle = nvglCreateImageFromHandleGLES3(vg, texture, m_textureWidth, m_textureHeight, 0);
