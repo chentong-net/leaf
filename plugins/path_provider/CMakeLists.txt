@@ -2,9 +2,13 @@ if (NOT TARGET leaf-core)
     message(FATAL_ERROR "path-provider requires leaf-core target")
 endif()
 
-if (LEAF_PLATFORM_DEF STREQUAL "WINDOWS" OR LEAF_PLATFORM_DEF STREQUAL "MACOS")
+if (LEAF_PLATFORM_DEF STREQUAL "WINDOWS")
     add_library(path-provider STATIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/desktop/LFPathProviderDesktop.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/windows/LFPathProviderWindows.cpp
+    )
+elseif (LEAF_PLATFORM_DEF STREQUAL "MACOS")
+    add_library(path-provider STATIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/macos/LFPathProviderMacOS.cpp
     )
 elseif (LEAF_PLATFORM_DEF STREQUAL "WEB")
     add_library(path-provider STATIC
