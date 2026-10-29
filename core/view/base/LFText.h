@@ -7,6 +7,9 @@
 
 #include "view/base/LFNode.h"
 
+/**
+* Center表示按字形着墨边界进行视觉居中
+*/
 enum class LFTextHAlign { Left, Center, Right };
 enum class LFTextVAlign { Top, Center, Bottom };
 
@@ -46,9 +49,6 @@ private:
     // Yoga 测量回调函数
     static YGSize measure(YGNodeRef node, float width, YGMeasureMode widthMode,
                           float height, YGMeasureMode heightMode);
-    void invalidateWrapCache();
-    const std::string& getWrappedText(NVGcontext* vg, float wrapWidth);
-
     // 成员变量
     std::string m_text;
     float m_fontSize = 16.0f;
@@ -59,9 +59,6 @@ private:
     LFTextVAlign m_textVAlign = LFTextVAlign::Top;
     int m_maxLines = 0;
     bool m_hasMaxLinesConfigured = false;
-    std::string m_wrappedTextCache;
-    float m_wrappedWidthCache = -1.0f;
-    bool m_wrapCacheValid = false;
 
     // 静态测量上下文
     static NVGcontext* s_measureContext;

@@ -114,6 +114,7 @@ public:
 
     float getWindowWidth() const { return m_windowWidth; }
     float getWindowHeight() const { return m_windowHeight; }
+    float getPixelRatio() const { return m_pixelRatio; }
 
     /**
      * 注册一个任务到主循环

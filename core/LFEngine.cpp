@@ -76,13 +76,13 @@ void LFEngine::render() {
     int phyHeight = (int)(m_windowHeight * m_pixelRatio);
     glViewport(0, 0, phyWidth, phyHeight);
 
+    // 先建立本帧的NanoVG上下文，确保文本测量和绘制使用相同的DPR
+    nvgBeginFrame(m_vg, m_windowWidth, m_windowHeight, m_pixelRatio);
+
     // 布局
     // Yoga内部有缓存机制，如果根节点没有markDirty，calculateLayout几乎无消耗
     // 所以每帧调用是安全的，确保布局始终正确
     m_rootNode->calculateLayout(m_windowWidth, m_windowHeight);
-
-    // 绘制
-    nvgBeginFrame(m_vg, m_windowWidth, m_windowHeight, m_pixelRatio);
 
     m_rootNode->render(m_vg);
 

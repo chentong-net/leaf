@@ -3,98 +3,279 @@
 //
 
 #include "view/base/LFText.h"
-#include <cmath>
 
-// 初始化静态成员
-NVGcontext *LFText::s_measureContext = nullptr;
+#include "LFEngine.h"
+#include "text/LFTextLayout.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <functional>
+#include <iterator>
+#include <limits>
+#include <list>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <utility>
+
+NVGcontext* LFText::s_measureContext = nullptr;
+
+namespace {
+
+constexpr size_t kLayoutCacheCapacity = 128;
+
+struct LayoutCacheKey {
+    std::string text;
+    int fontId = -1;
+    float fontSize = 0.0f;
+    float lineHeight = 0.0f;
+    float wrapWidth = 0.0f;
+    float pixelRatio = 1.0f;
+    int maxLines = 0;
+
+    bool operator==(const LayoutCacheKey& other) const {
+        return text == other.text &&
+               fontId == other.fontId &&
+               fontSize == other.fontSize &&
+               lineHeight == other.lineHeight &&
+               wrapWidth == other.wrapWidth &&
+               pixelRatio == other.pixelRatio &&
+               maxLines == other.maxLines;
+    }
+};
+
+void hashCombine(size_t& seed, size_t value) {
+    seed ^= value + 0x9E3779B97F4A7C15ULL + (seed << 6) + (seed >> 2);
+}
+
+struct LayoutCacheKeyHash {
+    size_t operator()(const LayoutCacheKey& key) const {
+        size_t seed = std::hash<std::string>{}(key.text);
+        hashCombine(seed, std::hash<int>{}(key.fontId));
+        hashCombine(seed, std::hash<float>{}(key.fontSize));
+        hashCombine(seed, std::hash<float>{}(key.lineHeight));
+        hashCombine(seed, std::hash<float>{}(key.wrapWidth));
+        hashCombine(seed, std::hash<float>{}(key.pixelRatio));
+        hashCombine(seed, std::hash<int>{}(key.maxLines));
+        return seed;
+    }
+};
+
+struct LayoutCacheEntry {
+    std::shared_ptr<const LFTextLayout> layout;
+    std::list<std::string>::iterator recency;
+};
+
+class TextLayoutCache {
+public:
+    std::shared_ptr<const LFTextLayout> get(const LayoutCacheKey& key) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = m_entries.find(key);
+        if (it == m_entries.end()) {
+            return nullptr;
+        }
+        m_recency.splice(m_recency.begin(), m_recency, it->second.recency);
+        return it->second.layout;
+    }
+
+    void put(const LayoutCacheKey& key, std::shared_ptr<const LFTextLayout> layout) {
+        if (!layout) return;
+
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto existing = m_entries.find(key);
+        if (existing != m_entries.end()) {
+            existing->second.layout = std::move(layout);
+            m_recency.splice(m_recency.begin(), m_recency, existing->second.recency);
+            return;
+        }
+
+        m_recency.push_front(key.text);
+        m_entries.emplace(key, LayoutCacheEntry{std::move(layout), m_recency.begin()});
+        while (m_entries.size() > kLayoutCacheCapacity && !m_recency.empty()) {
+            const auto oldest = std::prev(m_recency.end());
+            for (auto entry = m_entries.begin(); entry != m_entries.end(); ++entry) {
+                if (entry->second.recency == oldest) {
+                    m_entries.erase(entry);
+                    break;
+                }
+            }
+            m_recency.erase(oldest);
+        }
+    }
+
+private:
+    std::mutex m_mutex;
+    std::list<std::string> m_recency;
+    std::unordered_map<LayoutCacheKey, LayoutCacheEntry, LayoutCacheKeyHash> m_entries;
+};
+
+TextLayoutCache& getTextLayoutCache() {
+    static TextLayoutCache cache;
+    return cache;
+}
+
+float sanitizeLineHeight(float lineHeight) {
+    return std::isfinite(lineHeight) && lineHeight > 0.0f ? lineHeight : 1.0f;
+}
+
+float sanitizeEdge(float value) {
+    if (!std::isfinite(value) || YGFloatIsUndefined(value)) {
+        return 0.0f;
+    }
+    return std::max(0.0f, value);
+}
+
+float snapToPixel(float value, float pixelRatio) {
+    if (!std::isfinite(value) || !std::isfinite(pixelRatio) || pixelRatio <= 0.0f) {
+        return value;
+    }
+    return std::round(value * pixelRatio) / pixelRatio;
+}
+
+float canonicalizeWidth(float width, float pixelRatio) {
+    if (!std::isfinite(width)) {
+        return width;
+    }
+    return snapToPixel(std::max(0.0f, width), pixelRatio);
+}
+
+float reserveOneDevicePixel(float value, float pixelRatio) {
+    if (!std::isfinite(value) || !std::isfinite(pixelRatio) || pixelRatio <= 0.0f) {
+        return value;
+    }
+    return std::ceil((std::max(0.0f, value) + 1.0f / pixelRatio) * pixelRatio) /
+           pixelRatio;
+}
+
+LFTextLayoutAlign toLayoutAlign(LFTextHAlign align) {
+    switch (align) {
+        case LFTextHAlign::Center:
+            return LFTextLayoutAlign::Center;
+        case LFTextHAlign::Right:
+            return LFTextLayoutAlign::Right;
+        case LFTextHAlign::Left:
+        default:
+            return LFTextLayoutAlign::Left;
+    }
+}
+
+const char* resolveFontFamily(NVGcontext* vg, const std::string& fontFamily) {
+    if (!vg) {
+        return nullptr;
+    }
+    if (nvgFindFont(vg, fontFamily.c_str()) >= 0) {
+        return fontFamily.c_str();
+    }
+    return nvgFindFont(vg, "sans") >= 0 ? "sans" : nullptr;
+}
+
+LFTextLineMetrics measureLine(NVGcontext* vg, std::string_view text) {
+    LFTextLineMetrics metrics;
+    if (!vg || text.empty()) {
+        return metrics;
+    }
+
+    float bounds[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    metrics.advance = nvgTextBounds(
+        vg,
+        0.0f,
+        0.0f,
+        text.data(),
+        text.data() + text.size(),
+        bounds
+    );
+    metrics.inkMinX = bounds[0];
+    metrics.inkMaxX = bounds[2];
+    return metrics;
+}
+
+std::shared_ptr<const LFTextLayout> getTextLayout(
+        NVGcontext* vg,
+        const std::string& text,
+        const std::string& fontFamily,
+        float fontSize,
+        float lineHeight,
+        float wrapWidth,
+        int maxLines) {
+    if (!vg || text.empty()) {
+        return nullptr;
+    }
+
+    const char* resolvedFontFamily = resolveFontFamily(vg, fontFamily);
+    if (!resolvedFontFamily) {
+        return nullptr;
+    }
+
+    const int fontId = nvgFindFont(vg, resolvedFontFamily);
+    const float pixelRatio = std::max(0.01f, LFEngine::getInstance().getPixelRatio());
+    const float effectiveWrapWidth = canonicalizeWidth(wrapWidth, pixelRatio);
+
+    LayoutCacheKey key;
+    key.text = text;
+    key.fontId = fontId;
+    key.fontSize = fontSize;
+    key.lineHeight = sanitizeLineHeight(lineHeight);
+    key.wrapWidth = effectiveWrapWidth;
+    key.pixelRatio = pixelRatio;
+    key.maxLines = std::max(0, maxLines);
+
+    auto& cache = getTextLayoutCache();
+    if (auto cached = cache.get(key)) {
+        return cached;
+    }
+
+    nvgSave(vg);
+    nvgFontFace(vg, resolvedFontFamily);
+    nvgFontSize(vg, fontSize);
+    nvgTextLineHeight(vg, key.lineHeight);
+    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+
+    float naturalLineHeight = 0.0f;
+    nvgTextMetrics(vg, nullptr, nullptr, &naturalLineHeight);
+    if (!std::isfinite(naturalLineHeight) || naturalLineHeight <= 0.0f) {
+        naturalLineHeight = std::max(1.0f, fontSize);
+    }
+
+    LFTextLayoutOptions options;
+    options.wrapWidth = effectiveWrapWidth;
+    options.maxLines = key.maxLines;
+    options.lineAdvance = std::max(1.0f, naturalLineHeight * key.lineHeight);
+
+    auto layout = std::make_shared<LFTextLayout>(
+        LFTextLayoutBuilder::build(
+            text,
+            options,
+            [vg](std::string_view line) {
+                return measureLine(vg, line);
+            }
+        )
+    );
+    nvgRestore(vg);
+
+    cache.put(key, layout);
+    return layout;
+}
+
+} // namespace
 
 LFText::LFText() {
-    // 开启 Yoga 的测量功能
-    // 只有叶子节点（如 Text, Image）才需要自定义 MeasureFunc
     YGNodeSetMeasureFunc(getYGNode(), LFText::measure);
 }
 
-void LFText::invalidateWrapCache() {
-    m_wrapCacheValid = false;
-    m_wrappedWidthCache = -1.0f;
-    m_wrappedTextCache.clear();
-}
-
-const std::string& LFText::getWrappedText(NVGcontext* vg, float wrapWidth) {
-    if (m_text.empty() || !vg || wrapWidth <= 0.0f) {
-        return m_text;
-    }
-
-    if (m_wrapCacheValid && std::fabs(m_wrappedWidthCache - wrapWidth) < 0.5f) {
-        return m_wrappedTextCache;
-    }
-
-    m_wrappedTextCache.clear();
-    m_wrappedTextCache.reserve(m_text.size() + 16);
-
-    constexpr int kBatchRows = 16;
-    NVGtextRow rows[kBatchRows];
-    const char* cursor = m_text.c_str();
-    int appendedLineCount = 0;
-
-    while (cursor && *cursor != '\0') {
-        int nrows = nvgTextBreakLines(vg, cursor, nullptr, wrapWidth, rows, kBatchRows);
-        if (nrows <= 0) break;
-
-        for (int i = 0; i < nrows; ++i) {
-            if (m_hasMaxLinesConfigured && m_maxLines > 0 && appendedLineCount >= m_maxLines) {
-                break;
-            }
-
-            const NVGtextRow& row = rows[i];
-            if (row.end > row.start) {
-                m_wrappedTextCache.append(row.start, static_cast<size_t>(row.end - row.start));
-            }
-            appendedLineCount++;
-
-            if ((!m_hasMaxLinesConfigured || m_maxLines <= 0) &&
-                row.next && *row.next != '\0') {
-                m_wrappedTextCache.push_back('\n');
-            } else if (m_hasMaxLinesConfigured && m_maxLines > 0) {
-                if (appendedLineCount < m_maxLines && row.next && *row.next != '\0') {
-                    m_wrappedTextCache.push_back('\n');
-                }
-            }
-        }
-
-        if (m_hasMaxLinesConfigured && m_maxLines > 0 && appendedLineCount >= m_maxLines) {
-            break;
-        }
-
-        const char* next = rows[nrows - 1].next;
-        if (!next || next == cursor) break;
-        cursor = next;
-    }
-
-    if (m_wrappedTextCache.empty()) {
-        m_wrappedTextCache = m_text;
-    }
-
-    m_wrapCacheValid = true;
-    m_wrappedWidthCache = wrapWidth;
-    return m_wrappedTextCache;
-}
-
-void LFText::setText(const std::string &text) {
+void LFText::setText(const std::string& text) {
     if (m_text == text) return;
     m_text = text;
-    invalidateWrapCache();
-    // 内容改变，必须标记 Yoga 节点为脏，触发重新测量 (Measure)
     YGNodeMarkDirty(getYGNode());
-    // 同时也标记自身为脏，触发重绘
     markDirty();
 }
 
 void LFText::setFontSize(float size) {
-    float safeSize = std::max(1.0f, size);
+    const float safeSize = std::max(1.0f, size);
     if (m_fontSize == safeSize) return;
     m_fontSize = safeSize;
-    invalidateWrapCache();
     YGNodeMarkDirty(getYGNode());
     markDirty();
 }
@@ -102,22 +283,20 @@ void LFText::setFontSize(float size) {
 void LFText::setTextColor(uint32_t color) {
     if (m_textColor == color) return;
     m_textColor = color;
-    // 颜色改变不影响布局，只需要重绘，所以不调 YGNodeMarkDirty
     markDirty();
 }
 
 void LFText::setLineHeight(float lineHeight) {
-    if (m_lineHeight == lineHeight) return;
-    m_lineHeight = lineHeight;
-    invalidateWrapCache();
+    const float safeLineHeight = sanitizeLineHeight(lineHeight);
+    if (m_lineHeight == safeLineHeight) return;
+    m_lineHeight = safeLineHeight;
     YGNodeMarkDirty(getYGNode());
     markDirty();
 }
 
-void LFText::setFontFamily(const std::string &family) {
+void LFText::setFontFamily(const std::string& family) {
     if (m_fontFamily == family) return;
     m_fontFamily = family;
-    invalidateWrapCache();
     YGNodeMarkDirty(getYGNode());
     markDirty();
 }
@@ -135,168 +314,154 @@ void LFText::setTextVAlign(LFTextVAlign align) {
 }
 
 void LFText::setMaxLines(int maxLines) {
-    int safeMaxLines = std::max(0, maxLines);
+    const int safeMaxLines = std::max(0, maxLines);
     if (m_hasMaxLinesConfigured && m_maxLines == safeMaxLines) return;
     m_maxLines = safeMaxLines;
     m_hasMaxLinesConfigured = true;
-    invalidateWrapCache();
     YGNodeMarkDirty(getYGNode());
     markDirty();
 }
 
-/**
- * 测量回调：告诉 Yoga 这段文字到底有多大
- */
 YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
                        float height, YGMeasureMode heightMode) {
+    (void)height;
+    (void)heightMode;
 
-    // 1. 获取上下文
-    // LFNode 在构造时传入的是 LFNode*，所以先转回 LFNode* 再转 LFText* 安全性最高
-    auto *baseNode = static_cast<LFNode *>(YGNodeGetContext(node));
-    auto *textNode = static_cast<LFText *>(baseNode);
-
-    NVGcontext *vg = s_measureContext;
-
+    auto* baseNode = static_cast<LFNode*>(YGNodeGetContext(node));
+    auto* textNode = static_cast<LFText*>(baseNode);
+    NVGcontext* vg = s_measureContext;
     if (!vg || !textNode || textNode->m_text.empty()) {
-        return {0, 0};
+        return {0.0f, 0.0f};
     }
 
-    // 计算 Padding 和 Border
-    float pl = YGNodeLayoutGetPadding(node, YGEdgeLeft);
-    float pr = YGNodeLayoutGetPadding(node, YGEdgeRight);
-    float pt = YGNodeLayoutGetPadding(node, YGEdgeTop);
-    float pb = YGNodeLayoutGetPadding(node, YGEdgeBottom);
+    float wrapWidth = std::numeric_limits<float>::infinity();
+    if (widthMode == YGMeasureModeExactly || widthMode == YGMeasureModeAtMost) {
+        wrapWidth = std::max(0.0f, width);
+    }
 
-    float bl = YGNodeLayoutGetBorder(node, YGEdgeLeft);
-    float br = YGNodeLayoutGetBorder(node, YGEdgeRight);
-    float bt = YGNodeLayoutGetBorder(node, YGEdgeTop);
-    float bb = YGNodeLayoutGetBorder(node, YGEdgeBottom);
+    const auto layout = getTextLayout(
+        vg,
+        textNode->m_text,
+        textNode->m_fontFamily,
+        textNode->m_fontSize,
+        textNode->m_lineHeight,
+        wrapWidth,
+        textNode->m_maxLines
+    );
+    if (!layout) {
+        return {0.0f, 0.0f};
+    }
 
-    float extraW = pl + pr + bl + br;
-    float extraH = pt + pb + bt + bb;
-
-    // 2. 准备测量环境
-    nvgSave(vg);
-    nvgFontSize(vg, textNode->m_fontSize);
-    nvgFontFace(vg, textNode->m_fontFamily.c_str());
-    nvgTextLineHeight(vg, textNode->m_lineHeight);
-
-    float bounds[4];
-    YGSize result = {0, 0};
-    const float WRAP_BUFFER = std::max(8.0f, textNode->m_fontSize * 0.1f); // 安全像素，避免浮点误差导致边界误判
-
-    // 统一以 LEFT|TOP 测量，再由外部逻辑处理对齐。
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-
-    if (!textNode->m_hasMaxLinesConfigured || textNode->m_maxLines <= 0) {
-        if (widthMode == YGMeasureModeExactly) {
-            // 宽度固定：计算在该宽度下的高度 (自动换行)
-            nvgTextBoxBounds(vg, 0, 0, width, textNode->m_text.c_str(), nullptr, bounds);
-            result.width = width;
-            result.height = (float) ceil(bounds[3] - bounds[1]);
-        } else if (widthMode == YGMeasureModeAtMost) {
-            // 宽度受限 (最大不能超过 width)：尝试在该宽度下测量
-            nvgTextBoxBounds(vg, 0, 0, width, textNode->m_text.c_str(), nullptr, bounds);
-            result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
-            result.height = (float) ceil(bounds[3] - bounds[1]);
-        } else {
-            // 宽度无限：保留原始文本自然宽度测量
-            nvgTextBounds(vg, 0, 0, textNode->m_text.c_str(), nullptr, bounds);
-            result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
-            result.height = (float) ceil(bounds[3] - bounds[1]);
-        }
+    const float pixelRatio = std::max(0.01f, LFEngine::getInstance().getPixelRatio());
+    YGSize result{layout->width, layout->height};
+    if (widthMode == YGMeasureModeExactly) {
+        result.width = width;
     } else {
-        float measureWrapWidth = (widthMode == YGMeasureModeUndefined) ? 1000000.0f : width;
-        const std::string& visibleText = textNode->getWrappedText(vg, measureWrapWidth);
-        nvgTextBoxBounds(vg, 0, 0, measureWrapWidth, visibleText.c_str(), nullptr, bounds);
-
-        if (widthMode == YGMeasureModeExactly) {
-            result.width = width;
-        } else {
-            result.width = (float) ceil(bounds[2] - bounds[0]) + WRAP_BUFFER;
-        }
-        result.height = (float) ceil(bounds[3] - bounds[1]);
+        const float naturalWidth = reserveOneDevicePixel(layout->width, pixelRatio);
+        result.width = widthMode == YGMeasureModeAtMost
+                           ? std::min(width, naturalWidth)
+                           : naturalWidth;
     }
-
-    nvgRestore(vg);
-
-    result.width += extraW;
-    result.height += extraH;
+    result.height = reserveOneDevicePixel(layout->height, pixelRatio);
     return result;
 }
 
-void LFText::onDrawContent(NVGcontext *vg) {
-    if (m_text.empty()) return;
+void LFText::onDrawContent(NVGcontext* vg) {
+    if (m_text.empty() || !vg) return;
 
-    // 设置文本样式
-    nvgFontSize(vg, m_fontSize);
-    nvgFontFace(vg, m_fontFamily.c_str());
-    nvgFillColor(vg, LFNode::colorToNVG(m_textColor)); // 使用 LFNode 的静态工具需要加作用域，或者直接在 LFNode 里暴露 helper
-    nvgTextLineHeight(vg, m_lineHeight);
+    const float paddingLeft = sanitizeEdge(
+        YGNodeLayoutGetPadding(getYGNode(), YGEdgeLeft)
+    );
+    const float paddingTop = sanitizeEdge(
+        YGNodeLayoutGetPadding(getYGNode(), YGEdgeTop)
+    );
+    const float paddingRight = sanitizeEdge(
+        YGNodeLayoutGetPadding(getYGNode(), YGEdgeRight)
+    );
+    const float paddingBottom = sanitizeEdge(
+        YGNodeLayoutGetPadding(getYGNode(), YGEdgeBottom)
+    );
+    const float borderLeft = sanitizeEdge(
+        YGNodeLayoutGetBorder(getYGNode(), YGEdgeLeft)
+    );
+    const float borderTop = sanitizeEdge(
+        YGNodeLayoutGetBorder(getYGNode(), YGEdgeTop)
+    );
+    const float borderRight = sanitizeEdge(
+        YGNodeLayoutGetBorder(getYGNode(), YGEdgeRight)
+    );
+    const float borderBottom = sanitizeEdge(
+        YGNodeLayoutGetBorder(getYGNode(), YGEdgeBottom)
+    );
 
-    float paddingL = YGNodeLayoutGetPadding(getYGNode(), YGEdgeLeft);
-    float paddingT = YGNodeLayoutGetPadding(getYGNode(), YGEdgeTop);
-    float borderL = YGNodeLayoutGetBorder(getYGNode(), YGEdgeLeft);
-    float borderT = YGNodeLayoutGetBorder(getYGNode(), YGEdgeTop);
-
-    // 内容区域的左上角
-    float contentX = paddingL + borderL;
-    float contentY = paddingT + borderT;
-
-    // 内容区域的可用宽度
-    float layoutW = getLayoutWidth();
-    float layoutH = getLayoutHeight();
-    float contentW = layoutW - contentX - YGNodeLayoutGetPadding(getYGNode(), YGEdgeRight) -
-                     YGNodeLayoutGetBorder(getYGNode(), YGEdgeRight);
-    float contentH = layoutH - contentY - YGNodeLayoutGetPadding(getYGNode(), YGEdgeBottom) - YGNodeLayoutGetBorder(getYGNode(), YGEdgeBottom);
-
-    if (contentW <= 0) return;
-
-    // 分行前固定使用 LEFT|TOP，避免受外部对齐状态影响。
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-
-    // 生成内部换行缓存文本（不修改 m_text 原始内容）
-    const std::string& wrappedText = getWrappedText(vg, contentW);
-
-    // 根据对齐方式计算绘制锚点
-    int alignFlag;
-    switch (m_textHAlign) {
-        case LFTextHAlign::Left:
-            alignFlag = NVG_ALIGN_LEFT;
-            break;
-        case LFTextHAlign::Center:
-            alignFlag = NVG_ALIGN_CENTER;
-            break;
-        case LFTextHAlign::Right:
-            alignFlag = NVG_ALIGN_RIGHT;
-            break;
+    const float contentX = paddingLeft + borderLeft;
+    const float contentY = paddingTop + borderTop;
+    const float contentWidth = getLayoutWidth() - contentX - paddingRight - borderRight;
+    const float contentHeight = getLayoutHeight() - contentY - paddingBottom - borderBottom;
+    if (contentWidth < 0.0f || contentHeight < 0.0f) {
+        return;
     }
 
-    // 先测量文本总高度，再计算 Y 偏移
-    float bounds[4];
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP); // 测量时总是用 Top
-    nvgTextBoxBounds(vg, 0, 0, contentW, wrappedText.c_str(), nullptr, bounds);
-    float textHeight = bounds[3] - bounds[1];
-    // 根据对齐方式计算 Y 轴偏移量
+    const auto layout = getTextLayout(
+        vg,
+        m_text,
+        m_fontFamily,
+        m_fontSize,
+        m_lineHeight,
+        contentWidth,
+        m_maxLines
+    );
+    if (!layout || layout->empty()) {
+        return;
+    }
+
     float drawY = contentY;
     switch (m_textVAlign) {
-        case LFTextVAlign::Top:
-            drawY = contentY;
-            break;
         case LFTextVAlign::Center:
-            // 居中公式：起始点 + (容器高 - 内容高)/2
-            drawY = contentY + (contentH - textHeight) * 0.5f;
+            drawY = contentY + (contentHeight - layout->height) * 0.5f;
             break;
         case LFTextVAlign::Bottom:
-            // 底部公式：起始点 + (容器高 - 内容高)
-            drawY = contentY + (contentH - textHeight);
+            drawY = contentY + contentHeight - layout->height;
+            break;
+        case LFTextVAlign::Top:
+        default:
+            drawY = contentY;
             break;
     }
 
-    // 应用对齐并绘制
-    // 均以 Top 为基准
-    nvgTextAlign(vg, alignFlag | NVG_ALIGN_TOP);
+    const char* resolvedFontFamily = resolveFontFamily(vg, m_fontFamily);
+    if (!resolvedFontFamily) {
+        return;
+    }
 
-    // 使用缓存文本绘制，换行点已提前固定为 '\n'，规避自动换行偏差。
-    nvgTextBox(vg, contentX, drawY, contentW, wrappedText.c_str(), nullptr);
+    nvgSave(vg);
+    nvgFontFace(vg, resolvedFontFamily);
+    nvgFontSize(vg, m_fontSize);
+    nvgTextLineHeight(vg, m_lineHeight);
+    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+    nvgFillColor(vg, colorToNVG(m_textColor));
+
+    const float pixelRatio = std::max(0.01f, LFEngine::getInstance().getPixelRatio());
+    const LFTextLayoutAlign layoutAlign = toLayoutAlign(m_textHAlign);
+    for (size_t index = 0; index < layout->lines.size(); ++index) {
+        const LFTextLine& line = layout->lines[index];
+        if (line.begin >= line.end || line.end > m_text.size()) {
+            continue;
+        }
+
+        const float originX = snapToPixel(
+            line.resolveOriginX(contentX, contentWidth, layoutAlign),
+            pixelRatio
+        );
+        const float lineY = drawY + static_cast<float>(index) * layout->lineAdvance;
+        nvgText(
+            vg,
+            originX,
+            lineY,
+            m_text.data() + line.begin,
+            m_text.data() + line.end
+        );
+    }
+
+    nvgRestore(vg);
 }
