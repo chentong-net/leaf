@@ -2,10 +2,15 @@ if (NOT TARGET leaf-core)
     message(FATAL_ERROR "local-time requires leaf-core target")
 endif()
 
-if (LEAF_PLATFORM_DEF STREQUAL "WINDOWS" OR LEAF_PLATFORM_DEF STREQUAL "MACOS")
+if (LEAF_PLATFORM_DEF STREQUAL "WINDOWS")
     add_library(local-time STATIC
             LFLocalTime.cpp
-            desktop/LFLocalTimePlatformDesktop.cpp
+            windows/LFLocalTimePlatformWindows.cpp
+    )
+elseif (LEAF_PLATFORM_DEF STREQUAL "MACOS")
+    add_library(local-time STATIC
+            LFLocalTime.cpp
+            macos/LFLocalTimePlatformMacOS.cpp
     )
 else()
     add_library(local-time STATIC

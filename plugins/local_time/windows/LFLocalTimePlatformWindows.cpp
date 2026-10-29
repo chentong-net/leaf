@@ -1,12 +1,8 @@
 #include "LFLocalTimePlatform.h"
 
-#include <cstdlib>
-#include <filesystem>
 #include <unordered_map>
 
-#if defined(_WIN32)
 #include <windows.h>
-#endif
 
 namespace {
 
@@ -34,21 +30,20 @@ std::string normalizeTimezoneValue(std::string value) {
     return value;
 }
 
-#if defined(_WIN32)
 std::string wideToUtf8(const std::wstring& wide) {
     if (wide.empty()) {
         return "";
     }
 
     const int utf8Count = WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        wide.c_str(),
-        static_cast<int>(wide.size()),
-        nullptr,
-        0,
-        nullptr,
-        nullptr
+            CP_UTF8,
+            0,
+            wide.c_str(),
+            static_cast<int>(wide.size()),
+            nullptr,
+            0,
+            nullptr,
+            nullptr
     );
     if (utf8Count <= 0) {
         return "";
@@ -56,19 +51,18 @@ std::string wideToUtf8(const std::wstring& wide) {
 
     std::string utf8(static_cast<size_t>(utf8Count), '\0');
     const int converted = WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        wide.c_str(),
-        static_cast<int>(wide.size()),
-        utf8.data(),
-        utf8Count,
-        nullptr,
-        nullptr
+            CP_UTF8,
+            0,
+            wide.c_str(),
+            static_cast<int>(wide.size()),
+            utf8.data(),
+            utf8Count,
+            nullptr,
+            nullptr
     );
     if (converted <= 0) {
         return "";
     }
-
     return utf8;
 }
 
@@ -114,58 +108,24 @@ std::string mapWindowsTimezoneToIana(const std::string& windowsZone) {
         {"W. Europe Standard Time", "Europe/Berlin"}
     };
 
-    auto it = kWindowsToIana.find(windowsZone);
+    const auto it = kWindowsToIana.find(windowsZone);
     if (it != kWindowsToIana.end()) {
         return it->second;
     }
 
-    // TODO: Replace this curated Windows -> IANA list with a complete CLDR mapping.
+    // TODO: 替换为完整的CLDR映射
     return windowsZone;
-}
-#endif
-
-std::string resolvePosixTimezone() {
-    const char* tzValue = std::getenv("TZ");
-    if (tzValue && tzValue[0]) {
-        return normalizeTimezoneValue(tzValue);
-    }
-
-    std::error_code ec;
-    const std::filesystem::path localtimePath = std::filesystem::read_symlink("/etc/localtime", ec);
-    if (!ec && !localtimePath.empty()) {
-        const std::string normalized = normalizeTimezoneValue(localtimePath.string());
-        if (!normalized.empty()) {
-            return normalized;
-        }
-    }
-
-#if defined(__APPLE__) || defined(__linux__)
-    std::time_t now = std::time(nullptr);
-    std::tm localTm{};
-#if defined(_WIN32)
-    if (localtime_s(&localTm, &now) == 0 && localTm.tm_zone) {
-        return localTm.tm_zone;
-    }
-#else
-    if (localtime_r(&now, &localTm) != nullptr && localTm.tm_zone) {
-        return localTm.tm_zone;
-    }
-#endif
-#endif
-
-    return "";
 }
 
 } // namespace
 
-void LFLocalTimePlatform::getTimezone(LFLocalTimePlatformTimezoneCallback callback) {
+void LFLocalTimePlatform::getTimezone(
+        LFLocalTimePlatformTimezoneCallback callback) {
     if (!callback) {
         return;
     }
 
     LFLocalTimePlatformTimezoneResult result;
-
-#if defined(_WIN32)
     DYNAMIC_TIME_ZONE_INFORMATION timeZoneInfo{};
     const DWORD status = GetDynamicTimeZoneInformation(&timeZoneInfo);
     if (status != TIME_ZONE_ID_INVALID) {
@@ -174,13 +134,11 @@ void LFLocalTimePlatform::getTimezone(LFLocalTimePlatformTimezoneCallback callba
             rawTimezone = timeZoneInfo.StandardName;
         }
 
-        result.timezone = mapWindowsTimezoneToIana(normalizeTimezoneValue(wideToUtf8(rawTimezone)));
+        result.timezone = mapWindowsTimezoneToIana(
+                normalizeTimezoneValue(wideToUtf8(rawTimezone))
+        );
         result.ok = !result.timezone.empty();
     }
-#else
-    result.timezone = resolvePosixTimezone();
-    result.ok = !result.timezone.empty();
-#endif
 
     if (!result.ok) {
         result.error = "timezone_unavailable";
