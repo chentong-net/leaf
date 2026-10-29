@@ -34,6 +34,8 @@ LFTextLineMetrics fixedMeasure(std::string_view text) {
     metrics.advance = static_cast<float>(codepointCount(text)) * 10.0f;
     metrics.inkMinX = metrics.advance > 0.0f ? -1.0f : 0.0f;
     metrics.inkMaxX = metrics.advance > 0.0f ? metrics.advance - 2.0f : 0.0f;
+    metrics.inkMinY = 2.0f;
+    metrics.inkMaxY = 12.0f;
     return metrics;
 }
 
@@ -60,10 +62,10 @@ void testLatinWordWrapping() {
         expect(lineText(text, layout.lines[0]) == "alpha", "first Latin line");
         expect(lineText(text, layout.lines[1]) == "beta", "second Latin line");
         expect(lineText(text, layout.lines[2]) == "gamma", "third Latin line");
-        expect(std::fabs(layout.height - 54.0f) < 0.001f,
-               "trimmed height keeps inter-line advance only");
-        expect(std::fabs(layout.firstBaseline - 11.0f) < 0.001f,
-               "layout exposes the first baseline");
+        expect(std::fabs(layout.height - 50.0f) < 0.001f,
+               "ink height keeps inter-line advance only");
+        expect(std::fabs(layout.firstBaseline - 9.0f) < 0.001f,
+               "first baseline is offset to the visible ink top");
     }
 }
 
@@ -122,7 +124,7 @@ void testExplicitEmptyLines() {
         expect(lineText(text, layout.lines[0]) == "a", "first explicit line");
         expect(layout.lines[1].begin == layout.lines[1].end, "blank line offsets");
         expect(lineText(text, layout.lines[2]) == "b", "last explicit line");
-        expect(std::fabs(layout.height - 54.0f) < 0.001f,
+        expect(std::fabs(layout.height - 50.0f) < 0.001f,
                "empty lines retain inter-line advance");
     }
 }
@@ -133,8 +135,38 @@ void testMaxLinesAndTruncation() {
 
     expect(layout.lines.size() == 2, "maxLines should limit line count");
     expect(layout.truncated, "maxLines should report truncation");
-    expect(std::fabs(layout.height - 34.0f) < 0.001f,
-           "maxLines excludes trailing external leading");
+    expect(std::fabs(layout.height - 30.0f) < 0.001f,
+           "maxLines excludes ink exterior space");
+}
+
+void testInkHeightUsesAllLineExtents() {
+    LFTextLayoutOptions options;
+    options.wrapWidth = 100.0f;
+    options.lineAdvance = 20.0f;
+    options.naturalLineHeight = 14.0f;
+    options.firstBaseline = 11.0f;
+
+    const std::string text = "^\ng";
+    const LFTextLayout layout = LFTextLayoutBuilder::build(
+        text,
+        options,
+        [](std::string_view line) {
+            LFTextLineMetrics metrics = fixedMeasure(line);
+            if (line == "^") {
+                metrics.inkMinY = -3.0f;
+                metrics.inkMaxY = 8.0f;
+            } else if (line == "g") {
+                metrics.inkMinY = 4.0f;
+                metrics.inkMaxY = 18.0f;
+            }
+            return metrics;
+        }
+    );
+
+    expect(std::fabs(layout.height - 41.0f) < 0.001f,
+           "ink height includes the lowest visible line extent");
+    expect(std::fabs(layout.firstBaseline - 14.0f) < 0.001f,
+           "first baseline is shifted by ink above the font box");
 }
 
 void testLongWordEmergencyWrap() {
@@ -207,6 +239,7 @@ int main() {
     testCombiningMarkStaysWithBase();
     testExplicitEmptyLines();
     testMaxLinesAndTruncation();
+    testInkHeightUsesAllLineExtents();
     testLongWordEmergencyWrap();
     testOpticalCenterUsesInkBounds();
     testInvalidUtf8IsTolerated();

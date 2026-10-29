@@ -458,6 +458,12 @@ LFTextLineMetrics sanitizeMetrics(LFTextLineMetrics metrics) {
     if (!std::isfinite(metrics.inkMaxX) || metrics.inkMaxX < metrics.inkMinX) {
         metrics.inkMaxX = metrics.inkMinX;
     }
+    if (!std::isfinite(metrics.inkMinY)) {
+        metrics.inkMinY = 0.0f;
+    }
+    if (!std::isfinite(metrics.inkMaxY) || metrics.inkMaxY < metrics.inkMinY) {
+        metrics.inkMaxY = metrics.inkMinY;
+    }
     return metrics;
 }
 
@@ -479,6 +485,8 @@ LFTextLine makeLine(std::string_view text,
     line.advance = metrics.advance;
     line.inkMinX = metrics.inkMinX;
     line.inkMaxX = metrics.inkMaxX;
+    line.inkMinY = metrics.inkMinY;
+    line.inkMaxY = metrics.inkMaxY;
     return line;
 }
 
@@ -528,7 +536,7 @@ LFTextLayout LFTextLayoutBuilder::build(std::string_view text,
         std::isfinite(options.naturalLineHeight) && options.naturalLineHeight > 0.0f
             ? options.naturalLineHeight
             : lineAdvance;
-    const float firstBaseline =
+    const float fontFirstBaseline =
         std::isfinite(options.firstBaseline) && options.firstBaseline > 0.0f
             ? options.firstBaseline
             : naturalLineHeight;
@@ -539,12 +547,13 @@ LFTextLayout LFTextLayoutBuilder::build(std::string_view text,
     const int maxLines = std::max(0, options.maxLines);
     const std::vector<GraphemeUnit> units = buildGraphemeUnits(text);
     layout.lineAdvance = lineAdvance;
-    layout.firstBaseline = firstBaseline;
 
-    const auto appendEmptyLine = [&layout](size_t offset) {
+    const auto appendEmptyLine = [&layout, naturalLineHeight](size_t offset) {
         LFTextLine line;
         line.begin = offset;
         line.end = offset;
+        line.inkMinY = 0.0f;
+        line.inkMaxY = naturalLineHeight;
         layout.lines.push_back(line);
     };
 
@@ -666,9 +675,23 @@ LFTextLayout LFTextLayoutBuilder::build(std::string_view text,
     }
 
     if (!layout.lines.empty()) {
-        layout.height =
-            naturalLineHeight +
-            static_cast<float>(layout.lines.size() - 1) * lineAdvance;
+        float visibleTop = std::numeric_limits<float>::infinity();
+        float visibleBottom = -std::numeric_limits<float>::infinity();
+
+        for (size_t index = 0; index < layout.lines.size(); ++index) {
+            const LFTextLine& line = layout.lines[index];
+            const float lineOffset = static_cast<float>(index) * lineAdvance;
+            visibleTop = std::min(visibleTop, line.inkMinY + lineOffset);
+            visibleBottom = std::max(visibleBottom, line.inkMaxY + lineOffset);
+        }
+
+        if (std::isfinite(visibleTop) && std::isfinite(visibleBottom)) {
+            layout.height = std::max(0.0f, visibleBottom - visibleTop);
+            layout.firstBaseline = fontFirstBaseline - visibleTop;
+        } else {
+            layout.height = naturalLineHeight;
+            layout.firstBaseline = fontFirstBaseline;
+        }
     }
     return layout;
 }

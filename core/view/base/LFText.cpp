@@ -150,6 +150,13 @@ float reserveOneDevicePixel(float value, float pixelRatio) {
            pixelRatio;
 }
 
+float ceilToDevicePixel(float value, float pixelRatio) {
+    if (!std::isfinite(value) || !std::isfinite(pixelRatio) || pixelRatio <= 0.0f) {
+        return value;
+    }
+    return std::ceil(std::max(0.0f, value) * pixelRatio) / pixelRatio;
+}
+
 LFTextLayoutAlign toLayoutAlign(LFTextHAlign align) {
     switch (align) {
         case LFTextHAlign::Center:
@@ -179,7 +186,7 @@ LFTextLineMetrics measureLine(NVGcontext* vg, std::string_view text) {
     }
 
     float bounds[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    metrics.advance = nvgTextBounds(
+    metrics.advance = nvgTextInkBounds(
         vg,
         0.0f,
         0.0f,
@@ -189,6 +196,8 @@ LFTextLineMetrics measureLine(NVGcontext* vg, std::string_view text) {
     );
     metrics.inkMinX = bounds[0];
     metrics.inkMaxX = bounds[2];
+    metrics.inkMinY = bounds[1];
+    metrics.inkMaxY = bounds[3];
     return metrics;
 }
 
@@ -372,7 +381,7 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
                            ? std::min(width, naturalWidth)
                            : naturalWidth;
     }
-    result.height = reserveOneDevicePixel(layout->height, pixelRatio);
+    result.height = ceilToDevicePixel(layout->height, pixelRatio);
     return result;
 }
 

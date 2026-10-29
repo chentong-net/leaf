@@ -24,6 +24,8 @@ struct LFTextLineMetrics {
     float advance = 0.0f;
     float inkMinX = 0.0f;
     float inkMaxX = 0.0f;
+    float inkMinY = 0.0f;
+    float inkMaxY = 0.0f;
 };
 
 using LFTextMeasureLine = std::function<LFTextLineMetrics(std::string_view)>;
@@ -48,6 +50,8 @@ struct LFTextLine {
     float advance = 0.0f;
     float inkMinX = 0.0f;
     float inkMaxX = 0.0f;
+    float inkMinY = 0.0f;
+    float inkMaxY = 0.0f;
 
     float getInkWidth() const;
 
