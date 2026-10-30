@@ -1,11 +1,18 @@
+#ifndef LEAF_USE_METAL
 #define NANOVG_GLES3_IMPLEMENTATION
+#endif
 
 #import "LeafRenderer.h"
 #import "LFNativePluginBridge.h"
 
+#ifdef LEAF_USE_METAL
+#import <Metal/Metal.h>
+#import <QuartzCore/CAMetalLayer.h>
+#else
 #import <OpenGLES/EAGL.h>
 #import <OpenGLES/ES3/gl.h>
 #import <QuartzCore/CAEAGLLayer.h>
+#endif
 #import <QuartzCore/CADisplayLink.h>
 
 #include "LFEngine.h"
@@ -96,9 +103,13 @@ struct NativeKeyEvent {
 
 @interface LeafRenderer ()
 @property (nonatomic, weak) UIView* view;
+#ifdef LEAF_USE_METAL
+@property (nonatomic, strong) CAMetalLayer* metalLayer;
+#else
 - (void)setupOpenGLESContext;
 - (void)setupRenderBuffers;
 - (void)destroyRenderBuffers;
+#endif
 - (void)initializeEngineIfNeeded;
 - (void)drawFrame;
 - (void)processKeyInputEvents;
@@ -109,8 +120,10 @@ struct NativeKeyEvent {
 @end
 
 @implementation LeafRenderer {
+#ifdef LEAF_USE_METAL
+    CAMetalLayer* _metalLayer;
+#else
     EAGLContext* _glContext;
-    CADisplayLink* _displayLink;
 
     GLuint _frameBuffer;
     GLuint _colorBuffer;
@@ -118,7 +131,9 @@ struct NativeKeyEvent {
 
     GLint _backingWidth;
     GLint _backingHeight;
+#endif
 
+    CADisplayLink* _displayLink;
     NVGcontext* _vg;
     BOOL _engineInitialized;
     CFTimeInterval _lastFrameTimestamp;
@@ -136,19 +151,28 @@ struct NativeKeyEvent {
     if (!self) return nil;
 
     _view = view;
+#ifdef LEAF_USE_METAL
+    _metalLayer = (CAMetalLayer*)view.layer;
+    _metalLayer.device = MTLCreateSystemDefaultDevice();
+    _metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    _metalLayer.opaque = YES;
+#else
     _frameBuffer = 0;
     _colorBuffer = 0;
     _depthStencilBuffer = 0;
     _backingWidth = 0;
     _backingHeight = 0;
+#endif
     _vg = nullptr;
     _engineInitialized = NO;
     _lastFrameTimestamp = 0;
     _nextTouchId = 1;
     _lastTextInputFocused = NO;
 
+#ifndef LEAF_USE_METAL
     [self setupOpenGLESContext];
     [self setupRenderBuffers];
+#endif
     [self initializeEngineIfNeeded];
     [self resizeIfNeeded];
 
@@ -157,6 +181,12 @@ struct NativeKeyEvent {
 
 - (void)dealloc {
     [self stop];
+#ifdef LEAF_USE_METAL
+    if (_vg) {
+        nvgDeleteMTL(_vg);
+        _vg = nullptr;
+    }
+#else
     if (_glContext) {
         [EAGLContext setCurrentContext:_glContext];
     }
@@ -170,10 +200,12 @@ struct NativeKeyEvent {
     if ([EAGLContext currentContext] == _glContext) {
         [EAGLContext setCurrentContext:nil];
     }
+#endif
 
     [LFNativePluginBridge uninstall];
 }
 
+#ifndef LEAF_USE_METAL
 - (void)setupOpenGLESContext {
     CAEAGLLayer* glLayer = (CAEAGLLayer*)self.view.layer;
     glLayer.opaque = YES;
@@ -235,8 +267,19 @@ struct NativeKeyEvent {
         _frameBuffer = 0;
     }
 }
+#endif
 
 - (void)initializeEngineIfNeeded {
+#ifdef LEAF_USE_METAL
+    if (_engineInitialized || !_metalLayer) return;
+
+    int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES;
+    _vg = nvgCreateMTL((__bridge void*)_metalLayer, flags);
+    if (!_vg) {
+        LF_LOGI("LeafRenderer: failed to create NanoVG Metal context");
+        return;
+    }
+#else
     if (_engineInitialized || !_glContext) return;
     [EAGLContext setCurrentContext:_glContext];
 
@@ -246,6 +289,7 @@ struct NativeKeyEvent {
         LF_LOGI("LeafRenderer: failed to create NanoVG GLES3 context");
         return;
     }
+#endif
 
     LFEngine::getInstance().init(_vg);
     [LFNativePluginBridge install];
@@ -290,6 +334,17 @@ struct NativeKeyEvent {
 }
 
 - (void)resizeIfNeeded {
+#ifdef LEAF_USE_METAL
+    if (!_engineInitialized || CGRectIsEmpty(self.view.bounds)) return;
+
+    CGFloat scale = self.view.window.screen.scale ?: UIScreen.mainScreen.scale;
+    CGFloat logicalWidth = self.view.bounds.size.width;
+    CGFloat logicalHeight = self.view.bounds.size.height;
+    CGSize drawableSize = CGSizeMake(logicalWidth * scale, logicalHeight * scale);
+    _metalLayer.drawableSize = drawableSize;
+
+    LFEngine::getInstance().setWindowSize(logicalWidth, logicalHeight, scale);
+#else
     if (!_glContext || CGRectIsEmpty(self.view.bounds)) return;
     [EAGLContext setCurrentContext:_glContext];
 
@@ -298,9 +353,15 @@ struct NativeKeyEvent {
     CGFloat logicalWidth = self.view.bounds.size.width;
     CGFloat logicalHeight = self.view.bounds.size.height;
     LFEngine::getInstance().setWindowSize(logicalWidth, logicalHeight, scale);
+#endif
 }
 
 - (void)drawFrame {
+#ifdef LEAF_USE_METAL
+    if (!_engineInitialized || !_vg) return;
+
+    mnvgClearWithColor(_vg, nvgRGBA(0, 0, 0, 0));
+#else
     if (!_engineInitialized || !_glContext || _frameBuffer == 0) return;
 
     [EAGLContext setCurrentContext:_glContext];
@@ -309,6 +370,7 @@ struct NativeKeyEvent {
     glViewport(0, 0, _backingWidth, _backingHeight);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+#endif
 
     CFTimeInterval now = CACurrentMediaTime();
     float dt = _lastFrameTimestamp > 0 ? static_cast<float>(now - _lastFrameTimestamp) : (1.0f / 60.0f);
@@ -319,8 +381,10 @@ struct NativeKeyEvent {
     LFEngine::getInstance().render();
     [self syncTextInputFocusState];
 
+#ifndef LEAF_USE_METAL
     glBindRenderbuffer(GL_RENDERBUFFER, _colorBuffer);
     [_glContext presentRenderbuffer:GL_RENDERBUFFER];
+#endif
 }
 
 - (void)processKeyInputEvents {
