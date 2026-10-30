@@ -10,6 +10,7 @@
 
 // Forward declarations
 class LFTouchEvent;
+class LFScrollEvent;
 class LFKeyEvent;
 class LFNode;
 class LFGestureRecognizer;
@@ -41,6 +42,7 @@ public:
 
     // Event listener types
     using TouchEventListener = std::function<void(const LFTouchEvent&)>;
+    using ScrollEventListener = std::function<void(LFScrollEvent&)>;
     using InterceptEventListener = std::function<bool(const LFTouchEvent&)>;
     using KeyEventListener = std::function<void(LFKeyEvent&)>;
     using FocusChangeListener = std::function<void(bool)>;
@@ -155,6 +157,7 @@ public:
     void setOnTouchMove(TouchEventListener listener);
     void setOnTouchUp(TouchEventListener listener);
     void setOnTouchCancel(TouchEventListener listener);
+    void setOnScroll(ScrollEventListener listener);
     void setOnInterceptTouchEvent(InterceptEventListener listener);
     void setOnKeyDown(KeyEventListener listener);
     void setOnKeyUp(KeyEventListener listener);
@@ -172,6 +175,7 @@ public:
     TouchEventListener getOnTouchMove() const { return m_onTouchMove; }
     TouchEventListener getOnTouchUp() const { return m_onTouchUp; }
     TouchEventListener getOnTouchCancel() const { return m_onTouchCancel; }
+    ScrollEventListener getOnScroll() const { return m_onScroll; }
     InterceptEventListener getOnInterceptTouchEvent() const { return m_onInterceptTouchEvent; }
     KeyEventListener getOnKeyDown() const { return m_onKeyDown; }
     KeyEventListener getOnKeyUp() const { return m_onKeyUp; }
@@ -272,6 +276,7 @@ private:
     TouchEventListener m_onTouchMove;
     TouchEventListener m_onTouchUp;
     TouchEventListener m_onTouchCancel;
+    ScrollEventListener m_onScroll;
     InterceptEventListener m_onInterceptTouchEvent;
     KeyEventListener m_onKeyDown;
     KeyEventListener m_onKeyUp;

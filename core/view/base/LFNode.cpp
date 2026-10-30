@@ -441,6 +441,10 @@ void LFNode::setOnTouchCancel(TouchEventListener listener) {
     m_onTouchCancel = listener;
 }
 
+void LFNode::setOnScroll(ScrollEventListener listener) {
+    m_onScroll = listener;
+}
+
 void LFNode::setOnInterceptTouchEvent(InterceptEventListener listener) {
     m_onInterceptTouchEvent = listener;
 }
