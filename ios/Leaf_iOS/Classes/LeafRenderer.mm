@@ -320,7 +320,14 @@ struct NativeKeyEvent {
 
     _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(drawFrame)];
     if (@available(iOS 15.0, *)) {
-        _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(30, 60, 60);
+        UIScreen* screen = self.view.window.screen ?: UIScreen.mainScreen;
+        const float maximumFramesPerSecond =
+            static_cast<float>(MAX(60, screen.maximumFramesPerSecond));
+        _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(
+            30,
+            maximumFramesPerSecond,
+            maximumFramesPerSecond
+        );
     } else {
         _displayLink.preferredFramesPerSecond = 60;
     }
