@@ -114,7 +114,9 @@ private:
     // --- 滚动条相关 ---
     float m_scrollbarOpacity = 0.0f;
     std::shared_ptr<LFValueAnimator<float>> m_barFadeAnimator;
+    std::shared_ptr<LFValueAnimator<float>> m_barHideDelayAnimator;
     void showScrollbar();
+    void scheduleScrollbarHide();
     void hideScrollbar();
 
     bool m_scrollBarEnabled = true;

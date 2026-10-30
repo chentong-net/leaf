@@ -52,6 +52,7 @@ LFScrollView::LFScrollView() {
 
 LFScrollView::~LFScrollView() {
     if (m_animator) m_animator->stop();
+    if (m_barHideDelayAnimator) m_barHideDelayAnimator->stop();
 }
 
 void LFScrollView::initLayout(const LFNode::Ptr& content) {
@@ -336,6 +337,7 @@ bool LFScrollView::scrollBy(float deltaY) {
     m_scrollY = nextScrollY;
     m_content->setTranslate(0, m_scrollY);
     showScrollbar();
+    scheduleScrollbarHide();
     return true;
 }
 
@@ -352,6 +354,9 @@ void LFScrollView::setScrollBarEnabled(bool enabled) {
         m_scrollbarOpacity = 0.0f;
         if (m_barFadeAnimator && m_barFadeAnimator->isRunning()) {
             m_barFadeAnimator->stop();
+        }
+        if (m_barHideDelayAnimator && m_barHideDelayAnimator->isRunning()) {
+            m_barHideDelayAnimator->stop();
         }
         markDirty(); // 触发重绘以清除残影
     }
@@ -494,13 +499,45 @@ void LFScrollView::showScrollbar() {
     if (m_barFadeAnimator) {
         m_barFadeAnimator->stop();
     }
+    if (m_barHideDelayAnimator) {
+        m_barHideDelayAnimator->stop();
+    }
     markDirty(); // 触发重绘以显示
+}
+
+void LFScrollView::scheduleScrollbarHide() {
+    if (!m_scrollBarEnabled || m_scrollbarOpacity <= 0.0f) return;
+
+    if (m_barHideDelayAnimator && m_barHideDelayAnimator->isRunning()) {
+        m_barHideDelayAnimator->stop();
+    }
+
+    auto delayAnimator = LFValueAnimator<float>::of(0.0f, 0.0f);
+    delayAnimator->setStartDelay(0.8f);
+    delayAnimator->setDuration(0.001f);
+    m_barHideDelayAnimator = delayAnimator;
+
+    std::weak_ptr<LFScrollView> weakSelf =
+            std::weak_ptr<LFScrollView>(std::static_pointer_cast<LFScrollView>(shared_from_this()));
+    delayAnimator->setOnEnd([weakSelf]() {
+        if (auto self = weakSelf.lock()) {
+            self->m_barHideDelayAnimator.reset();
+            self->hideScrollbar();
+        }
+    });
+
+    delayAnimator->start();
+    LFGlobalAnimationManager::getInstance().addAnimator(delayAnimator);
 }
 
 void LFScrollView::hideScrollbar() {
     // 淡出动画
     if (!m_scrollBarEnabled) return;
     if (m_scrollbarOpacity <= 0) return;
+
+    if (m_barHideDelayAnimator && m_barHideDelayAnimator->isRunning()) {
+        m_barHideDelayAnimator->stop();
+    }
 
     m_barFadeAnimator = LFValueAnimator<float>::of(m_scrollbarOpacity, 0.0f);
     m_barFadeAnimator->setDuration(0.3f);
