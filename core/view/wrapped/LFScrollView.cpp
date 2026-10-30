@@ -18,6 +18,7 @@ LFScrollView::Ptr LFScrollView::createVertical() {
 
     instance->initLayout(content);
     instance->initAnimator();
+    instance->initScrollHandling();
     instance->initGestures();
 
     return instance;
@@ -32,6 +33,7 @@ LFScrollView::Ptr LFScrollView::createHorizontal() {
 
     instance->initLayout(content);
     instance->initAnimator();
+    instance->initScrollHandling();
     instance->initGestures();
 
     return instance;
@@ -89,6 +91,24 @@ void LFScrollView::initAnimator() {
             return self->m_velocity == 0.0f && !self->m_inSpringMode; // 返回 true 结束动画
         }
         return true;
+    });
+}
+
+void LFScrollView::initScrollHandling() {
+    std::weak_ptr<LFScrollView> weakSelf =
+            std::weak_ptr<LFScrollView>(std::static_pointer_cast<LFScrollView>(shared_from_this()));
+
+    setOnScroll([weakSelf](LFScrollEvent& event) {
+        if (event.phase == LFEventPhase::Capture || event.deltaY == 0.0f) return;
+
+        auto self = weakSelf.lock();
+        if (!self) return;
+
+        const bool moved = self->scrollBy(event.deltaY);
+        if (moved || self->m_preventAncestorScroll) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
     });
 }
 

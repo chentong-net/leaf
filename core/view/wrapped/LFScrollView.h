@@ -62,6 +62,7 @@ protected:
 private:
     void initLayout(const LFNode::Ptr& child);
     void initGestures();
+    void initScrollHandling();
     void initAnimator();
 
     bool shouldParticipateInPan(const LFTouchEvent& event) const;
