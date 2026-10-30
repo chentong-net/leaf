@@ -16,8 +16,12 @@
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
 #if TARGET_OS_IPHONE
+#ifdef LEAF_USE_METAL
+#include "nanovg_mtl.h"
+#else
 #include <OpenGLES/ES3/gl.h>
 #include <OpenGLES/ES3/glext.h>
+#endif
 #include <cstdio>
 #define LF_LOGI(...) printf("[Leaf]: " __VA_ARGS__); printf("\n")
 #endif
@@ -38,7 +42,9 @@
 #endif
 
 #include "nanovg.h"
+#ifndef LEAF_USE_METAL
 #include "nanovg_gl.h"
+#endif
 #include "Yoga.h"
 #include <string>
 #include <vector>
