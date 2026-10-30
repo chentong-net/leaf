@@ -38,6 +38,12 @@ public:
      */
     void scrollTo(float y, bool animate = true);
 
+    /**
+     * 按逻辑像素滚动，deltaY 大于 0 表示向内容末尾滚动。
+     * @return 滚动位置是否发生变化
+     */
+    bool scrollBy(float deltaY);
+
     float getScrollY() const { return m_scrollY; }
 
     void setScrollBarEnabled(bool enabled);

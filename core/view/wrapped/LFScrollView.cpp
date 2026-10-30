@@ -298,6 +298,27 @@ void LFScrollView::scrollTo(float y, bool animate) {
     m_content->setTranslate(0, m_scrollY);
 }
 
+bool LFScrollView::scrollBy(float deltaY) {
+    if (deltaY == 0.0f) return false;
+
+    if (m_animator && m_animator->isRunning()) {
+        m_animator->stop();
+    }
+    m_isDragging = false;
+    m_inSpringMode = false;
+    m_velocity = 0.0f;
+
+    const float nextScrollY = getBoundaryY(m_scrollY - deltaY);
+    if (nextScrollY == m_scrollY) {
+        return false;
+    }
+
+    m_scrollY = nextScrollY;
+    m_content->setTranslate(0, m_scrollY);
+    showScrollbar();
+    return true;
+}
+
 // ==========================================
 // 滚动条绘制
 // ==========================================
