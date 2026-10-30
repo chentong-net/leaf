@@ -115,6 +115,31 @@ void LFEventDispatcher::dispatchTouchEvent(
     }
 }
 
+bool LFEventDispatcher::dispatchScrollEvent(
+    float x,
+    float y,
+    float deltaX,
+    float deltaY,
+    uint32_t modifiers,
+    std::shared_ptr<LFNode> root
+) {
+    if (!root || (deltaX == 0.0f && deltaY == 0.0f)) return false;
+
+    LFHitTestResult hitResult = LFHitTestEngine::hitTest(root, x, y);
+    if (!hitResult.hasTarget()) return false;
+
+    LFScrollEvent event;
+    event.x = x;
+    event.y = y;
+    event.deltaX = deltaX;
+    event.deltaY = deltaY;
+    event.modifiers = modifiers;
+    event.target = hitResult.getTarget();
+
+    performScrollDispatch(event, root);
+    return event.defaultPrevented;
+}
+
 void LFEventDispatcher::dispatchKeyEvent(LFKeyEventType type, LFKeyCode keyCode, uint32_t modifiers, bool repeat) {
     auto focused = m_focusedNode.lock();
     if (!focused) return;
@@ -199,6 +224,25 @@ void LFEventDispatcher::performDispatch(
     }
 }
 
+void LFEventDispatcher::performScrollDispatch(
+    LFScrollEvent& event,
+    std::shared_ptr<LFNode> root
+) {
+    auto target = event.target.lock();
+    if (!target) return;
+
+    auto path = buildEventPath(root, target);
+    captureScrollPhase(event, path);
+
+    if (!event.propagationStopped && target) {
+        targetScrollPhase(event, target);
+    }
+
+    if (!event.propagationStopped) {
+        bubbleScrollPhase(event, path);
+    }
+}
+
 void LFEventDispatcher::capturePhase(
     LFTouchEvent& event,
     const std::vector<std::shared_ptr<LFNode>>& path
@@ -232,6 +276,21 @@ void LFEventDispatcher::capturePhase(
     }
 }
 
+void LFEventDispatcher::captureScrollPhase(
+    LFScrollEvent& event,
+    const std::vector<std::shared_ptr<LFNode>>& path
+) {
+    event.phase = LFEventPhase::Capture;
+
+    for (size_t i = 0; i + 1 < path.size(); ++i) {
+        if (event.propagationStopped) break;
+
+        auto node = path[i];
+        event.currentTarget = node;
+        invokeScrollListener(node, event);
+    }
+}
+
 void LFEventDispatcher::targetPhase(
     LFTouchEvent& event,
     std::shared_ptr<LFNode> target
@@ -239,6 +298,15 @@ void LFEventDispatcher::targetPhase(
     event.phase = LFEventPhase::Target;
     event.currentTarget = target;
     invokeListener(target, event);
+}
+
+void LFEventDispatcher::targetScrollPhase(
+    LFScrollEvent& event,
+    std::shared_ptr<LFNode> target
+) {
+    event.phase = LFEventPhase::Target;
+    event.currentTarget = target;
+    invokeScrollListener(target, event);
 }
 
 void LFEventDispatcher::bubblePhase(
@@ -254,6 +322,21 @@ void LFEventDispatcher::bubblePhase(
         auto node = path[i];
         event.currentTarget = node;
         invokeListener(node, event);
+    }
+}
+
+void LFEventDispatcher::bubbleScrollPhase(
+    LFScrollEvent& event,
+    const std::vector<std::shared_ptr<LFNode>>& path
+) {
+    event.phase = LFEventPhase::Bubble;
+
+    for (int i = static_cast<int>(path.size()) - 2; i >= 0; --i) {
+        if (event.propagationStopped) break;
+
+        auto node = path[i];
+        event.currentTarget = node;
+        invokeScrollListener(node, event);
     }
 }
 
@@ -293,6 +376,18 @@ void LFEventDispatcher::invokeListener(
             if (listener) listener(event);
             break;
         }
+    }
+}
+
+void LFEventDispatcher::invokeScrollListener(
+    std::shared_ptr<LFNode> node,
+    LFScrollEvent& event
+) {
+    if (!node) return;
+
+    auto listener = node->getOnScroll();
+    if (listener) {
+        listener(event);
     }
 }
 

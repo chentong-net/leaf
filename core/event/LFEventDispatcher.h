@@ -32,6 +32,15 @@ public:
         std::shared_ptr<LFNode> root
     );
 
+    bool dispatchScrollEvent(
+        float x,
+        float y,
+        float deltaX,
+        float deltaY,
+        uint32_t modifiers,
+        std::shared_ptr<LFNode> root
+    );
+
     void dispatchKeyEvent(LFKeyEventType type, LFKeyCode keyCode, uint32_t modifiers = LFKeyModNone, bool repeat = false);
     void dispatchCharInput(uint32_t codepoint);
 
@@ -48,16 +57,24 @@ private:
 
     // Event dispatch core flow
     void performDispatch(LFTouchEvent& event, std::shared_ptr<LFNode> root);
+    void performScrollDispatch(LFScrollEvent& event, std::shared_ptr<LFNode> root);
 
     // Three-phase dispatch
     void capturePhase(LFTouchEvent& event, const std::vector<std::shared_ptr<LFNode>>& path);
     void targetPhase(LFTouchEvent& event, std::shared_ptr<LFNode> target);
     void bubblePhase(LFTouchEvent& event, const std::vector<std::shared_ptr<LFNode>>& path);
+    void captureScrollPhase(LFScrollEvent& event, const std::vector<std::shared_ptr<LFNode>>& path);
+    void targetScrollPhase(LFScrollEvent& event, std::shared_ptr<LFNode> target);
+    void bubbleScrollPhase(LFScrollEvent& event, const std::vector<std::shared_ptr<LFNode>>& path);
 
     // Invoke node listener
     void invokeListener(
         std::shared_ptr<LFNode> node,
         LFTouchEvent& event
+    );
+    void invokeScrollListener(
+        std::shared_ptr<LFNode> node,
+        LFScrollEvent& event
     );
 
     // Build event path from root to target
