@@ -19,6 +19,8 @@ namespace {
 
 static const int KEY_EVENT_DOWN = 0;
 static const int KEY_EVENT_UP = 1;
+static const double WHEEL_PIXELS_PER_LINE = 32.0;
+static const double WHEEL_PAGE_RATIO = 0.9;
 
 static const int LF_KEY_UNKNOWN = 0;
 static const int LF_KEY_ENTER = 13;
@@ -399,6 +401,32 @@ EM_BOOL mouse_callback(int eventType, const EmscriptenMouseEvent *e, void *userD
     return EM_TRUE; // 消费事件
 }
 
+EM_BOOL wheel_callback(int eventType, const EmscriptenWheelEvent *e, void *userData) {
+    (void)userData;
+    if (eventType != EMSCRIPTEN_EVENT_WHEEL) return EM_FALSE;
+
+    auto root = LFEngine::getInstance().getRoot();
+    if (!root) return EM_FALSE;
+
+    double scale = 1.0;
+    if (e->deltaMode == DOM_DELTA_LINE) {
+        scale = WHEEL_PIXELS_PER_LINE;
+    } else if (e->deltaMode == DOM_DELTA_PAGE) {
+        scale = static_cast<double>(LFEngine::getInstance().getWindowHeight()) * WHEEL_PAGE_RATIO;
+    }
+
+    const bool handled = LFEventDispatcher::getInstance().dispatchScrollEvent(
+            static_cast<float>(e->mouse.targetX),
+            static_cast<float>(e->mouse.targetY),
+            static_cast<float>(e->deltaX * scale),
+            static_cast<float>(e->deltaY * scale),
+            LFKeyModNone,
+            root
+    );
+
+    return handled ? EM_TRUE : EM_FALSE;
+}
+
 // ==========================================
 // 触摸事件适配 (原生多点触控)
 // ==========================================
@@ -573,6 +601,7 @@ int main() {
     emscripten_set_mousedown_callback(CANVAS_ID, nullptr, EM_TRUE, mouse_callback);
     emscripten_set_mouseup_callback(CANVAS_ID, nullptr, EM_TRUE, mouse_callback);
     emscripten_set_mousemove_callback(CANVAS_ID, nullptr, EM_TRUE, mouse_callback);
+    emscripten_set_wheel_callback(CANVAS_ID, nullptr, EM_TRUE, wheel_callback);
 
     emscripten_set_touchstart_callback(CANVAS_ID, nullptr, EM_TRUE, touch_callback);
     emscripten_set_touchend_callback(CANVAS_ID, nullptr, EM_TRUE, touch_callback);
