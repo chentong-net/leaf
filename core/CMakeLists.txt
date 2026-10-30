@@ -10,6 +10,11 @@ set(DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 set(NANOVG_DIR ${DEPS_DIR}/nanovg/src)
 set(YOGA_DIR ${DEPS_DIR}/yoga)
 set(GLAD_DIR ${DEPS_DIR}/glad)
+set(METALNANOVG_DIR ${DEPS_DIR}/MetalNanoVG/src)
+
+if(LEAF_USE_METAL AND NOT APPLE)
+    message(FATAL_ERROR "LEAF_USE_METAL requires an Apple platform")
+endif()
 
 set(LEAF_CORE_SOURCES
         ${NANOVG_DIR}/nanovg.c
@@ -67,6 +72,14 @@ if(LEAF_USE_GL3)
     )
 endif()
 
+if(LEAF_USE_METAL)
+    list(APPEND LEAF_CORE_SOURCES
+            ${METALNANOVG_DIR}/nanovg_mtl.m
+    )
+    set_source_files_properties(${METALNANOVG_DIR}/nanovg_mtl.m
+            PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+endif()
+
 add_library(leaf-core ${LEAF_CORE_SOURCES})
 set_target_properties(leaf-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
@@ -80,5 +93,11 @@ target_include_directories(leaf-core
 if(LEAF_USE_GL3)
     target_include_directories(leaf-core PUBLIC
             ${GLAD_DIR}
+    )
+endif()
+
+if(LEAF_USE_METAL)
+    target_include_directories(leaf-core PUBLIC
+            ${METALNANOVG_DIR}
     )
 endif()
