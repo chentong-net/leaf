@@ -106,6 +106,9 @@ prepare_headers() {
   while IFS= read -r -d '' header_file; do
     cp "${header_file}" "${HEADERS_DIR}/"
   done < <(find "${ROOT_DIR}/third_party/nanovg/src" -maxdepth 1 -type f -name '*.h' -print0)
+  while IFS= read -r -d '' header_file; do
+    cp "${header_file}" "${HEADERS_DIR}/"
+  done < <(find "${ROOT_DIR}/third_party/MetalNanoVG/src" -maxdepth 1 -type f -name '*.h' -print0)
 
   # Plugin C++ facade headers
   cp "${ROOT_DIR}/plugins/file_picker/LFFilePicker.h" "${HEADERS_DIR}/"

@@ -1,7 +1,7 @@
 #import "LeafView.h"
 #import "LeafRenderer.h"
 #import <CoreFoundation/CFString.h>
-#import <QuartzCore/CAEAGLLayer.h>
+#import <QuartzCore/CAMetalLayer.h>
 
 @interface LFTextPosition : UITextPosition
 @property (nonatomic, assign) NSInteger offset;
@@ -79,7 +79,7 @@
 }
 
 + (Class)layerClass {
-    return [CAEAGLLayer class];
+    return [CAMetalLayer class];
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
