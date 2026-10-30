@@ -11,7 +11,7 @@ Leaf local time plugin for iOS. Implements local_time.get_timezone.
   s.author           = { 'Leaf Team' => 'contact@chentong.net' }
   s.source           = { :git => 'https://github.com/chentong-net/leaf.git', :tag => s.version.to_s }
 
-  s.platform         = :ios, '13.0'
+  s.platform         = :ios, '15.0'
   s.requires_arc     = true
   s.static_framework = true
   s.module_name      = 'Local_Time'

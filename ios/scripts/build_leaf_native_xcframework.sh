@@ -9,7 +9,7 @@ XCFRAMEWORK_PATH="${OUTPUT_DIR}/LeafNative.xcframework"
 HEADERS_DIR="${BUILD_ROOT}/headers"
 ASSET_SYNC_SCRIPT="${ROOT_DIR}/ios/scripts/leaf_assets.sh"
 CONFIGURATION="${CONFIGURATION:-Release}"
-DEPLOYMENT_TARGET="${IOS_DEPLOYMENT_TARGET:-13.0}"
+DEPLOYMENT_TARGET="${IOS_DEPLOYMENT_TARGET:-15.0}"
 
 required_tools=(cmake xcodebuild libtool xcrun)
 for tool in "${required_tools[@]}"; do
