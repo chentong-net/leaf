@@ -72,9 +72,11 @@ void LFEngine::update(float dt) {
 void LFEngine::render() {
     if (!m_vg || !m_rootNode) return;
 
+#ifndef LEAF_USE_METAL
     int phyWidth = (int)(m_windowWidth * m_pixelRatio);
     int phyHeight = (int)(m_windowHeight * m_pixelRatio);
     glViewport(0, 0, phyWidth, phyHeight);
+#endif
 
     // 先建立本帧的NanoVG上下文，确保文本测量和绘制使用相同的DPR
     nvgBeginFrame(m_vg, m_windowWidth, m_windowHeight, m_pixelRatio);

@@ -34,7 +34,6 @@ set(LEAF_CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFNode.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFText.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFImage.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFTexture.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFInput.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFNavigator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFPage.cpp
@@ -69,6 +68,12 @@ set(LEAF_CORE_SOURCES
 if(LEAF_USE_GL3)
     list(APPEND LEAF_CORE_SOURCES
             ${GLAD_DIR}/glad.c
+    )
+endif()
+
+if(NOT LEAF_USE_METAL)
+    list(APPEND LEAF_CORE_SOURCES
+            ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFTexture.cpp
     )
 endif()
 

@@ -8,7 +8,9 @@
 #include "LFDef.h"
 #include "view/base/LFNode.h"
 #include "view/base/LFImage.h"
+#ifndef LEAF_USE_METAL
 #include "view/base/LFTexture.h"
+#endif
 #include "view/base/LFText.h"
 #include "view/base/LFInput.h"
 #include "view/base/LFNavigator.h"
