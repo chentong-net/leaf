@@ -16,6 +16,7 @@
 namespace {
 
 std::filesystem::path g_assetsRootDir;
+constexpr double kWheelStepInLogicalPixels = 32.0;
 
 std::filesystem::path getExecutableDir() {
     uint32_t size = 0;
@@ -110,6 +111,24 @@ void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         dispatchMouseToEngine(LFTouchEventType::Move, window, xpos, ypos);
     }
+}
+
+void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+    auto root = LFEngine::getInstance().getRoot();
+    if (!root) return;
+
+    double xpos = 0.0;
+    double ypos = 0.0;
+    glfwGetCursorPos(window, &xpos, &ypos);
+
+    LFEventDispatcher::getInstance().dispatchScrollEvent(
+            static_cast<float>(xpos),
+            static_cast<float>(ypos),
+            static_cast<float>(xoffset * kWheelStepInLogicalPixels),
+            static_cast<float>(-yoffset * kWheelStepInLogicalPixels),
+            LFKeyModNone,
+            root
+    );
 }
 
 uint32_t toLFKeyMods(int glfwMods) {
@@ -208,6 +227,7 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetCursorPosCallback(window, cursorPositionCallback);
+    glfwSetScrollCallback(window, scrollCallback);
     glfwSetKeyCallback(window, keyCallback);
     glfwSetCharCallback(window, charCallback);
 
