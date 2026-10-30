@@ -273,7 +273,7 @@ struct NativeKeyEvent {
 #ifdef LEAF_USE_METAL
     if (_engineInitialized || !_metalLayer) return;
 
-    int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES;
+    int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_TRIPLE_BUFFER;
     _vg = nvgCreateMTL((__bridge void*)_metalLayer, flags);
     if (!_vg) {
         LF_LOGI("LeafRenderer: failed to create NanoVG Metal context");
