@@ -39,3 +39,9 @@ The following notices are provided for attribution and compliance.
    Upstream: https://github.com/facebook/yoga
    License: MIT
    License file: third_party/yoga/LICENSE.txt
+
+5) MetalNanoVG
+   Path: third_party/MetalNanoVG
+   Upstream: https://github.com/ollix/MetalNanoVG
+   License: MIT
+   License file: third_party/MetalNanoVG/LICENSE
