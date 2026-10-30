@@ -25,8 +25,9 @@ The following notices are provided for attribution and compliance.
    Upstream: https://github.com/memononen/nanovg
    License: zlib license
    License file: third_party/nanovg/LICENSE.txt
-   Local modifications:
-   - None in current distributed snapshot.
+   Local modifications in this project:
+   - third_party/nanovg/src/nanovg.c
+   - third_party/nanovg/src/nanovg.h
 
 3) glad
    Path: third_party/glad
