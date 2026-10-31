@@ -5439,6 +5439,23 @@ GLFWAPI GLFWcursorenterfun glfwSetCursorEnterCallback(GLFWwindow* window, GLFWcu
  */
 GLFWAPI GLFWscrollfun glfwSetScrollCallback(GLFWwindow* window, GLFWscrollfun callback);
 
+/*! @brief Returns whether the most recent scroll event used precise deltas.
+ *
+ *  This is a Leaf extension for distinguishing high-resolution touchpad input
+ *  from detented wheel input.
+ *
+ *  @param[in] window The window whose most recent scroll event to query.
+ *  @return `GLFW_TRUE` if the most recent scroll event used precise deltas,
+ *  or `GLFW_FALSE` otherwise.
+ *
+ *  @errors Possible errors include @ref GLFW_NOT_INITIALIZED.
+ *
+ *  @thread_safety This function must only be called from the main thread.
+ *
+ *  @ingroup input
+ */
+GLFWAPI int glfwWasLastScrollPrecise(GLFWwindow* window);
+
 /*! @brief Sets the path drop callback.
  *
  *  This function sets the path drop callback of the specified window, which is

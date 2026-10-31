@@ -548,6 +548,7 @@ struct _GLFWwindow
     int                 cursorMode;
     char                mouseButtons[GLFW_MOUSE_BUTTON_LAST + 1];
     char                keys[GLFW_KEY_LAST + 1];
+    GLFWbool            scrollWasPrecise;
     // Virtual cursor position when cursor is disabled
     double              virtualCursorPosX, virtualCursorPosY;
     // Input method cursor anchor position (for IME candidate windows)

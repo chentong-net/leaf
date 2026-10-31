@@ -634,8 +634,10 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 {
     double deltaX = [event scrollingDeltaX];
     double deltaY = [event scrollingDeltaY];
+    const BOOL precise = [event hasPreciseScrollingDeltas];
 
-    if ([event hasPreciseScrollingDeltas])
+    window->scrollWasPrecise = precise ? GLFW_TRUE : GLFW_FALSE;
+    if (precise)
     {
         deltaX *= 0.1;
         deltaY *= 0.1;
