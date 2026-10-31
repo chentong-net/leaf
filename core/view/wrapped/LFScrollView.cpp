@@ -514,21 +514,13 @@ LFScrollView* LFScrollView::findNestedPriorityScrollView(float x, float y) const
 }
 
 bool LFScrollView::containsGlobalPoint(float x, float y) const {
-    float globalX = 0.0f;
-    float globalY = 0.0f;
-    getGlobalOffset(globalX, globalY);
-
-    float width = getLayoutWidth();
-    float height = getLayoutHeight();
-
-    return x >= globalX && x <= globalX + width &&
-           y >= globalY && y <= globalY + height;
-}
-
-void LFScrollView::getGlobalOffset(float& x, float& y) const {
-    x = 0.0f;
-    y = 0.0f;
-    convertLocalPointToWindow(x, y);
+    float localX = 0.0f;
+    float localY = 0.0f;
+    if (!convertWindowPointToLocal(x, y, localX, localY)) {
+        return false;
+    }
+    return localX >= 0.0f && localX <= getLayoutWidth() &&
+           localY >= 0.0f && localY <= getLayoutHeight();
 }
 
 bool LFScrollView::isAncestorOf(const LFScrollView* ancestor, const LFScrollView* node) {
