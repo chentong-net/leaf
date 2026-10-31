@@ -87,4 +87,8 @@ public:
                               const LFTextMeasureLine& measureLine);
 };
 
+size_t LFPreviousGraphemeBoundary(std::string_view text, size_t offset);
+size_t LFNextGraphemeBoundary(std::string_view text, size_t offset);
+size_t LFGraphemeCount(std::string_view text);
+
 #endif // LEAF_LFTEXTLAYOUT_H

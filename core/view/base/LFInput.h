@@ -60,10 +60,10 @@ private:
     void ensureCursorVisible(float contentWidth);
     std::pair<float, float> localToWindow(float x, float y) const;
 
-    static size_t prevUtf8Index(const std::string& text, size_t index);
-    static size_t nextUtf8Index(const std::string& text, size_t index);
-    static size_t utf8CodepointCount(const std::string& text);
-    static size_t utf8CodepointCountUntilByte(const std::string& text, size_t byteIndex);
+    static size_t prevGraphemeIndex(const std::string& text, size_t index);
+    static size_t nextGraphemeIndex(const std::string& text, size_t index);
+    static size_t graphemeCount(const std::string& text);
+    static size_t graphemeCountUntilByte(const std::string& text, size_t byteIndex);
     static std::string utf8FromCodepoint(uint32_t codepoint);
 
     std::string m_text;

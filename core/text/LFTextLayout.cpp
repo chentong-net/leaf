@@ -695,3 +695,41 @@ LFTextLayout LFTextLayoutBuilder::build(std::string_view text,
     }
     return layout;
 }
+
+size_t LFPreviousGraphemeBoundary(std::string_view text, size_t offset) {
+    if (offset == 0) {
+        return 0;
+    }
+
+    const size_t clampedOffset = std::min(offset, text.size());
+    const std::vector<GraphemeUnit> units = buildGraphemeUnits(text);
+    size_t previous = 0;
+    for (const auto& unit : units) {
+        if (unit.end > clampedOffset) {
+            break;
+        }
+        previous = unit.begin;
+    }
+    return previous;
+}
+
+size_t LFNextGraphemeBoundary(std::string_view text, size_t offset) {
+    if (text.empty() || offset >= text.size()) {
+        return text.size();
+    }
+
+    const std::vector<GraphemeUnit> units = buildGraphemeUnits(text);
+    for (const auto& unit : units) {
+        if (unit.end > offset) {
+            return unit.end;
+        }
+    }
+    return text.size();
+}
+
+size_t LFGraphemeCount(std::string_view text) {
+    if (text.empty()) {
+        return 0;
+    }
+    return buildGraphemeUnits(text).size();
+}

@@ -4,14 +4,7 @@
 
 #include "view/base/LFInput.h"
 #include "LFEngine.h"
-
-namespace {
-
-bool isUtf8ContinuationByte(unsigned char c) {
-    return (c & 0xC0) == 0x80;
-}
-
-}
+#include "text/LFTextLayout.h"
 
 LFInput::LFInput() {
     setFocusable(true);
@@ -82,13 +75,13 @@ void LFInput::setMaxLength(size_t maxLength) {
     if (m_maxLength == maxLength) return;
     m_maxLength = maxLength;
 
-    if (m_maxLength > 0 && utf8CodepointCount(m_text) > m_maxLength) {
+    if (m_maxLength > 0 && graphemeCount(m_text) > m_maxLength) {
         std::string newText;
         newText.reserve(m_text.size());
         size_t index = 0;
         size_t count = 0;
         while (index < m_text.size() && count < m_maxLength) {
-            size_t next = nextUtf8Index(m_text, index);
+            size_t next = nextGraphemeIndex(m_text, index);
             if (next <= index) break;
             newText.append(m_text, index, next - index);
             index = next;
@@ -181,8 +174,8 @@ void LFInput::insertText(const std::string& utf8) {
     if (utf8.empty()) return;
 
     if (m_maxLength > 0) {
-        size_t currentCount = utf8CodepointCount(m_text);
-        size_t appendCount = utf8CodepointCount(utf8);
+        size_t currentCount = graphemeCount(m_text);
+        size_t appendCount = graphemeCount(utf8);
         if (currentCount + appendCount > m_maxLength) {
             return;
         }
@@ -195,7 +188,7 @@ void LFInput::insertText(const std::string& utf8) {
 
 void LFInput::deleteBackward() {
     if (m_cursorIndex == 0 || m_text.empty()) return;
-    size_t prev = prevUtf8Index(m_text, m_cursorIndex);
+    size_t prev = prevGraphemeIndex(m_text, m_cursorIndex);
     if (prev >= m_cursorIndex) return;
     m_text.erase(prev, m_cursorIndex - prev);
     m_cursorIndex = prev;
@@ -204,7 +197,7 @@ void LFInput::deleteBackward() {
 
 void LFInput::deleteForward() {
     if (m_cursorIndex >= m_text.size() || m_text.empty()) return;
-    size_t next = nextUtf8Index(m_text, m_cursorIndex);
+    size_t next = nextGraphemeIndex(m_text, m_cursorIndex);
     if (next <= m_cursorIndex) return;
     m_text.erase(m_cursorIndex, next - m_cursorIndex);
     commitTextChanged();
@@ -212,13 +205,13 @@ void LFInput::deleteForward() {
 
 void LFInput::moveCursorLeft() {
     if (m_cursorIndex == 0) return;
-    m_cursorIndex = prevUtf8Index(m_text, m_cursorIndex);
+    m_cursorIndex = prevGraphemeIndex(m_text, m_cursorIndex);
     markDirty();
 }
 
 void LFInput::moveCursorRight() {
     if (m_cursorIndex >= m_text.size()) return;
-    m_cursorIndex = nextUtf8Index(m_text, m_cursorIndex);
+    m_cursorIndex = nextGraphemeIndex(m_text, m_cursorIndex);
     markDirty();
 }
 
@@ -249,11 +242,11 @@ std::string LFInput::getDisplayText() const {
     if (!m_passwordMode) {
         return m_text;
     }
-    return std::string(utf8CodepointCount(m_text), '*');
+    return std::string(graphemeCount(m_text), '*');
 }
 
 size_t LFInput::cursorCodepointIndex() const {
-    return utf8CodepointCountUntilByte(m_text, m_cursorIndex);
+    return graphemeCountUntilByte(m_text, m_cursorIndex);
 }
 
 float LFInput::measureTextWidth(const std::string& text) const {
@@ -308,45 +301,28 @@ std::pair<float, float> LFInput::localToWindow(float x, float y) const {
     return {outX, outY};
 }
 
-size_t LFInput::prevUtf8Index(const std::string& text, size_t index) {
-    if (index == 0 || text.empty()) return 0;
-    size_t pos = std::min(index, text.size());
-    --pos;
-    while (pos > 0 && isUtf8ContinuationByte((unsigned char)text[pos])) {
-        --pos;
-    }
-    return pos;
+size_t LFInput::prevGraphemeIndex(const std::string& text, size_t index) {
+    return LFPreviousGraphemeBoundary(text, index);
 }
 
-size_t LFInput::nextUtf8Index(const std::string& text, size_t index) {
-    if (text.empty()) return 0;
-    size_t pos = std::min(index, text.size());
-    if (pos >= text.size()) return text.size();
-
-    unsigned char c = (unsigned char)text[pos];
-    if ((c & 0x80) == 0) return pos + 1;
-    if ((c & 0xE0) == 0xC0) return std::min(pos + 2, text.size());
-    if ((c & 0xF0) == 0xE0) return std::min(pos + 3, text.size());
-    if ((c & 0xF8) == 0xF0) return std::min(pos + 4, text.size());
-    return std::min(pos + 1, text.size());
+size_t LFInput::nextGraphemeIndex(const std::string& text, size_t index) {
+    return LFNextGraphemeBoundary(text, index);
 }
 
-size_t LFInput::utf8CodepointCount(const std::string& text) {
-    if (text.empty()) return 0;
-    size_t count = 0;
-    for (size_t i = 0; i < text.size();) {
-        i = nextUtf8Index(text, i);
-        ++count;
-    }
-    return count;
+size_t LFInput::graphemeCount(const std::string& text) {
+    return LFGraphemeCount(text);
 }
 
-size_t LFInput::utf8CodepointCountUntilByte(const std::string& text, size_t byteIndex) {
+size_t LFInput::graphemeCountUntilByte(const std::string& text, size_t byteIndex) {
     size_t target = std::min(byteIndex, text.size());
     size_t count = 0;
     size_t i = 0;
     while (i < target) {
-        i = nextUtf8Index(text, i);
+        const size_t next = nextGraphemeIndex(text, i);
+        if (next <= i) {
+            break;
+        }
+        i = next;
         ++count;
     }
     return count;
