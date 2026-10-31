@@ -8,7 +8,7 @@
 #include <sstream>
 
 const float TOP_BAR_HEIGHT = 56.0f;         // 顶部导航栏高度
-const float ADAPTER_PADDING_TOP = 30.0f;    // 正文顶部内边距
+const float ADAPTER_PADDING_TOP = TOP_BAR_HEIGHT + 12.0f; // 顶栏下方的正文留白
 const float ADAPTER_PADDING_BOTTOM = 30.0f; // 正文底部内边距
 const float ADAPTER_PADDING_X = 24.0f;      // 正文左右内边距
 

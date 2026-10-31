@@ -17,6 +17,8 @@ namespace {
 
 struct SplitMetrics {
     float lineAdvance = 0.0f;
+    float naturalLineHeight = 0.0f;
+    float firstBaseline = 0.0f;
     int linesPerPage = 1;
 };
 
@@ -48,17 +50,23 @@ bool prepareSplitMetrics(NVGcontext* vg,
         std::isfinite(config.lineHeight) && config.lineHeight > 0.0f
             ? config.lineHeight
             : 1.0f;
+    float ascender = 0.0f;
     float naturalLineHeight = 0.0f;
     nvgFontFace(vg, fontFamily);
     nvgFontSize(vg, config.fontSize);
     nvgTextLineHeight(vg, lineHeightScale);
     nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-    nvgTextMetrics(vg, nullptr, nullptr, &naturalLineHeight);
+    nvgTextMetrics(vg, &ascender, nullptr, &naturalLineHeight);
     if (!std::isfinite(naturalLineHeight) || naturalLineHeight <= 0.0f) {
         naturalLineHeight = config.fontSize;
     }
+    if (!std::isfinite(ascender) || ascender <= 0.0f) {
+        ascender = naturalLineHeight;
+    }
 
     metrics.lineAdvance = std::max(1.0f, naturalLineHeight * lineHeightScale);
+    metrics.naturalLineHeight = naturalLineHeight;
+    metrics.firstBaseline = ascender;
     metrics.linesPerPage = std::max(
         1,
         static_cast<int>(std::floor(config.height / metrics.lineAdvance))
@@ -73,7 +81,7 @@ LFTextLineMetrics measureLine(NVGcontext* vg, std::string_view text) {
     }
 
     float bounds[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    metrics.advance = nvgTextBounds(
+    metrics.advance = nvgTextInkBounds(
         vg,
         0.0f,
         0.0f,
@@ -112,6 +120,8 @@ LFTextLayout buildLayout(NVGcontext* vg,
     options.wrapWidth = width;
     options.maxLines = maxLines;
     options.lineAdvance = metrics.lineAdvance;
+    options.naturalLineHeight = metrics.naturalLineHeight;
+    options.firstBaseline = metrics.firstBaseline;
     return LFTextLayoutBuilder::build(
         text,
         options,
