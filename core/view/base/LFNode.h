@@ -143,6 +143,7 @@ public:
     // 可见性检查
     bool isVisible() const { return m_visible; }
     float getOpacity() const { return m_opacity; }
+    bool isMasksToBounds() const { return m_masksToBounds; }
 
     uint32_t getBackgroundColor() const { return m_backgroundColor; }
 

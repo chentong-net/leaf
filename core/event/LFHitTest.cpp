@@ -48,19 +48,22 @@ bool LFHitTestEngine::hitTestRecursive(
         return false;  // Transform not invertible (e.g., scale = 0)
     }
 
-    // 3. Bounds check
+    // 3. Bounds check. Overflow-visible children remain hittable outside their
+    // parent bounds; masksToBounds limits traversal to the visible region.
     float width = node->getLayoutWidth();
     float height = node->getLayoutHeight();
-
-    if (localX < 0 || localX > width || localY < 0 || localY > height) {
+    const bool insideBounds = isPointInBounds(node.get(), localX, localY);
+    if (!insideBounds && node->isMasksToBounds()) {
         return false;
     }
 
     // 4. Rounded rect check (if has border radius)
-    float radius = node->getRadius();
-    if (radius > 0) {
+    const float radius = node->getRadius();
+    if (insideBounds && radius > 0) {
         if (!isPointInRoundedRect(localX, localY, width, height, radius)) {
-            return false;
+            if (node->isMasksToBounds()) {
+                return false;
+            }
         }
     }
 
@@ -76,7 +79,7 @@ bool LFHitTestEngine::hitTestRecursive(
 
     // 6. No child hit, check current node
     // Only nodes with touch enabled count as hit
-    if (!node->isTouchEnabled()) {
+    if (!insideBounds || !node->isTouchEnabled()) {
         return false;
     }
 
