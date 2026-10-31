@@ -1,5 +1,6 @@
 #import "FilePickerPlugin.h"
 #import <TargetConditionals.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -95,14 +96,6 @@ static const int32_t REQUEST_ERROR_FILE_NOT_FOUND = -404;
     [pending.result error:pending.requestId code:0 error:@"canceled" canceled:YES];
 }
 
-- (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url {
-    if (!url) {
-        [self documentPickerWasCancelled:controller];
-        return;
-    }
-    [self documentPicker:controller didPickDocumentsAtURLs:@[url]];
-}
-
 - (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
     FilePickerPendingPick *pending = self.pendingPick;
     self.pendingPick = nil;
@@ -167,8 +160,9 @@ static const int32_t REQUEST_ERROR_FILE_NOT_FOUND = -404;
     pending.result = result;
     self.pendingPick = pending;
 
-    UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:[self documentTypesForMediaType:mediaType]
-                                                                                                      inMode:UIDocumentPickerModeOpen];
+    UIDocumentPickerViewController *picker =
+            [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:[self contentTypesForMediaType:mediaType]
+                                                                       asCopy:NO];
     picker.delegate = self;
     picker.allowsMultipleSelection = NO;
 
@@ -392,24 +386,29 @@ static const int32_t REQUEST_ERROR_FILE_NOT_FOUND = -404;
 - (UIViewController *)resolvePresenter {
     UIViewController *base = self.presentingViewController;
     if (!base) {
-        if (@available(iOS 13.0, *)) {
-            for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
-                if (![scene isKindOfClass:[UIWindowScene class]]) {
-                    continue;
+        UIWindowScene *preferredScene = nil;
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]] &&
+                scene.activationState == UISceneActivationStateForegroundActive) {
+                preferredScene = (UIWindowScene *)scene;
+                break;
+            }
+        }
+        if (preferredScene) {
+            for (UIWindow *window in preferredScene.windows) {
+                if (window.isKeyWindow && window.rootViewController) {
+                    base = window.rootViewController;
+                    break;
                 }
-                UIWindowScene *windowScene = (UIWindowScene *)scene;
-                for (UIWindow *window in windowScene.windows) {
-                    if (window.isKeyWindow && window.rootViewController) {
+            }
+            if (!base) {
+                for (UIWindow *window in preferredScene.windows) {
+                    if (window.rootViewController) {
                         base = window.rootViewController;
                         break;
                     }
                 }
-                if (base) {
-                    break;
-                }
             }
-        } else {
-            base = UIApplication.sharedApplication.keyWindow.rootViewController;
         }
     }
 
@@ -419,16 +418,16 @@ static const int32_t REQUEST_ERROR_FILE_NOT_FOUND = -404;
     return base;
 }
 
-- (NSArray<NSString *> *)documentTypesForMediaType:(NSInteger)mediaType {
+- (NSArray<UTType *> *)contentTypesForMediaType:(NSInteger)mediaType {
     switch (mediaType) {
         case 1:
-            return @[@"public.image"];
+            return @[UTTypeImage];
         case 2:
-            return @[@"public.movie"];
+            return @[UTTypeMovie];
         case 3:
-            return @[@"public.image", @"public.movie"];
+            return @[UTTypeImage, UTTypeMovie];
         default:
-            return @[@"public.item"];
+            return @[UTTypeItem];
     }
 }
 
