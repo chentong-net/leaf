@@ -99,15 +99,38 @@ bool LFNativeSender::resolve(const LFMethodResult& result) {
     }
 
     if (callback) {
-        callback(result);
+        try {
+            callback(result);
+        } catch (...) {
+            return false;
+        }
         return true;
     }
     return false;
 }
 
 void LFNativeSender::clearPending() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_pendingCallbacks.clear();
+    std::unordered_map<int32_t, LFMethodResultCallback> pendingCallbacks;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        pendingCallbacks.swap(m_pendingCallbacks);
+    }
+
+    for (auto& entry : pendingCallbacks) {
+        if (!entry.second) {
+            continue;
+        }
+        LFMethodResult result = makeErrorResult(
+                entry.first,
+                -4,
+                "native_target_unbound"
+        );
+        result.canceled = true;
+        try {
+            entry.second(result);
+        } catch (...) {
+        }
+    }
 }
 
 bool LFNativeSender::isTargetBound() const {
