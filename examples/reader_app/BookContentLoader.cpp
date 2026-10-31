@@ -27,7 +27,7 @@ BookContentLoadResult BookContentLoader::loadTextFile(const std::string& filePat
 
     std::ostringstream oss;
     oss << file.rdbuf();
-    if (!file.good() && !file.eof()) {
+    if (file.bad() || (file.fail() && !file.eof())) {
         result.error = "read_file_failed";
         return result;
     }
