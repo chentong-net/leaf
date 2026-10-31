@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <sstream>
 
 #if defined(_WIN32)
@@ -441,10 +442,11 @@ bool BookRepository::loadFromDiskLocked() {
             if (item->contains("filePath")) book.filePath = normalizeUtf8(item->at("filePath").asString());
             if (item->contains("mimeType")) book.mimeType = normalizeUtf8(item->at("mimeType").asString());
             if (item->contains("size")) {
-                book.size = std::max<int64_t>(
-                        0,
-                        static_cast<int64_t>(item->at("size").asDouble())
-                );
+                const double size = item->at("size").asDouble();
+                if (size >= 0.0 &&
+                    size <= static_cast<double>(std::numeric_limits<int64_t>::max())) {
+                    book.size = static_cast<int64_t>(size);
+                }
             }
             if (item->contains("createdAt")) {
                 book.createdAt = std::max(0.0, item->at("createdAt").asDouble());
