@@ -337,6 +337,25 @@ EM_JS(void, leafWebReadChunk, (int requestId, int handle, double offset, double 
     });
 });
 
+EM_JS(void, leafWebReleaseFile, (int handle), {
+    const state = Module.__leafFilePickerState;
+    if (!state || !state.filesByHandle) return;
+
+    const record = state.filesByHandle.get(handle);
+    if (!record) return;
+
+    if (record.path) {
+        try {
+            FS.unlink(record.path);
+        } catch (e) {
+        }
+    }
+    state.filesByHandle.delete(handle);
+    if (record.fileId) {
+        state.handleByFileId.delete(record.fileId);
+    }
+});
+
 } // namespace
 
 extern "C" {
@@ -532,4 +551,23 @@ void LFFilePicker::readFile(
         static_cast<double>(options.offset),
         static_cast<double>(requestLength)
     );
+}
+
+void LFFilePicker::releaseFile(const LFFileInfo& file) {
+    if (file.fileId.empty()) {
+        return;
+    }
+
+    int handle = 0;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        auto it = g_fileIdToHandle.find(file.fileId);
+        if (it != g_fileIdToHandle.end()) {
+            handle = it->second;
+            g_fileIdToHandle.erase(it);
+        }
+    }
+    if (handle > 0) {
+        leafWebReleaseFile(handle);
+    }
 }

@@ -238,3 +238,15 @@ void LFFilePicker::readFile(const LFFileInfo& file, const LFFileReadOptions& opt
         }
     );
 }
+
+void LFFilePicker::releaseFile(const LFFileInfo& file) {
+    if (file.fileId.empty()) {
+        return;
+    }
+
+    LFNativeSender::getInstance().send(
+            "file_picker.release",
+            buildOpenFdArgs(file.fileId),
+            nullptr
+    );
+}

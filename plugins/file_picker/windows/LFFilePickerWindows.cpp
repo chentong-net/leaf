@@ -10,7 +10,9 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <mutex>
 #include <sys/stat.h>
+#include <unordered_map>
 
 #include <shobjidl.h>
 #include <windows.h>
@@ -18,6 +20,8 @@
 namespace {
 
 std::atomic<uint64_t> g_fileIdCounter{1};
+std::mutex g_ownedCopiesMutex;
+std::unordered_map<std::string, std::string> g_ownedCopies;
 
 std::wstring utf8ToWide(const std::string& utf8) {
     if (utf8.empty()) return L"";
@@ -428,6 +432,10 @@ void LFFilePicker::pickFile(
 
     const uint64_t fileId = g_fileIdCounter.fetch_add(1);
     fileInfo.fileId = "fp_" + std::to_string(fileId);
+    if (options.copyToSandbox) {
+        std::lock_guard<std::mutex> lock(g_ownedCopiesMutex);
+        g_ownedCopies[fileInfo.fileId] = finalPath;
+    }
 
     LFFilePickResult result;
     result.ok = true;
@@ -463,4 +471,24 @@ void LFFilePicker::readFile(
     }
 
     callback({false, false, {}, "file_id_not_supported_on_windows"});
+}
+
+void LFFilePicker::releaseFile(const LFFileInfo& file) {
+    if (file.fileId.empty()) {
+        return;
+    }
+
+    std::string ownedPath;
+    {
+        std::lock_guard<std::mutex> lock(g_ownedCopiesMutex);
+        auto it = g_ownedCopies.find(file.fileId);
+        if (it == g_ownedCopies.end()) {
+            return;
+        }
+        ownedPath = it->second;
+        g_ownedCopies.erase(it);
+    }
+
+    std::error_code error;
+    std::filesystem::remove(std::filesystem::u8path(ownedPath), error);
 }

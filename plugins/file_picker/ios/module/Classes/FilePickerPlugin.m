@@ -58,7 +58,9 @@ static const int32_t REQUEST_ERROR_FILE_NOT_FOUND = -404;
 }
 
 - (BOOL)canHandle:(NSString *)method {
-    return [method isEqualToString:@"file_picker.pick"] || [method isEqualToString:@"file_picker.open_fd"];
+    return [method isEqualToString:@"file_picker.pick"]
+        || [method isEqualToString:@"file_picker.open_fd"]
+        || [method isEqualToString:@"file_picker.release"];
 }
 
 - (void)onMethodCall:(id<LeafMethodCall>)call result:(id<LeafResult>)result {
@@ -75,6 +77,10 @@ static const int32_t REQUEST_ERROR_FILE_NOT_FOUND = -404;
     }
     if ([call.method isEqualToString:@"file_picker.open_fd"]) {
         [self handleOpenFd:call result:result];
+        return;
+    }
+    if ([call.method isEqualToString:@"file_picker.release"]) {
+        [self handleRelease:call result:result];
         return;
     }
     [result error:call.requestId code:REQUEST_ERROR_FILE_NOT_FOUND error:@"method_not_implemented" canceled:NO];
@@ -237,6 +243,24 @@ static const int32_t REQUEST_ERROR_FILE_NOT_FOUND = -404;
         return;
     }
     [result success:call.requestId data:json];
+}
+
+- (void)handleRelease:(id<LeafMethodCall>)call result:(id<LeafResult>)result {
+    NSDictionary *args = [self parseArgs:call.args];
+    NSString *fileId = [args[@"fileId"] isKindOfClass:[NSString class]] ? args[@"fileId"] : @"";
+    if (fileId.length == 0) {
+        [result error:call.requestId code:REQUEST_ERROR_INVALID_ARGS error:@"invalid_args" canceled:NO];
+        return;
+    }
+
+    FilePickerRecord *record = self.pickedFiles[fileId];
+    if (record) {
+        if (record.path.length > 0) {
+            [[NSFileManager defaultManager] removeItemAtPath:record.path error:nil];
+        }
+        [self.pickedFiles removeObjectForKey:fileId];
+    }
+    [result success:call.requestId data:@"{}"];
 }
 
 - (NSDictionary *)buildPickPayloadWithURL:(NSURL *)url copyToSandbox:(BOOL)copyToSandbox error:(NSError **)error {

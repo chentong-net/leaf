@@ -41,7 +41,9 @@ public class FilePickerPlugin implements LeafPlugin {
 
     @Override
     public boolean canHandle(String method) {
-        return "file_picker.pick".equals(method) || "file_picker.open_fd".equals(method);
+        return "file_picker.pick".equals(method)
+            || "file_picker.open_fd".equals(method)
+            || "file_picker.release".equals(method);
     }
 
     @Override
@@ -52,6 +54,10 @@ public class FilePickerPlugin implements LeafPlugin {
         }
         if ("file_picker.open_fd".equals(call.getMethod())) {
             handleOpenFd(call, result);
+            return;
+        }
+        if ("file_picker.release".equals(call.getMethod())) {
+            handleRelease(call, result);
             return;
         }
         result.error(call.getRequestId(), -404, "method_not_implemented", false);
@@ -201,6 +207,23 @@ public class FilePickerPlugin implements LeafPlugin {
             result.success(call.getRequestId(), out.toString());
         } catch (Throwable throwable) {
             result.error(call.getRequestId(), -20, "open_fd_failed", false);
+        }
+    }
+
+    private void handleRelease(LeafMethodCall call, Result result) {
+        try {
+            JSONObject json = parseArgs(call.getArgs());
+            String fileId = json.optString("fileId", "");
+            PickedFileRecord record = pickedFiles.remove(fileId);
+            if (record != null && record.path != null && !record.path.isEmpty()) {
+                File cachedCopy = new File(record.path);
+                if (cachedCopy.exists()) {
+                    cachedCopy.delete();
+                }
+            }
+            result.success(call.getRequestId(), "{}");
+        } catch (Throwable throwable) {
+            result.error(call.getRequestId(), -1, "invalid_args", false);
         }
     }
 

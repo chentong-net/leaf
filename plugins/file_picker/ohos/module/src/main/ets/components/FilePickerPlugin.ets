@@ -55,7 +55,9 @@ export class FilePickerPlugin implements LeafPlugin {
   }
 
   canHandle(method: string): boolean {
-    return method === 'file_picker.pick' || method === 'file_picker.open_fd';
+    return method === 'file_picker.pick'
+      || method === 'file_picker.open_fd'
+      || method === 'file_picker.release';
   }
 
   onMethodCall(call: LeafMethodCall, result: LeafResult): void {
@@ -65,6 +67,10 @@ export class FilePickerPlugin implements LeafPlugin {
     }
     if (call.method === 'file_picker.open_fd') {
       this.handleOpenFd(call, result);
+      return;
+    }
+    if (call.method === 'file_picker.release') {
+      this.handleRelease(call, result);
       return;
     }
     result.error(call.requestId, REQUEST_ERROR_FILE_NOT_FOUND, 'method_not_implemented', false);
@@ -179,6 +185,28 @@ export class FilePickerPlugin implements LeafPlugin {
     } catch (_err) {
       result.error(call.requestId, REQUEST_ERROR_READ_SOURCE_UNAVAILABLE, 'open_fd_failed', false);
     }
+  }
+
+  private handleRelease(call: LeafMethodCall, result: LeafResult): void {
+    let args: OpenFdArgs;
+    try {
+      args = this.parseOpenFdArgs(call.args);
+    } catch (_err) {
+      result.error(call.requestId, REQUEST_ERROR_INVALID_ARGS, 'invalid_args', false);
+      return;
+    }
+
+    const record = this.pickedFiles.get(args.fileId);
+    if (record) {
+      if (record.path.length > 0) {
+        try {
+          fileIo.unlinkSync(record.path);
+        } catch (_err) {
+        }
+      }
+      this.pickedFiles.delete(args.fileId);
+    }
+    result.success(call.requestId, '{}');
   }
 
   private parsePickOptions(args: string): PickOptions {

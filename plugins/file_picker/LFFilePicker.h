@@ -57,6 +57,8 @@ public:
 
     static void readFile(const LFFileInfo& file, LFFileReadCallback callback);
     static void readFile(const LFFileInfo& file, const LFFileReadOptions& options, LFFileReadCallback callback);
+
+    static void releaseFile(const LFFileInfo& file);
 };
 
 #endif // LEAF_LFFILEPICKER_H
