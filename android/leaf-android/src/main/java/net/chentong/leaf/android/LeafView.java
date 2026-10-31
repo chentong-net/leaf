@@ -150,7 +150,7 @@ public class LeafView extends GLSurfaceView implements LeafRenderer.TextInputFoc
     @Override
     protected void onDetachedFromWindow() {
         if (renderer != null) {
-            renderer.release();
+            queueEvent(renderer::release);
         }
         super.onDetachedFromWindow();
     }

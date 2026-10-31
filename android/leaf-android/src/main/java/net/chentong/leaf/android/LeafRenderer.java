@@ -173,7 +173,7 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
     }
 
     public void release() {
-        queueEvent(this::nativeRelease);
+        nativeRelease();
     }
 
     /**
