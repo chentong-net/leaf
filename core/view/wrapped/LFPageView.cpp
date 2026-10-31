@@ -48,8 +48,38 @@ void LFPageView::setCurrentItem(int index, bool animated) {
     if (index < 0 || index >= m_totalCount) return;
     if (m_currentIndex == index) return;
 
+    const int direction = index > m_currentIndex ? 1 : -1;
+    const float pageWidth = getLayoutWidth();
+    if (animated && std::abs(index - m_currentIndex) == 1 && pageWidth > 0.0f) {
+        if (m_animator && m_animator->isRunning()) {
+            m_animator->stop();
+        }
+
+        m_dragOffset = 0.0f;
+        updateViewPositions();
+        const float targetOffset = direction == 1 ? -pageWidth : pageWidth;
+        m_animator = LFValueAnimator<float>::of(0.0f, targetOffset);
+        m_animator->setSpring(1.08f, 0.48f);
+
+        std::weak_ptr<LFPageView> weakSelf =
+                std::static_pointer_cast<LFPageView>(shared_from_this());
+        m_animator->addUpdateListener([weakSelf](float value) {
+            if (auto self = weakSelf.lock()) {
+                self->m_dragOffset = value;
+                self->updateViewPositions();
+            }
+        });
+        m_animator->setOnEnd([weakSelf, direction]() {
+            if (auto self = weakSelf.lock()) {
+                self->rotateViews(direction);
+            }
+        });
+        m_animator->start();
+        LFGlobalAnimationManager::getInstance().addAnimator(m_animator);
+        return;
+    }
+
     m_currentIndex = index;
-    // 暂时只支持非动画跳转，因为跨页动画比较复杂
     refreshData();
 
     if (m_onPageChange) {

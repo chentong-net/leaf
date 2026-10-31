@@ -69,7 +69,7 @@ public:
     /**
      * 跳转到指定页
      * @param index 目标索引
-     * @param animated 是否动画 (目前支持 false，未来可扩展动画跳转)
+     * @param animated 是否为相邻页播放转场动画；跨多页会直接刷新
      */
     void setCurrentItem(int index, bool animated = false);
 
