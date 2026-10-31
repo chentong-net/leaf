@@ -373,17 +373,20 @@ void dispatch_to_engine(LFTouchEventType type, const std::vector<LFTouchPoint>& 
 // 鼠标事件适配 (模拟单指触摸)
 // ==========================================
 EM_BOOL mouse_callback(int eventType, const EmscriptenMouseEvent *e, void *userData) {
-    // 只处理左键 (button 0)
-    if (e->button != 0) return EM_FALSE;
-
     LFTouchEventType type;
-    if (eventType == EMSCRIPTEN_EVENT_MOUSEDOWN) type = LFTouchEventType::Down;
+    if (eventType == EMSCRIPTEN_EVENT_MOUSEDOWN) {
+        if (e->button != 0) return EM_FALSE;
+        type = LFTouchEventType::Down;
+    }
     else if (eventType == EMSCRIPTEN_EVENT_MOUSEMOVE) {
         // 只有按住左键移动时才算 Drag/Move
         if (e->buttons & 1) type = LFTouchEventType::Move;
         else return EM_FALSE; // 只是 hover，移动端引擎通常忽略
     }
-    else if (eventType == EMSCRIPTEN_EVENT_MOUSEUP) type = LFTouchEventType::Up;
+    else if (eventType == EMSCRIPTEN_EVENT_MOUSEUP) {
+        if (e->button != 0) return EM_FALSE;
+        type = LFTouchEventType::Up;
+    }
     else return EM_FALSE;
 
     // 构造 TouchPoint
@@ -422,7 +425,10 @@ EM_BOOL wheel_callback(int eventType, const EmscriptenWheelEvent *e, void *userD
             static_cast<float>(e->deltaX * scale),
             static_cast<float>(e->deltaY * scale),
             LFKeyModNone,
-            root
+            root,
+            e->deltaMode == DOM_DELTA_PIXEL
+                    ? LFScrollInputType::Precise
+                    : LFScrollInputType::Discrete
     );
 
     return handled ? EM_TRUE : EM_FALSE;
