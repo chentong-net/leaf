@@ -455,7 +455,8 @@ float LFDropdown::resolvePanelHeight() const {
 
 float LFDropdown::resolvePopupPanelWidth() const {
     if (m_triggerButton && m_triggerButton->getLayoutWidth() > 0.0f) {
-        return m_triggerButton->getLayoutWidth();
+        return m_triggerButton->getLayoutWidth() *
+               std::abs(m_triggerButton->getTransform().scaleX);
     }
     if (getLayoutWidth() > 0.0f) {
         return getLayoutWidth();
@@ -497,28 +498,22 @@ void LFDropdown::resolvePopupGeometry(float& x, float& y, float& width, float& h
 }
 
 float LFDropdown::getAbsoluteX(const LFNode* node) const {
-    float x = 0.0f;
-    const LFNode* current = node;
-    while (current) {
-        x += current->getLayoutX();
-        const auto& transform = current->getTransform();
-        x += transform.translateX;
-        x += current->getLayoutWidth() * (transform.translatePercentX / 100.0f);
-        current = current->getParent();
+    if (!node) {
+        return 0.0f;
     }
+    float x = 0.0f;
+    float y = 0.0f;
+    node->convertLocalPointToWindow(x, y);
     return x;
 }
 
 float LFDropdown::getAbsoluteY(const LFNode* node) const {
-    float y = 0.0f;
-    const LFNode* current = node;
-    while (current) {
-        y += current->getLayoutY();
-        const auto& transform = current->getTransform();
-        y += transform.translateY;
-        y += current->getLayoutHeight() * (transform.translatePercentY / 100.0f);
-        current = current->getParent();
+    if (!node) {
+        return 0.0f;
     }
+    float x = 0.0f;
+    float y = 0.0f;
+    node->convertLocalPointToWindow(x, y);
     return y;
 }
 

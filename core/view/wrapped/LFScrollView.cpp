@@ -521,20 +521,7 @@ bool LFScrollView::containsGlobalPoint(float x, float y) const {
 void LFScrollView::getGlobalOffset(float& x, float& y) const {
     x = 0.0f;
     y = 0.0f;
-
-    const LFNode* current = this;
-    while (current) {
-        x += current->getLayoutX();
-        y += current->getLayoutY();
-
-        const auto& transform = current->getTransform();
-        x += transform.translateX;
-        y += transform.translateY;
-        x += current->getLayoutWidth() * (transform.translatePercentX / 100.0f);
-        y += current->getLayoutHeight() * (transform.translatePercentY / 100.0f);
-
-        current = current->getParent();
-    }
+    convertLocalPointToWindow(x, y);
 }
 
 bool LFScrollView::isAncestorOf(const LFScrollView* ancestor, const LFScrollView* node) {
