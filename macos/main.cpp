@@ -16,7 +16,8 @@
 namespace {
 
 std::filesystem::path g_assetsRootDir;
-constexpr double kWheelStepInLogicalPixels = 32.0;
+constexpr double kDiscreteWheelStepInLogicalPixels = 32.0;
+constexpr double kPreciseWheelStepInLogicalPixels = 12.0;
 
 std::filesystem::path getExecutableDir() {
     uint32_t size = 0;
@@ -121,13 +122,19 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     double ypos = 0.0;
     glfwGetCursorPos(window, &xpos, &ypos);
 
+    const bool precise = glfwWasLastScrollPrecise(window) == GLFW_TRUE;
+    const double step = precise
+            ? kPreciseWheelStepInLogicalPixels
+            : kDiscreteWheelStepInLogicalPixels;
+
     LFEventDispatcher::getInstance().dispatchScrollEvent(
             static_cast<float>(xpos),
             static_cast<float>(ypos),
-            static_cast<float>(xoffset * kWheelStepInLogicalPixels),
-            static_cast<float>(-yoffset * kWheelStepInLogicalPixels),
+            static_cast<float>(xoffset * step),
+            static_cast<float>(-yoffset * step),
             LFKeyModNone,
-            root
+            root,
+            precise ? LFScrollInputType::Precise : LFScrollInputType::Discrete
     );
 }
 
