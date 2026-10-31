@@ -64,6 +64,7 @@ private:
         std::string title;
         std::string iconNormal;
         std::string iconSelected;
+        bool entered = false;
     };
 
     // 页面列表 (m_tabContents)

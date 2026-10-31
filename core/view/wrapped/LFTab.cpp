@@ -162,13 +162,18 @@ void LFTab::selectTab(int index) {
     if (m_currentIndex >= 0) {
         auto oldPage = m_tabItems[m_currentIndex].page;
         oldPage->setVisible(false);
-        // 如果需要模拟生命周期，可以在这里手动调用 oldPage->onDisappear();
+        oldPage->onDisappear();
     }
 
     // 2. 显示新页面
-    auto newPage = m_tabItems[index].page;
+    auto& newItem = m_tabItems[index];
+    auto newPage = newItem.page;
+    if (!newItem.entered) {
+        newItem.entered = true;
+        newPage->onEnter();
+    }
     newPage->setVisible(true);
-    // 如果需要模拟生命周期，可以在这里手动调用 newPage->onAppear();
+    newPage->onAppear();
 
     m_currentIndex = index;
 
