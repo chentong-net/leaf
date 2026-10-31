@@ -44,7 +44,23 @@ void LFEventDispatcher::dispatchTouchEvent(
     event.changedTouches = changedIDs;
     event.timestamp = touches.empty() ? 0.0 : touches[0].timestamp;
 
-    // 2. Update active touch point state
+    // 2. Populate per-point lifecycle data from the previous active state.
+    for (auto& point : event.touches) {
+        auto activeIt = m_activeTouches.find(point.id);
+        if (type == LFTouchEventType::Down || activeIt == m_activeTouches.end()) {
+            point.startX = point.x;
+            point.startY = point.y;
+            point.lastX = point.x;
+            point.lastY = point.y;
+        } else {
+            point.startX = activeIt->second.startX;
+            point.startY = activeIt->second.startY;
+            point.lastX = activeIt->second.lastX;
+            point.lastY = activeIt->second.lastY;
+        }
+    }
+
+    // 3. Update active touch point state
     for (auto id : changedIDs) {
         auto it = std::find_if(touches.begin(), touches.end(),
             [id](const LFTouchPoint& t) { return t.id == id; });
@@ -60,7 +76,7 @@ void LFEventDispatcher::dispatchTouchEvent(
         }
     }
 
-    // 3. Perform HitTest (only for Down event)
+    // 4. Perform HitTest (only for Down event)
     if (type == LFTouchEventType::Down) {
         for (auto id : changedIDs) {
             auto it = std::find_if(touches.begin(), touches.end(),
@@ -99,12 +115,20 @@ void LFEventDispatcher::dispatchTouchEvent(
         }
     }
 
-    // 4. Execute three-phase dispatch
+    // 5. Execute three-phase dispatch
     if (event.target.lock()) {
         performDispatch(event, root);
     }
 
-    // 5. Close arena and cleanup (Up/Cancel events)
+    // Interception may retarget the Down event. Keep subsequent Move/Up/Cancel
+    // events on the same effective target.
+    if (type == LFTouchEventType::Down && changedIDs.size() == 1) {
+        if (auto dispatchedTarget = event.target.lock()) {
+            m_touchTargets[changedIDs.front()] = dispatchedTarget;
+        }
+    }
+
+    // 6. Close arena and cleanup (Up/Cancel events)
     if (type == LFTouchEventType::Up || type == LFTouchEventType::Cancel) {
         auto& arenaManager = LFGestureArenaManager::getInstance();
         for (auto id : changedIDs) {

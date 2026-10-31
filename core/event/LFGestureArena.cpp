@@ -32,7 +32,13 @@ std::shared_ptr<LFGestureArenaEntry> LFGestureArenaManager::add(
 ) {
     if (!member) return nullptr;
 
-    // Get or create arena state for this pointer
+    // A closed arena belongs to a completed touch sequence and must not leak
+    // into the next sequence that reuses the same pointer ID.
+    auto stateIt = m_arenas.find(pointer);
+    if (stateIt != m_arenas.end() && !stateIt->second.isOpen) {
+        m_arenas.erase(stateIt);
+    }
+
     auto& state = m_arenas[pointer];
 
     // Create entry
@@ -154,7 +160,8 @@ void LFGestureArenaManager::tryToResolveArena(int pointer, LFArenaState& state) 
         }
     }
 
-    // Note: If no one has accepted yet, keep arena alive
-    // This handles cases where gestures need more input to decide
+    // The arena is closed and every member rejected the gesture. No later
+    // event can change that outcome, so the state must be released.
+    m_arenas.erase(pointer);
 }
 
