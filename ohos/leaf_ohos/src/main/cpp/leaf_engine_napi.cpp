@@ -192,7 +192,9 @@ void RenderThreadLoop() {
     // 初始化 EGL
     // 渲染线程
     EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    eglInitialize(display, nullptr, nullptr);
+    if (display == EGL_NO_DISPLAY || !eglInitialize(display, nullptr, nullptr)) {
+        return;
+    }
 
     const EGLint attribs[] = {
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
@@ -204,8 +206,8 @@ void RenderThreadLoop() {
 
     EGLConfig config;
     EGLint numConfigs = 0;
-    eglChooseConfig(display, attribs, &config, 1, &numConfigs);
-    if (numConfigs <= 0) {
+    if (!eglChooseConfig(display, attribs, &config, 1, &numConfigs) ||
+        numConfigs <= 0) {
         eglTerminate(display);
         return;
     }
@@ -227,7 +229,10 @@ void RenderThreadLoop() {
 
     // 绑定上下文到本线程
     if (!eglMakeCurrent(display, surface, surface, context)) {
-        return; // 出错退出
+        eglDestroyContext(display, context);
+        eglDestroySurface(display, surface);
+        eglTerminate(display);
+        return;
     }
 
     // 初始化 Leaf 引擎
