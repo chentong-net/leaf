@@ -5,9 +5,20 @@
 
 extern "C" {
 
+void leaf_shutdown() {
+    LFEngine& engine = LFEngine::getInstance();
+    NVGcontext* vg = engine.getNVGContext();
+    if (!vg) {
+        return;
+    }
+
+    engine.shutdown();
+    nvgDeleteGLES3(vg);
+}
+
 void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loader) {
     if (LFEngine::getInstance().getNVGContext()) {
-        LFEngine::getInstance().discardContext();
+        leaf_shutdown();
     }
 
     // 1. 创建 NanoVG 上下文

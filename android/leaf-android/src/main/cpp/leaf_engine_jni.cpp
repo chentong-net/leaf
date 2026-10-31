@@ -315,6 +315,7 @@ void leaf_init(std::function<std::vector<unsigned char>(const char* path)> loade
 void leaf_update_size(float w, float h, float d);
 void leaf_render();
 void leaf_eval_js(const char* code);
+void leaf_shutdown();
 }
 
 // 实现具体的读取逻辑
@@ -455,7 +456,7 @@ Java_net_chentong_leaf_android_LeafRenderer_nativeRelease(JNIEnv* env, jobject t
         g_leafRendererObj = nullptr;
     }
     g_textInputCursorMethod = nullptr;
-    LFEngine::getInstance().discardContext();
+    leaf_shutdown();
 }
 
 extern "C" JNIEXPORT void JNICALL

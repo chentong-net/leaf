@@ -13,6 +13,7 @@ void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loade
 void leaf_update_size(float w, float h, float d);
 void leaf_render();
 void leaf_eval_js(const char* code);
+void leaf_shutdown();
 }
 
 NativeResourceManager* g_resMgr = nullptr;
@@ -264,6 +265,7 @@ void RenderThreadLoop() {
     }
 
     // 清理
+    leaf_shutdown();
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroyContext(display, context);
     eglDestroySurface(display, surface);
