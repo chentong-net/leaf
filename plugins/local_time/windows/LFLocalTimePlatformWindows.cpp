@@ -1,5 +1,7 @@
 #include "LFLocalTimePlatform.h"
 
+#include <algorithm>
+#include <string>
 #include <unordered_map>
 
 #include <windows.h>

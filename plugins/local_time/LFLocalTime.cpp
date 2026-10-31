@@ -2,6 +2,7 @@
 
 #include "LFLocalTimePlatform.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <ctime>

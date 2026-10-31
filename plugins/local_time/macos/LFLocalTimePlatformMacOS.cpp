@@ -1,5 +1,6 @@
 #include "LFLocalTimePlatform.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <ctime>
 #include <filesystem>
