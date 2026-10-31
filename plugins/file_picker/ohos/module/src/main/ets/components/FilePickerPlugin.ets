@@ -302,12 +302,17 @@ export class FilePickerPlugin implements LeafPlugin {
   }
 
   private copyByStream(sourcePathOrUri: string, targetPath: string): void {
-    const srcFile = this.openFileForRead(sourcePathOrUri);
-    const dstMode = fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.CREATE | fileIo.OpenMode.TRUNC;
-    const dstFile = fileIo.openSync(targetPath, dstMode);
-
-    const buffer = new ArrayBuffer(8192);
+    let srcFile: fileIo.File | null = null;
+    let dstFile: fileIo.File | null = null;
     try {
+      srcFile = this.openFileForRead(sourcePathOrUri);
+      const dstMode =
+        fileIo.OpenMode.READ_WRITE |
+        fileIo.OpenMode.CREATE |
+        fileIo.OpenMode.TRUNC;
+      dstFile = fileIo.openSync(targetPath, dstMode);
+
+      const buffer = new ArrayBuffer(8192);
       while (true) {
         const readBytes = fileIo.readSync(srcFile.fd, buffer);
         if (readBytes <= 0) {
@@ -315,9 +320,21 @@ export class FilePickerPlugin implements LeafPlugin {
         }
         fileIo.writeSync(dstFile.fd, buffer, { length: readBytes });
       }
+    } catch (_err) {
+      throw new Error('copy_file_failed');
     } finally {
-      fileIo.closeSync(srcFile);
-      fileIo.closeSync(dstFile);
+      this.closeQuietly(srcFile);
+      this.closeQuietly(dstFile);
+    }
+  }
+
+  private closeQuietly(file: fileIo.File | null): void {
+    if (!file) {
+      return;
+    }
+    try {
+      fileIo.closeSync(file);
+    } catch (_err) {
     }
   }
 
