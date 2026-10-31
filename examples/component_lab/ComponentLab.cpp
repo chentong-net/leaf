@@ -233,6 +233,13 @@ bool writeBinaryFile(const std::filesystem::path& path, const std::shared_ptr<LF
 }
 
 struct AudioDemoState {
+    ~AudioDemoState() {
+        if (!tempAudioPath.empty()) {
+            std::error_code error;
+            std::filesystem::remove(std::filesystem::u8path(tempAudioPath), error);
+        }
+    }
+
     std::shared_ptr<LFAudioPlayer> player;
     bool ready = false;
     bool durationResolved = false;
