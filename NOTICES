@@ -53,3 +53,9 @@ The following notices are provided for attribution and compliance.
    Upstream: https://www.alibabafonts.com/
    Legal statement: https://www.yuque.com/yiguang-wkqc2/hgpff0/nus9wiinq4aeiegy
    The font is distributed under separate terms from the Apache License.
+
+7) Unicode CLDR
+   Path: plugins/local_time/windows/LFLocalTimePlatformWindows.cpp
+   Upstream: https://github.com/unicode-org/cldr
+   License: Unicode License V3
+   License file: third_party/cldr/LICENSE
