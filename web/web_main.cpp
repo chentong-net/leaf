@@ -8,8 +8,9 @@
 #include <emscripten.h>
 #include <emscripten/em_js.h>
 #include <emscripten/html5.h>
-#include <emscripten/fetch.h>
 #include "LFAppLaunch.h"
+
+#include <fstream>
 
 static const char* CANVAS_ID = "#canvas";
 double dpr = 1.0f;
@@ -553,53 +554,41 @@ int main() {
     });
     leaf_web_sync_text_input_focus(0);
 
-    nvgCreateFont(vg, "sans", "fonts/Alibaba-PuHuiTi-Regular.ttf");
+    nvgCreateFont(vg, "sans", "/assets/fonts/Alibaba-PuHuiTi-Regular.ttf");
 
     LFResourceProvider::getInstance().setAssetLoader(
             [](const std::string &path,
                std::function<void(std::shared_ptr<LFData>)> callback) {
+                const std::string assetPath =
+                        !path.empty() && path.front() == '/'
+                        ? path
+                        : "/assets/" + path;
+                std::ifstream file(assetPath, std::ios::binary | std::ios::ate);
+                if (!file.is_open()) {
+                    callback(nullptr);
+                    return;
+                }
 
-                emscripten_fetch_attr_t attr;
-                emscripten_fetch_attr_init(&attr);
+                const std::streamsize size = file.tellg();
+                if (size <= 0) {
+                    callback(nullptr);
+                    return;
+                }
 
-                strcpy(attr.requestMethod, "GET");
-                attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY; // 直接加载到内存
+                auto data = std::make_shared<LFData>();
+                data->size = static_cast<size_t>(size);
+                data->data = static_cast<unsigned char*>(malloc(data->size));
+                if (!data->data) {
+                    callback(nullptr);
+                    return;
+                }
 
-                // 关键点：我们需要把 callback 传给成功/失败的静态函数
-                // 我们在堆上创建一个 callback 的拷贝，生命周期交给 Fetch 管理
-                auto *callbackPtr = new std::function<void(std::shared_ptr<LFData>)>(callback);
-                attr.userData = callbackPtr;
-
-                // 成功回调
-                attr.onsuccess = [](emscripten_fetch_t *fetch) {
-                    auto *cb = static_cast<std::function<void(
-                            std::shared_ptr<LFData>)> *>(fetch->userData);
-
-                    auto data = std::make_shared<LFData>();
-                    data->size = fetch->numBytes;
-                    data->data = (unsigned char *) malloc(data->size);
-                    memcpy(data->data, fetch->data, data->size);
-
-                    (*cb)(data); // 调用引擎的回调
-
-                    delete cb; // 清理 callback wrapper
-                    emscripten_fetch_close(fetch); // 释放 fetch 资源
-                };
-
-                // 失败回调
-                attr.onerror = [](emscripten_fetch_t *fetch) {
-                    auto *cb = static_cast<std::function<void(
-                            std::shared_ptr<LFData>)> *>(fetch->userData);
-                    printf("Fetch failed: %s\n", fetch->url);
-
-                    (*cb)(nullptr); // 告诉引擎加载失败
-
-                    delete cb;
-                    emscripten_fetch_close(fetch);
-                };
-
-                // 发起请求
-                emscripten_fetch(&attr, path.c_str());
+                file.seekg(0, std::ios::beg);
+                if (!file.read(reinterpret_cast<char*>(data->data), size)) {
+                    callback(nullptr);
+                    return;
+                }
+                callback(data);
             }
     );
 

@@ -23,7 +23,6 @@ add_link_options(
         -sUSE_WEBGL2=1
         -sFULL_ES3=1
         -sALLOW_MEMORY_GROWTH=1   # 允许内存动态增长
-        -sASSERTIONS=1            # 开启断言调试
         -sFETCH=1
         # -sASYNCIFY=1            # 如果后面需要处理复杂的 QuickJS 异步，可能需要开启
 )
@@ -37,7 +36,12 @@ target_link_libraries(leaf-web PRIVATE
         leaf-application
 )
 
+target_link_options(leaf-web PRIVATE
+        $<$<CONFIG:Debug>:-sASSERTIONS=1>
+        $<$<NOT:$<CONFIG:Debug>>:-sASSERTIONS=0>
+)
+
 set_target_properties(leaf-web PROPERTIES SUFFIX ".html")
 
-target_link_options(leaf-web PRIVATE --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/fonts@/fonts)
+target_link_options(leaf-web PRIVATE --preload-file ${APPLICATION_DIR}/assets@/assets)
 target_link_options(leaf-web PRIVATE --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html)
