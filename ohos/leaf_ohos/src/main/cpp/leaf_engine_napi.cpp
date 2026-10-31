@@ -130,6 +130,7 @@ void TsfnFinalize(napi_env env, void* finalize_data, void* finalize_hint) {
         std::lock_guard<std::mutex> lock(g_touchQueueMutex);
         g_pendingTouchEvents.clear();
     }
+    LFEngine::getInstance().discardContext();
 }
 
 void DispatchMethodCallToArkTS(const LFMethodCall& call) {
