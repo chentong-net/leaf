@@ -35,6 +35,7 @@ private:
     std::vector<BookRecord> m_books;
     std::string m_booksDirectory;
     bool m_importing = false;
+    bool m_openingBook = false;
 
     std::weak_ptr<LFNavigator> m_navigator;
 };

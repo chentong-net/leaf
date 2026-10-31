@@ -317,21 +317,37 @@ void BookshelfPage::openBook(const BookRecord& book) {
         setStatusText("打开失败：文件路径为空", 0xFFFF4D4F);
         return;
     }
-
-    auto loadResult = BookContentLoader::loadTextFile(book.filePath);
-    if (!loadResult.ok) {
-        setStatusText("读取失败：" + loadResult.error, 0xFFFF4D4F);
+    if (m_openingBook) {
         return;
     }
 
-    BookRepository::getInstance().touchBook(book.id, nowSeconds());
+    m_openingBook = true;
+    setStatusText("正在加载...", 0xFF1677FF);
 
-    auto readerPage = ReaderPage::create(book.id, book.title, loadResult.content);
-    if (auto nav = m_navigator.lock()) {
-        nav->push(readerPage);
-    } else {
-        setStatusText("导航器不可用，无法打开阅读页", 0xFFFF4D4F);
-    }
+    std::weak_ptr<BookshelfPage> weakSelf = std::static_pointer_cast<BookshelfPage>(shared_from_this());
+    BookContentLoader::loadTextFileAsync(
+            book.filePath,
+            [weakSelf, book](const BookContentLoadResult& loadResult) {
+                auto self = weakSelf.lock();
+                if (!self) {
+                    return;
+                }
+                self->m_openingBook = false;
+                if (!loadResult.ok) {
+                    self->setStatusText("读取失败：" + loadResult.error, 0xFFFF4D4F);
+                    return;
+                }
+
+                BookRepository::getInstance().touchBook(book.id, nowSeconds());
+                auto readerPage = ReaderPage::create(book.id, book.title, loadResult.content);
+                if (auto nav = self->m_navigator.lock()) {
+                    nav->push(readerPage);
+                    self->setStatusText("已打开：" + book.title, 0xFF52C41A);
+                } else {
+                    self->setStatusText("导航器不可用，无法打开阅读页", 0xFFFF4D4F);
+                }
+            }
+    );
 }
 
 void BookshelfPage::setStatusText(const std::string& text, uint32_t color) {
