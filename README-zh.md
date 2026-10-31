@@ -10,8 +10,60 @@
 
 - 设计实现一个跨平台应用开发引擎，实现全平台统一的UI绘制
 - 摒弃原生控件，采用自绘UI策略，保证全平台绘制效果的一致
-- 底层绘制使用NanoVG库，在OpenGL环境中进行绘制
+- 底层绘制使用NanoVG，在多数平台通过OpenGL/OpenGL ES绘制，在iOS使用MetalNanoVG
 - 布局使用Yoga库进行计算，纯数学计算，与图形绘制严格解耦
+
+### 构建
+
+#### macOS
+
+```bash
+cmake -S macos -B build-macos -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-macos --parallel
+ctest --test-dir build-macos --output-on-failure
+```
+
+#### Windows
+
+使用LLVM工具链和支持的生成器（例如Ninja）配置 `windows/CMakeLists.txt`：
+
+```powershell
+cmake -S windows -B build-windows -G Ninja `
+  -DCMAKE_C_COMPILER=clang.exe `
+  -DCMAKE_CXX_COMPILER=clang++.exe
+cmake --build build-windows --parallel
+```
+
+#### Web
+
+Web端需要Emscripten：
+
+```bash
+emcmake cmake -S web -B build_web -DCMAKE_BUILD_TYPE=Release
+cmake --build build_web --parallel
+```
+
+`application/assets` 下的全部资源会打包到虚拟 `/assets` 目录。
+
+#### Android
+
+```bash
+cd android
+./gradlew :app:assembleDebug
+```
+
+#### iOS
+
+安装Pod并打开工程前，先生成原生框架：
+
+```bash
+./ios/scripts/build_leaf_native_xcframework.sh
+cd ios/App
+pod install
+open App.xcworkspace
+```
+
+iOS最低支持版本为15.0。
 
 ### 项目架构
 

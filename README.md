@@ -10,8 +10,60 @@ English | [中文](README-zh.md)
 
 - Build a cross-platform app engine with unified UI rendering across all platforms.
 - Avoid native controls and use fully custom-drawn UI to ensure consistent visual output.
-- Use NanoVG for low-level rendering in an OpenGL environment.
+- Use NanoVG for low-level rendering through OpenGL/OpenGL ES on most platforms and MetalNanoVG on iOS.
 - Use Yoga for layout calculation, keeping pure layout math strictly decoupled from rendering.
+
+### Build
+
+#### macOS
+
+```bash
+cmake -S macos -B build-macos -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-macos --parallel
+ctest --test-dir build-macos --output-on-failure
+```
+
+#### Windows
+
+Configure `windows/CMakeLists.txt` with the LLVM toolchain and a supported generator such as Ninja:
+
+```powershell
+cmake -S windows -B build-windows -G Ninja `
+  -DCMAKE_C_COMPILER=clang.exe `
+  -DCMAKE_CXX_COMPILER=clang++.exe
+cmake --build build-windows --parallel
+```
+
+#### Web
+
+The Web target requires Emscripten:
+
+```bash
+emcmake cmake -S web -B build_web -DCMAKE_BUILD_TYPE=Release
+cmake --build build_web --parallel
+```
+
+All files under `application/assets` are packaged into the virtual `/assets` directory.
+
+#### Android
+
+```bash
+cd android
+./gradlew :app:assembleDebug
+```
+
+#### iOS
+
+Generate the native framework and install pods before opening the workspace:
+
+```bash
+./ios/scripts/build_leaf_native_xcframework.sh
+cd ios/App
+pod install
+open App.xcworkspace
+```
+
+The iOS deployment target is iOS 15.0 or newer.
 
 ### Project Structure
 
