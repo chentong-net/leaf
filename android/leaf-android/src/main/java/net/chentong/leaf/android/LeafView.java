@@ -135,10 +135,13 @@ public class LeafView extends GLSurfaceView implements LeafRenderer.TextInputFoc
 
             CursorAnchorInfo info = new CursorAnchorInfo.Builder()
                 .setMatrix(matrix)
-                .setInsertionMarkerHorizontal(left)
-                .setInsertionMarkerTop(top)
-                .setInsertionMarkerBottom(bottom)
-                .setInsertionMarkerFlags(CursorAnchorInfo.FLAG_HAS_VISIBLE_REGION)
+                .setInsertionMarkerLocation(
+                    left,
+                    top,
+                    right,
+                    bottom,
+                    CursorAnchorInfo.FLAG_HAS_VISIBLE_REGION
+                )
                 .build();
             inputMethodManager.updateCursorAnchorInfo(this, info);
         });
