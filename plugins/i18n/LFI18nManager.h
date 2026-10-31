@@ -5,8 +5,6 @@
 #include "LFI18nPlatform.h"
 #include "LFResourceProvider.h"
 
-#include <condition_variable>
-
 using LFI18nInitCallback = std::function<void(bool)>;
 
 class LFI18nManager {
@@ -37,8 +35,16 @@ private:
 
     LFI18nManager() = default;
 
-    bool ensureInitialized();
-    bool ensureInitializedFromAsset(const std::string& assetPath);
+    void ensureInitializationStarted();
+    void startInitialization(const std::string& assetPath);
+    void finishInitialization(
+            const ParsedTranslations& parsed,
+            const std::string& systemLanguageTag,
+            const std::string& cachedLanguageTag,
+            const std::string& cacheFilePath
+    );
+    void finishInitializationFailure();
+    void notifyInitializationCallbacks(bool ready);
     ParsedTranslations parseTranslations(const std::shared_ptr<LFData>& data) const;
     void clearStateLocked();
     bool applyCurrentLanguageLocked(const std::string& requestedTag);
@@ -46,10 +52,8 @@ private:
     std::string resolveDefaultLanguageTagLocked(const std::string& requestedTag) const;
     std::string resolveTextLocked(const std::string& key) const;
     bool persistCachedLanguage(const std::string& languageTag) const;
-    std::string loadCachedLanguage() const;
 
     mutable std::mutex m_mutex;
-    std::condition_variable m_stateCv;
     bool m_loading = false;
     bool m_ready = false;
     std::string m_assetPath = "i18n.json";
@@ -57,8 +61,10 @@ private:
     std::string m_currentLanguageTag = "zh-CN";
     std::string m_systemLanguageTag;
     std::string m_pendingLanguageTag;
+    std::string m_cacheFilePath;
     std::map<std::string, std::unordered_map<std::string, std::string>> m_translations;
     std::vector<std::string> m_languageOrder;
+    std::vector<LFI18nInitCallback> m_initCallbacks;
 };
 
 #endif // LEAF_LFI18NMANAGER_H
