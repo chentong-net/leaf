@@ -226,6 +226,13 @@ std::shared_ptr<LFNode> LFEventDispatcher::getFocusedNode() const {
     return m_focusedNode.lock();
 }
 
+void LFEventDispatcher::reset() {
+    clearFocus();
+    m_touchTargets.clear();
+    m_activeTouches.clear();
+    LFGestureArenaManager::getInstance().clearAll();
+}
+
 void LFEventDispatcher::performDispatch(
     LFTouchEvent& event,
     std::shared_ptr<LFNode> root

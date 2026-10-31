@@ -48,6 +48,7 @@ public:
     void setFocusedNode(const std::shared_ptr<LFNode>& node);
     void clearFocus(const std::shared_ptr<LFNode>& expectedNode = nullptr);
     std::shared_ptr<LFNode> getFocusedNode() const;
+    void reset();
 
     // Update gesture recognizers (for LongPress timing)
     void update(double currentTime, std::shared_ptr<LFNode> root);

@@ -26,7 +26,7 @@ void LFEngine::init(NVGcontext* vg) {
 
 void LFEngine::shutdown() {
     NVGcontext* context = m_vg;
-    LFEventDispatcher::getInstance().clearFocus();
+    LFEventDispatcher::getInstance().reset();
     LFGlobalAnimationManager::getInstance().cancelAll();
     m_rootNode.reset();
 
@@ -54,7 +54,7 @@ void LFEngine::shutdown() {
 }
 
 void LFEngine::discardContext() {
-    LFEventDispatcher::getInstance().clearFocus();
+    LFEventDispatcher::getInstance().reset();
     LFGlobalAnimationManager::getInstance().cancelAll();
     m_rootNode.reset();
 
