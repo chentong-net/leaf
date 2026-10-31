@@ -35,10 +35,8 @@ public class LeafView extends GLSurfaceView implements LeafRenderer.TextInputFoc
         setFocusable(true);
         setFocusableInTouchMode(true);
 
-        // 显式设置模板缓冲区
-        // LFScrollView 依赖 nvgIntersectScissor 来裁剪超出视口的内容
-        // NanoVG 内部利用模板缓冲区来标记画的内容
-        // setEGLConfigChooser(8, 8, 8, 8, 16, 8);
+        // NanoVG 的 antialias 与 stencil strokes 需要模板缓冲。
+        setEGLConfigChooser(8, 8, 8, 8, 24, 8);
 
         // 设置渲染器
         renderer = new LeafRenderer(context.getAssets(), this);

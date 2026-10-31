@@ -13,6 +13,7 @@ import net.chentong.leaf.android.plugin.localtime.LocalTimePlugin;
 import net.chentong.leaf.android.plugin.pathprovider.PathProviderPlugin;
 
 public class MainActivity extends Activity {
+    private LeafView leafView;
     private FilePickerPlugin filePickerPlugin;
     private PathProviderPlugin pathProviderPlugin;
     private AudioPlayerPlugin audioPlayerPlugin;
@@ -23,7 +24,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // 直接创建并显示 Leaf 视图
-        LeafView leafView = new LeafView(this);
+        leafView = new LeafView(this);
         setContentView(leafView);
         filePickerPlugin = new FilePickerPlugin(this);
         pathProviderPlugin = new PathProviderPlugin(this);
@@ -46,11 +47,28 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (leafView != null) {
+            leafView.onResume();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (leafView != null) {
+            leafView.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
     protected void onDestroy() {
         if (audioPlayerPlugin != null) {
             audioPlayerPlugin.release();
             audioPlayerPlugin = null;
         }
+        PluginRegistry.getInstance().clear();
         super.onDestroy();
     }
 }
