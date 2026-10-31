@@ -167,9 +167,24 @@ std::vector<unsigned char> read_asset(const char* path) {
         OH_ResourceManager_CloseRawFile(file);
         return {};
     }
-    std::vector<unsigned char> buf(len);
-    OH_ResourceManager_ReadRawFile(file, buf.data(), len);
+    std::vector<unsigned char> buf(static_cast<size_t>(len));
+    size_t offset = 0;
+    while (offset < buf.size()) {
+        const long read = OH_ResourceManager_ReadRawFile(
+                file,
+                buf.data() + offset,
+                buf.size() - offset
+        );
+        if (read <= 0) {
+            break;
+        }
+        offset += static_cast<size_t>(read);
+    }
     OH_ResourceManager_CloseRawFile(file);
+
+    if (offset != buf.size()) {
+        return {};
+    }
     return buf;
 }
 
