@@ -8,6 +8,8 @@
 #include <string>
 #include <functional>
 #include <vector>
+#include <mutex>
+#include <utility>
 
 // TODO: 为以后扩展参数做准备，目前没有这个需求
 using LFVariant = std::variant<int, float, std::string, std::vector<unsigned char>>;
@@ -32,16 +34,29 @@ public:
         return instance;
     }
 
-    void setAssetLoader(LFAssetLoader loader) { m_nativeLoader = loader; }
+    void setAssetLoader(LFAssetLoader loader) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_nativeLoader = std::move(loader);
+    }
 
     void fetchAsset(const std::string& uri, std::function<void(std::shared_ptr<LFData>)> callback) {
-        if (m_nativeLoader) {
-            m_nativeLoader(uri, callback);
+        LFAssetLoader loader;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            loader = m_nativeLoader;
         }
+        if (!loader) {
+            if (callback) {
+                callback(nullptr);
+            }
+            return;
+        }
+        loader(uri, callback);
     }
 
 private:
     LFResourceProvider() = default;
+    std::mutex m_mutex;
     LFAssetLoader m_nativeLoader;
 };
 
