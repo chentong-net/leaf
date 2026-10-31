@@ -184,13 +184,27 @@ void RenderThreadLoop() {
     };
 
     EGLConfig config;
-    EGLint numConfigs;
+    EGLint numConfigs = 0;
     eglChooseConfig(display, attribs, &config, 1, &numConfigs);
+    if (numConfigs <= 0) {
+        eglTerminate(display);
+        return;
+    }
 
     // 创建 Surface 和 Context
     EGLSurface surface = eglCreateWindowSurface(display, config, (EGLNativeWindowType)g_window, nullptr);
     const EGLint ctxAttribs[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
     EGLContext context = eglCreateContext(display, config, EGL_NO_CONTEXT, ctxAttribs);
+    if (surface == EGL_NO_SURFACE || context == EGL_NO_CONTEXT) {
+        if (surface != EGL_NO_SURFACE) {
+            eglDestroySurface(display, surface);
+        }
+        if (context != EGL_NO_CONTEXT) {
+            eglDestroyContext(display, context);
+        }
+        eglTerminate(display);
+        return;
+    }
 
     // 绑定上下文到本线程
     if (!eglMakeCurrent(display, surface, surface, context)) {
