@@ -10,6 +10,7 @@
 #include <memory>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <string_view>
 
 class LFJSONValue;
@@ -83,7 +84,14 @@ public:
         if (!isNumber()) throw std::runtime_error("LFJSON: Not a number");
         return std::get<double>(data); 
     }
-    int asInt() const { return static_cast<int>(asDouble()); }
+    int asInt() const {
+        const double value = asDouble();
+        if (value < static_cast<double>(std::numeric_limits<int>::min()) ||
+            value > static_cast<double>(std::numeric_limits<int>::max())) {
+            throw std::runtime_error("LFJSON: Number out of int range");
+        }
+        return static_cast<int>(value);
+    }
     bool asBool() const { 
         if (!isBool()) throw std::runtime_error("LFJSON: Not a boolean");
         return std::get<bool>(data); 
