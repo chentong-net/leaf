@@ -1,0 +1,11 @@
+{
+  "name": "audio_player",
+  "version": "1.0.0",
+  "description": "Leaf audio player plugin for HarmonyOS.",
+  "main": "Index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "leaf_plugin": "@module:leaf_plugin"
+  }
+}

@@ -61,6 +61,10 @@
     {
       "name": "path_provider",
       "srcPath": "../plugins/path_provider/ohos/module"
+    },
+    {
+      "name": "audio_player",
+      "srcPath": "../plugins/audio_player/ohos/module"
     }
   ]
 }

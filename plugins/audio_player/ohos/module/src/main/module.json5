@@ -1,0 +1,9 @@
+{
+  "module": {
+    "name": "audio_player",
+    "type": "har",
+    "deviceTypes": [
+      "default"
+    ]
+  }
+}
