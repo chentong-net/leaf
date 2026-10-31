@@ -48,7 +48,10 @@ public:
                 std::lock_guard<std::mutex> lock(m_mutex);
                 currentValue = m_value;
             }
-            listener(currentValue);
+            try {
+                listener(currentValue);
+            } catch (...) {
+            }
         }
 
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -80,7 +83,10 @@ private:
         }
 
         for (const auto& listener : listenersCopy) {
-            listener(value);
+            try {
+                listener(value);
+            } catch (...) {
+            }
         }
     }
 
