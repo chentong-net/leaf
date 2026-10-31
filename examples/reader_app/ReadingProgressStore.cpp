@@ -6,9 +6,14 @@
 
 #include "LFJSONParser.h"
 
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 
 namespace {
 
@@ -45,12 +50,41 @@ bool writeTextFile(const std::string& path, const std::string& content) {
     if (!ensureParentDirectory(path)) {
         return false;
     }
-    std::ofstream output(std::filesystem::u8path(path), std::ios::binary | std::ios::trunc);
+    const std::filesystem::path targetPath = std::filesystem::u8path(path);
+    std::filesystem::path temporaryPath = targetPath;
+    temporaryPath += ".tmp";
+
+    std::ofstream output(temporaryPath, std::ios::binary | std::ios::trunc);
     if (!output.is_open()) {
         return false;
     }
     output.write(content.data(), static_cast<std::streamsize>(content.size()));
-    return output.good();
+    output.flush();
+    const bool writeSucceeded = output.good();
+    output.close();
+    if (!writeSucceeded) {
+        std::error_code removeError;
+        std::filesystem::remove(temporaryPath, removeError);
+        return false;
+    }
+
+#if defined(_WIN32)
+    const bool replaced = MoveFileExW(
+            temporaryPath.wstring().c_str(),
+            targetPath.wstring().c_str(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH
+    ) != 0;
+#else
+    const bool replaced = std::rename(
+            temporaryPath.string().c_str(),
+            targetPath.string().c_str()
+    ) == 0;
+#endif
+    if (!replaced) {
+        std::error_code removeError;
+        std::filesystem::remove(temporaryPath, removeError);
+    }
+    return replaced;
 }
 
 std::string escapeJson(const std::string& text) {
@@ -74,7 +108,18 @@ std::string escapeJson(const std::string& text) {
                 escaped += "\\t";
                 break;
             default:
-                escaped += c;
+                if (static_cast<unsigned char>(c) < 0x20) {
+                    char buffer[7];
+                    std::snprintf(
+                            buffer,
+                            sizeof(buffer),
+                            "\\u%04x",
+                            static_cast<unsigned char>(c)
+                    );
+                    escaped += buffer;
+                } else {
+                    escaped += c;
+                }
                 break;
         }
     }
@@ -95,7 +140,11 @@ bool FileReadingProgressStore::initialize(const std::string& filePath) {
     }
     m_filePath = filePath;
     m_initialized = true;
-    return loadFromDiskLocked();
+    if (!loadFromDiskLocked()) {
+        m_initialized = false;
+        return false;
+    }
+    return true;
 }
 
 bool FileReadingProgressStore::isInitialized() const {
@@ -111,21 +160,39 @@ bool FileReadingProgressStore::get(const std::string& bookId, ReadingProgress& o
     return true;
 }
 
-void FileReadingProgressStore::put(const std::string& bookId, const ReadingProgress& progress) {
+bool FileReadingProgressStore::put(const std::string& bookId, const ReadingProgress& progress) {
     std::lock_guard<std::mutex> lock(m_mutex);
-    if (bookId.empty()) return;
+    if (bookId.empty()) return false;
+
+    auto existing = m_data.find(bookId);
+    const bool hadPrevious = existing != m_data.end();
+    const ReadingProgress previous = hadPrevious ? existing->second : ReadingProgress{};
     m_data[bookId] = progress;
-    if (m_initialized) {
-        persistToDiskLocked();
+    if (m_initialized && !persistToDiskLocked()) {
+        if (hadPrevious) {
+            m_data[bookId] = previous;
+        } else {
+            m_data.erase(bookId);
+        }
+        return false;
     }
+    return true;
 }
 
-void FileReadingProgressStore::clear(const std::string& bookId) {
+bool FileReadingProgressStore::clear(const std::string& bookId) {
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_data.erase(bookId);
-    if (m_initialized) {
-        persistToDiskLocked();
+    auto it = m_data.find(bookId);
+    if (it == m_data.end()) {
+        return true;
     }
+
+    const ReadingProgress previous = it->second;
+    m_data.erase(bookId);
+    if (m_initialized && !persistToDiskLocked()) {
+        m_data[bookId] = previous;
+        return false;
+    }
+    return true;
 }
 
 bool FileReadingProgressStore::loadFromDiskLocked() {

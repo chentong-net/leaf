@@ -338,7 +338,9 @@ void ReaderPage::persistCurrentProgress() {
     progress.pageIndex = currentIndex;
     progress.pageStartOffset = adapter->getPageStartOffset(currentIndex);
     progress.updatedAt = LFEngine::getInstance().getElapsedTime();
-    m_progressStore->put(m_bookId, progress);
+    if (!m_progressStore->put(m_bookId, progress)) {
+        LF_LOGI("Failed to persist reading progress for book: %s", m_bookId.c_str());
+    }
 }
 
 void ReaderPage::setupTopBar(const std::string& title) {

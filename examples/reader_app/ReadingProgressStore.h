@@ -29,8 +29,8 @@ class IReadingProgressStore {
 public:
     virtual ~IReadingProgressStore() = default;
     virtual bool get(const std::string& bookId, ReadingProgress& out) = 0;
-    virtual void put(const std::string& bookId, const ReadingProgress& progress) = 0;
-    virtual void clear(const std::string& bookId) = 0;
+    virtual bool put(const std::string& bookId, const ReadingProgress& progress) = 0;
+    virtual bool clear(const std::string& bookId) = 0;
 };
 
 /**
@@ -51,14 +51,16 @@ public:
         return true;
     }
 
-    void put(const std::string& bookId, const ReadingProgress& progress) override {
+    bool put(const std::string& bookId, const ReadingProgress& progress) override {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_data[bookId] = progress;
+        return true;
     }
 
-    void clear(const std::string& bookId) override {
+    bool clear(const std::string& bookId) override {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_data.erase(bookId);
+        return true;
     }
 
 private:
@@ -75,8 +77,8 @@ public:
     bool isInitialized() const;
 
     bool get(const std::string& bookId, ReadingProgress& out) override;
-    void put(const std::string& bookId, const ReadingProgress& progress) override;
-    void clear(const std::string& bookId) override;
+    bool put(const std::string& bookId, const ReadingProgress& progress) override;
+    bool clear(const std::string& bookId) override;
 
 private:
     FileReadingProgressStore() = default;
