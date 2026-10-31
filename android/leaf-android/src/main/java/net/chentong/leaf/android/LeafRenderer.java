@@ -173,6 +173,14 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
     }
 
     public void release() {
+        synchronized (queueLock) {
+            MotionEvent event;
+            while ((event = touchEventQueue.poll()) != null) {
+                event.recycle();
+            }
+            keyEventQueue.clear();
+            charInputQueue.clear();
+        }
         nativeRelease();
     }
 
