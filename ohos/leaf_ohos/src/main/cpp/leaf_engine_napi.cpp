@@ -163,6 +163,10 @@ std::vector<unsigned char> read_asset(const char* path) {
     RawFile* file = OH_ResourceManager_OpenRawFile(g_resMgr, path);
     if (!file) return {};
     long len = OH_ResourceManager_GetRawFileSize(file);
+    if (len <= 0) {
+        OH_ResourceManager_CloseRawFile(file);
+        return {};
+    }
     std::vector<unsigned char> buf(len);
     OH_ResourceManager_ReadRawFile(file, buf.data(), len);
     OH_ResourceManager_CloseRawFile(file);
