@@ -41,7 +41,6 @@ void LFNavigator::push(LFPage::Ptr page, bool animated) {
     LFPage::Ptr oldPage = nullptr;
     if (!m_stack.empty()) {
         oldPage = m_stack.back();
-        oldPage->onDisappear();
     }
 
     // 利用 LFBox 的绝对定位堆叠特性
@@ -57,6 +56,7 @@ void LFNavigator::push(LFPage::Ptr page, bool animated) {
     } else {
         if (oldPage) {
             oldPage->setVisible(false);
+            oldPage->onDisappear();
         }
         page->setVisible(true);
         page->setTranslate(0, 0);
@@ -79,6 +79,7 @@ void LFNavigator::pop(bool animated) {
         animatePop(exitPage, enterPage);
     } else {
         removeChild(exitPage);
+        exitPage->onDisappear();
         // The previous page may have been hidden by an earlier animated push.
         enterPage->setVisible(true);
         enterPage->setTranslate(0, 0);
@@ -152,13 +153,14 @@ void LFNavigator::animatePush(LFPage::Ptr exitPage, LFPage::Ptr enterPage) {
         if (auto self = weakSelf.lock()) {
             self->m_isTransitioning = false;
 
-            if (auto enter = weakEnter.lock()) {
-                enter->setTranslate(0, 0); // 修正可能存在的浮点误差
-                enter->onAppear();
-            }
             if (auto exit = weakExit.lock()) {
                 exit->setTranslate(0, 0); // 归位
                 exit->setVisible(false);  // 隐藏不可见的旧页面以优化性能
+                exit->onDisappear();
+            }
+            if (auto enter = weakEnter.lock()) {
+                enter->setTranslate(0, 0); // 修正可能存在的浮点误差
+                enter->onAppear();
             }
         }
     });
@@ -211,6 +213,7 @@ void LFNavigator::animatePop(LFPage::Ptr exitPage, LFPage::Ptr enterPage) {
             // 物理移除
             if (auto exit = weakExit.lock()) {
                 self->removeChild(exit);
+                exit->onDisappear();
             }
 
             if (auto enter = weakEnter.lock()) {
