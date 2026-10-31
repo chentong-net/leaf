@@ -4,6 +4,12 @@
 
 #include "LFSpring.h"
 
+namespace {
+
+constexpr double kPi = 3.14159265358979323846;
+
+}
+
 LFSpring::LFSpring(double mass, double stiffness, double damping)
     : m_mass(mass)
     , m_stiffness(stiffness)
@@ -44,7 +50,7 @@ void LFSpring::setDampingRatio(double dampingRatio, double frequencyResponse) {
     }
 
     m_mass = 1.0;
-    double angularFrequency = (2.0 * M_PI) / frequencyResponse; // w0
+    double angularFrequency = (2.0 * kPi) / frequencyResponse; // w0
     m_stiffness = angularFrequency * angularFrequency;          // k = w0^2 * m
     m_damping = 2.0 * dampingRatio * angularFrequency;          // c = 2 * zeta * w0 * m
 

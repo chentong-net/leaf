@@ -8,6 +8,12 @@
 #include <cmath>
 #include <algorithm>
 
+namespace {
+
+constexpr float kPi = 3.14159265358979323846f;
+
+}
+
 // ==========================================
 // Base Gesture Recognizer Implementation
 // ==========================================
@@ -645,14 +651,14 @@ void LFRotateGestureRecognizer::handleEvent(const LFTouchEvent& event) {
             float angleDelta = currentAngle - m_previousAngle;
 
             // Normalize to [-PI, PI]
-            while (angleDelta > M_PI) angleDelta -= 2 * M_PI;
-            while (angleDelta < -M_PI) angleDelta += 2 * M_PI;
+            while (angleDelta > kPi) angleDelta -= 2 * kPi;
+            while (angleDelta < -kPi) angleDelta += 2 * kPi;
 
             if (!m_started) {
                 // Start rotation if angle changed significantly
                 float totalRotation = currentAngle - m_initialAngle;
-                while (totalRotation > M_PI) totalRotation -= 2 * M_PI;
-                while (totalRotation < -M_PI) totalRotation += 2 * M_PI;
+                while (totalRotation > kPi) totalRotation -= 2 * kPi;
+                while (totalRotation < -kPi) totalRotation += 2 * kPi;
 
                 if (std::abs(totalRotation) > 0.1f) { // ~5.7 degrees threshold
                     m_started = true;
