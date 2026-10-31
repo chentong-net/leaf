@@ -189,7 +189,9 @@ public:
         m_elapsedTime += dt;
         m_totalTime += dt;
 
-        float fraction = m_elapsedTime / m_duration;
+        float fraction = m_duration > 0.0f
+                         ? m_elapsedTime / m_duration
+                         : 1.0f;
         bool cycleEnded = false;
 
         // 处理完成或循环

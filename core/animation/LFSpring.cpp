@@ -13,12 +13,16 @@ LFSpring::LFSpring(double mass, double stiffness, double damping)
     , m_velocity(0.0)
 {
     // 质量不能为0或负数
-    if (m_mass <= 1e-5) m_mass = 1.0;
+    if (!std::isfinite(m_mass) || m_mass <= 1e-5) m_mass = 1.0;
+    if (!std::isfinite(m_stiffness) || m_stiffness <= 0.0) m_stiffness = 1.0;
+    if (!std::isfinite(m_damping) || m_damping < 0.0) m_damping = 0.0;
     recomputeSolverParameters();
 }
 
 void LFSpring::setPhysicalParameters(double mass, double stiffness, double damping) {
-    if (mass <= 1e-5) mass = 1.0;
+    if (!std::isfinite(mass) || mass <= 1e-5) mass = 1.0;
+    if (!std::isfinite(stiffness) || stiffness <= 0.0) stiffness = 1.0;
+    if (!std::isfinite(damping) || damping < 0.0) damping = 0.0;
     m_mass = mass;
     m_stiffness = stiffness;
     m_damping = damping;
@@ -32,6 +36,13 @@ void LFSpring::setDampingRatio(double dampingRatio, double frequencyResponse) {
     // damping = 4 * PI * dampingRatio * mass / frequencyResponse
 
     // 假设 Mass 为 1.0 以简化计算（Spring 的运动只取决于比例）
+    if (!std::isfinite(dampingRatio) || dampingRatio < 0.0) {
+        dampingRatio = 1.0;
+    }
+    if (!std::isfinite(frequencyResponse) || frequencyResponse <= 1e-5) {
+        frequencyResponse = 1.0;
+    }
+
     m_mass = 1.0;
     double angularFrequency = (2.0 * M_PI) / frequencyResponse; // w0
     m_stiffness = angularFrequency * angularFrequency;          // k = w0^2 * m

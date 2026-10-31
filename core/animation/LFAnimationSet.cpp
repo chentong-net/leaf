@@ -4,6 +4,8 @@
 
 #include "LFAnimationSet.h"
 
+#include <algorithm>
+
 void LFAnimationSet::addAnimator(LFAnimator::Ptr animator) {
     if (animator) {
         m_animators.push_back(animator);
@@ -12,15 +14,30 @@ void LFAnimationSet::addAnimator(LFAnimator::Ptr animator) {
 
 void LFAnimationSet::playTogether(std::initializer_list<LFAnimator::Ptr> items) {
     m_playSequentially = false;
-    m_animators = items;
+    m_animators.assign(items.begin(), items.end());
+    m_animators.erase(
+            std::remove_if(m_animators.begin(), m_animators.end(),
+                           [](const auto& animator) { return !animator; }),
+            m_animators.end()
+    );
 }
 
 void LFAnimationSet::playSequentially(std::initializer_list<LFAnimator::Ptr> items) {
     m_playSequentially = true;
-    m_animators = items;
+    m_animators.assign(items.begin(), items.end());
+    m_animators.erase(
+            std::remove_if(m_animators.begin(), m_animators.end(),
+                           [](const auto& animator) { return !animator; }),
+            m_animators.end()
+    );
 }
 
 void LFAnimationSet::start() {
+    m_animators.erase(
+            std::remove_if(m_animators.begin(), m_animators.end(),
+                           [](const auto& animator) { return !animator; }),
+            m_animators.end()
+    );
     if (m_animators.empty()) {
         m_state = LFAnimatorState::Ended;
         notifyEnd();
@@ -53,28 +70,28 @@ void LFAnimationSet::start() {
 void LFAnimationSet::stop() {
     LFAnimator::stop();
     for (auto& anim : m_animators) {
-        anim->stop();
+        if (anim) anim->stop();
     }
 }
 
 void LFAnimationSet::pause() {
     LFAnimator::pause();
     for (auto& anim : m_animators) {
-        anim->pause();
+        if (anim) anim->pause();
     }
 }
 
 void LFAnimationSet::resume() {
     LFAnimator::resume();
     for (auto& anim : m_animators) {
-        anim->resume();
+        if (anim) anim->resume();
     }
 }
 
 void LFAnimationSet::cancel() {
     LFAnimator::cancel();
     for (auto& anim : m_animators) {
-        anim->cancel();
+        if (anim) anim->cancel();
     }
 }
 
