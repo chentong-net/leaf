@@ -64,6 +64,7 @@ private:
     static size_t nextGraphemeIndex(const std::string& text, size_t index);
     static size_t graphemeCount(const std::string& text);
     static size_t graphemeCountUntilByte(const std::string& text, size_t byteIndex);
+    static size_t graphemeBoundaryAtOrBefore(const std::string& text, size_t byteIndex);
     static std::string utf8FromCodepoint(uint32_t codepoint);
 
     std::string m_text;

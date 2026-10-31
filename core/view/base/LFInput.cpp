@@ -28,9 +28,7 @@ LFInput::Ptr LFInput::create() {
 void LFInput::setText(const std::string& text) {
     if (m_text == text) return;
     m_text = text;
-    if (m_cursorIndex > m_text.size()) {
-        m_cursorIndex = m_text.size();
-    }
+    m_cursorIndex = graphemeBoundaryAtOrBefore(m_text, m_cursorIndex);
     commitTextChanged();
 }
 
@@ -328,7 +326,25 @@ size_t LFInput::graphemeCountUntilByte(const std::string& text, size_t byteIndex
     return count;
 }
 
+size_t LFInput::graphemeBoundaryAtOrBefore(const std::string& text, size_t byteIndex) {
+    const size_t target = std::min(byteIndex, text.size());
+    size_t boundary = 0;
+    while (boundary < target) {
+        const size_t next = nextGraphemeIndex(text, boundary);
+        if (next <= boundary || next > target) {
+            break;
+        }
+        boundary = next;
+    }
+    return boundary;
+}
+
 std::string LFInput::utf8FromCodepoint(uint32_t codepoint) {
+    if (codepoint > 0x10FFFF ||
+        (codepoint >= 0xD800 && codepoint <= 0xDFFF)) {
+        return {};
+    }
+
     std::string out;
     if (codepoint <= 0x7F) {
         out.push_back((char)codepoint);
@@ -339,7 +355,7 @@ std::string LFInput::utf8FromCodepoint(uint32_t codepoint) {
         out.push_back((char)(0xE0 | ((codepoint >> 12) & 0x0F)));
         out.push_back((char)(0x80 | ((codepoint >> 6) & 0x3F)));
         out.push_back((char)(0x80 | (codepoint & 0x3F)));
-    } else if (codepoint <= 0x10FFFF) {
+    } else {
         out.push_back((char)(0xF0 | ((codepoint >> 18) & 0x07)));
         out.push_back((char)(0x80 | ((codepoint >> 12) & 0x3F)));
         out.push_back((char)(0x80 | ((codepoint >> 6) & 0x3F)));
