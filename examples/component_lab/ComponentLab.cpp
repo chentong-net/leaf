@@ -836,6 +836,10 @@ LFLinear::Ptr buildFunctionDemoPage() {
         fallbackValue->setText(LFI18n::get("i18n.demo.default_fallback_value"));
     };
 
+    LFI18n::initialize([refreshI18nPreview](bool) {
+        refreshI18nPreview();
+    });
+
     auto i18nButtonRow = makeRow();
     auto setZhButton = makeActionButton("zh-CN", [refreshI18nPreview](LFButton*) {
         LFI18n::setLanguage(LFLocales::ZhCN);
