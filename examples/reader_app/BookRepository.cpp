@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -230,6 +231,10 @@ std::string trimExtension(const std::string& fileName) {
     return fileName.substr(0, dot);
 }
 
+double sanitizeTimestamp(double value) {
+    return std::isfinite(value) && value >= 0.0 ? value : 0.0;
+}
+
 } // namespace
 
 BookRepository& BookRepository::getInstance() {
@@ -303,6 +308,8 @@ bool BookRepository::upsertBook(const BookRecord& incoming) {
         const std::string fileName = slash == std::string::npos ? book.filePath : book.filePath.substr(slash + 1);
         book.title = trimExtension(fileName);
     }
+    book.createdAt = sanitizeTimestamp(book.createdAt);
+    book.lastReadAt = sanitizeTimestamp(book.lastReadAt);
 
     auto sameBook = [&book](const BookRecord& item) {
         if (!book.id.empty() && item.id == book.id) return true;
@@ -379,7 +386,8 @@ bool BookRepository::findBook(const std::string& bookId, BookRecord& outBook) co
 
 bool BookRepository::touchBook(const std::string& bookId, double timestamp) {
     std::lock_guard<std::mutex> lock(m_mutex);
-    if (!m_initialized || bookId.empty()) {
+    if (!m_initialized || bookId.empty() ||
+        !std::isfinite(timestamp) || timestamp < 0.0) {
         return false;
     }
 
@@ -449,10 +457,10 @@ bool BookRepository::loadFromDiskLocked() {
                 }
             }
             if (item->contains("createdAt")) {
-                book.createdAt = std::max(0.0, item->at("createdAt").asDouble());
+                book.createdAt = sanitizeTimestamp(item->at("createdAt").asDouble());
             }
             if (item->contains("lastReadAt")) {
-                book.lastReadAt = std::max(0.0, item->at("lastReadAt").asDouble());
+                book.lastReadAt = sanitizeTimestamp(item->at("lastReadAt").asDouble());
             }
 
             if (!book.id.empty() && !book.filePath.empty()) {

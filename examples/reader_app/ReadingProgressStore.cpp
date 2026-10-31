@@ -6,6 +6,7 @@
 
 #include "LFJSONParser.h"
 
+#include <cmath>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -127,6 +128,10 @@ std::string escapeJson(const std::string& text) {
     return escaped;
 }
 
+double sanitizeTimestamp(double value) {
+    return std::isfinite(value) && value >= 0.0 ? value : 0.0;
+}
+
 } // namespace
 
 FileReadingProgressStore& FileReadingProgressStore::getInstance() {
@@ -165,10 +170,14 @@ bool FileReadingProgressStore::put(const std::string& bookId, const ReadingProgr
     std::lock_guard<std::mutex> lock(m_mutex);
     if (bookId.empty()) return false;
 
+    ReadingProgress sanitized = progress;
+    sanitized.pageIndex = std::max(0, sanitized.pageIndex);
+    sanitized.updatedAt = sanitizeTimestamp(sanitized.updatedAt);
+
     auto existing = m_data.find(bookId);
     const bool hadPrevious = existing != m_data.end();
     const ReadingProgress previous = hadPrevious ? existing->second : ReadingProgress{};
-    m_data[bookId] = progress;
+    m_data[bookId] = sanitized;
     if (m_initialized && !persistToDiskLocked()) {
         if (hadPrevious) {
             m_data[bookId] = previous;
@@ -234,7 +243,7 @@ bool FileReadingProgressStore::loadFromDiskLocked() {
                 progress.pageIndex = std::max(0, item->at("pageIndex").asInt());
             }
             if (item->contains("updatedAt")) {
-                progress.updatedAt = std::max(0.0, item->at("updatedAt").asDouble());
+                progress.updatedAt = sanitizeTimestamp(item->at("updatedAt").asDouble());
             }
 
             m_data[item->at("bookId").asString()] = progress;
