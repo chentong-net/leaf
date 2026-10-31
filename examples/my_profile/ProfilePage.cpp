@@ -4,6 +4,7 @@
 
 #include "ProfilePage.h"
 #include "ProfileSecurity.h"
+#include "plugin/LFPlugin.h"
 
 std::shared_ptr<LFNode> buildICP(std::string icpText);
 
@@ -36,12 +37,26 @@ static const float FS_SMALL  = 13.0f;
 std::shared_ptr<ProfilePage> ProfilePage::create() {
     auto page = std::make_shared<ProfilePage>();
     LFResourceProvider::getInstance().fetchAsset("profile", [page](std::shared_ptr<LFData> data) {
-        std::vector<unsigned char> rawData(data->data, data->data + data->size);
-        std::string jsonCode = ProfileSecurity::decrypt_profile_data(rawData);
-        page->data = LFJSONParser::parse(jsonCode);
-        if (page->data) {
-            page->initUI();
-        }
+        LFPluginCenter::dispatchToMain([page, data = std::move(data)]() {
+            if (!data || !data->data || data->size < 4 || (data->size - 4) % 8 != 0) {
+                page->showLoadError("Profile asset is unavailable or malformed.");
+                return;
+            }
+
+            try {
+                std::vector<unsigned char> rawData(data->data, data->data + data->size);
+                const std::string jsonCode = ProfileSecurity::decrypt_profile_data(rawData);
+                if (jsonCode.empty()) {
+                    page->showLoadError("Profile data could not be decrypted.");
+                    return;
+                }
+                page->data = LFJSONParser::parse(jsonCode);
+                page->initUI();
+            } catch (...) {
+                page->data.reset();
+                page->showLoadError("Profile data could not be parsed.");
+            }
+        });
     });
     return page;
 }
@@ -53,6 +68,20 @@ ProfilePage::ProfilePage() {
 void ProfilePage::onEnter() {
     LFPage::onEnter();
     // 可以在这里做埋点统计
+}
+
+void ProfilePage::showLoadError(const std::string& message) {
+    auto children = getChildren();
+    for (const auto& child : children) {
+        removeChild(child);
+    }
+
+    setBackgroundColor(COL_BG);
+    auto text = createLabel(message, FS_BODY, COL_TEXT_SUB);
+    text->matchParentWidth();
+    text->wrapContentHeight();
+    text->setPadding(YGEdgeAll, PAGE_PADDING);
+    addChild(text);
 }
 
 void ProfilePage::initUI() {

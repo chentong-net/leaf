@@ -20,6 +20,7 @@ public:
 
 private:
     void initUI();
+    void showLoadError(const std::string& message);
 
     // UI 构建辅助方法
     // 为了保持 initUI 整洁，将各板块的构建逻辑拆分
