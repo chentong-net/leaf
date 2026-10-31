@@ -47,7 +47,9 @@ void LFEventDispatcher::dispatchTouchEvent(
     // 2. Populate per-point lifecycle data from the previous active state.
     for (auto& point : event.touches) {
         auto activeIt = m_activeTouches.find(point.id);
-        if (type == LFTouchEventType::Down || activeIt == m_activeTouches.end()) {
+        const bool isNewDown = type == LFTouchEventType::Down &&
+            std::find(changedIDs.begin(), changedIDs.end(), point.id) != changedIDs.end();
+        if (isNewDown || activeIt == m_activeTouches.end()) {
             point.startX = point.x;
             point.startY = point.y;
             point.lastX = point.x;
