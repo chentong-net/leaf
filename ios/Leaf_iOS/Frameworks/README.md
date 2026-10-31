@@ -15,4 +15,5 @@ ios/Leaf_iOS/Frameworks/LeafNative.xcframework
 ```
 
 The xcframework bundles native static libraries and exported C++ headers
-(core, third-party dependencies used by core, plugin public headers, and demo public headers).
+(core, third-party dependencies used by core, and the File Picker/Path Provider
+public headers required by the runtime).

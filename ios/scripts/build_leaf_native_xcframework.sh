@@ -102,9 +102,6 @@ prepare_headers() {
   copy_headers_tree "${ROOT_DIR}/third_party/yoga"
   while IFS= read -r -d '' header_file; do
     cp "${header_file}" "${HEADERS_DIR}/"
-  done < <(find "${ROOT_DIR}/third_party/quickjs" -maxdepth 1 -type f -name '*.h' -print0)
-  while IFS= read -r -d '' header_file; do
-    cp "${header_file}" "${HEADERS_DIR}/"
   done < <(find "${ROOT_DIR}/third_party/nanovg/src" -maxdepth 1 -type f -name '*.h' -print0)
   while IFS= read -r -d '' header_file; do
     cp "${header_file}" "${HEADERS_DIR}/"
