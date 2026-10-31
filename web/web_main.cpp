@@ -554,7 +554,9 @@ int main() {
     });
     leaf_web_sync_text_input_focus(0);
 
-    nvgCreateFont(vg, "sans", "/assets/fonts/Alibaba-PuHuiTi-Regular.ttf");
+    if (nvgCreateFont(vg, "sans", "/assets/fonts/Alibaba-PuHuiTi-Regular.ttf") < 0) {
+        LF_LOGI("Failed to load bundled Web font");
+    }
 
     LFResourceProvider::getInstance().setAssetLoader(
             [](const std::string &path,

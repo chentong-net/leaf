@@ -318,7 +318,11 @@ struct NativeKeyEvent {
 
     NSString* fontPath = leafResolveAssetPath(@"fonts/Alibaba-PuHuiTi-Regular.ttf");
     if (fontPath.length > 0) {
-        nvgCreateFont(_vg, "sans", fontPath.UTF8String);
+        if (nvgCreateFont(_vg, "sans", fontPath.UTF8String) < 0) {
+            LF_LOGI("LeafRenderer: failed to load bundled font");
+        }
+    } else {
+        LF_LOGI("LeafRenderer: bundled font was not found");
     }
 
     _engineInitialized = YES;
