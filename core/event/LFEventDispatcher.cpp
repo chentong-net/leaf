@@ -62,10 +62,10 @@ void LFEventDispatcher::dispatchTouchEvent(
 
     // 3. Update active touch point state
     for (auto id : changedIDs) {
-        auto it = std::find_if(touches.begin(), touches.end(),
+        auto it = std::find_if(event.touches.begin(), event.touches.end(),
             [id](const LFTouchPoint& t) { return t.id == id; });
 
-        if (it != touches.end()) {
+        if (it != event.touches.end()) {
             if (type == LFTouchEventType::Down) {
                 m_activeTouches[id] = *it;
             } else if (type == LFTouchEventType::Up || type == LFTouchEventType::Cancel) {
