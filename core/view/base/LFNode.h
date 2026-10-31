@@ -139,6 +139,9 @@ public:
 
     // 获取变换（供 HitTest 使用）
     const LFTransform& getTransform() const { return m_transform; }
+    bool convertWindowPointToLocal(float windowX, float windowY,
+                                   float& localX, float& localY) const;
+    bool containsWindowPoint(float windowX, float windowY) const;
 
     // 可见性检查
     bool isVisible() const { return m_visible; }

@@ -381,34 +381,12 @@ float LFSlider::clampNormalized(float normalized) const {
 }
 
 LFPoint LFSlider::toLocalPoint(const LFTouchPoint& touch) const {
-    return LFPoint(touch.x - getRootAbsoluteX(), touch.y - getRootAbsoluteY());
-}
-
-float LFSlider::getRootAbsoluteX() const {
-    // TODO: 没有处理scale/rotate
-    float x = 0.0f;
-    const LFNode* current = this;
-    while (current) {
-        x += current->getLayoutX();
-        const auto& transform = current->getTransform();
-        x += transform.translateX;
-        x += current->getLayoutWidth() * (transform.translatePercentX / 100.0f);
-        current = current->getParent();
+    float localX = touch.x;
+    float localY = touch.y;
+    if (!convertWindowPointToLocal(touch.x, touch.y, localX, localY)) {
+        return LFPoint();
     }
-    return x;
-}
-
-float LFSlider::getRootAbsoluteY() const {
-    float y = 0.0f;
-    const LFNode* current = this;
-    while (current) {
-        y += current->getLayoutY();
-        const auto& transform = current->getTransform();
-        y += transform.translateY;
-        y += current->getLayoutHeight() * (transform.translatePercentY / 100.0f);
-        current = current->getParent();
-    }
-    return y;
+    return LFPoint(localX, localY);
 }
 
 bool LFSlider::almostEqual(float a, float b) {

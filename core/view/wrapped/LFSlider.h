@@ -81,8 +81,6 @@ private:
     float quantizeValue(float value) const;
     float clampNormalized(float normalized) const;
     LFPoint toLocalPoint(const LFTouchPoint& touch) const;
-    float getRootAbsoluteX() const;
-    float getRootAbsoluteY() const;
 
     static bool almostEqual(float a, float b);
 

@@ -17,6 +17,8 @@
 
 namespace {
 
+constexpr float kPi = 3.14159265358979323846f;
+
 float resolveOwnerAxis(const YGValue& axis, float ownerSize) {
     if (axis.unit == YGUnitPoint) {
         return axis.value;
@@ -25,6 +27,36 @@ float resolveOwnerAxis(const YGValue& axis, float ownerSize) {
         return ownerSize * axis.value / 100.0f;
     }
     return YGUndefined;
+}
+
+bool pointInRoundedRect(float x, float y, float width, float height, float radius) {
+    radius = std::min(radius, std::min(width, height) * 0.5f);
+    const bool inLeft = x < radius;
+    const bool inRight = x > width - radius;
+    const bool inTop = y < radius;
+    const bool inBottom = y > height - radius;
+
+    if (inLeft && inTop) {
+        const float dx = x - radius;
+        const float dy = y - radius;
+        return dx * dx + dy * dy <= radius * radius;
+    }
+    if (inRight && inTop) {
+        const float dx = x - (width - radius);
+        const float dy = y - radius;
+        return dx * dx + dy * dy <= radius * radius;
+    }
+    if (inLeft && inBottom) {
+        const float dx = x - radius;
+        const float dy = y - (height - radius);
+        return dx * dx + dy * dy <= radius * radius;
+    }
+    if (inRight && inBottom) {
+        const float dx = x - (width - radius);
+        const float dy = y - (height - radius);
+        return dx * dx + dy * dy <= radius * radius;
+    }
+    return true;
 }
 
 }
@@ -435,6 +467,86 @@ void LFNode::drawBorder(NVGcontext* vg, float w, float h) {
 
 NVGcolor LFNode::colorToNVG(uint32_t c) {
     return nvgRGBA((c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF, (c >> 24) & 0xFF);
+}
+
+bool LFNode::convertWindowPointToLocal(float windowX, float windowY,
+                                       float& localX, float& localY) const {
+    std::vector<const LFNode*> chain;
+    for (const LFNode* node = this; node; node = node->m_parent) {
+        chain.push_back(node);
+    }
+
+    float x = windowX;
+    float y = windowY;
+    for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
+        const LFNode* node = *it;
+        x -= node->getLayoutX();
+        y -= node->getLayoutY();
+
+        const LFTransform& transform = node->m_transform;
+        const float width = node->getLayoutWidth();
+        const float height = node->getLayoutHeight();
+        x -= transform.translateX + width * transform.translatePercentX / 100.0f;
+        y -= transform.translateY + height * transform.translatePercentY / 100.0f;
+
+        if (transform.rotate == 0.0f &&
+            transform.scaleX == 1.0f &&
+            transform.scaleY == 1.0f) {
+            continue;
+        }
+        if (std::abs(transform.scaleX) < 0.001f ||
+            std::abs(transform.scaleY) < 0.001f) {
+            return false;
+        }
+
+        const float centerX = width * 0.5f;
+        const float centerY = height * 0.5f;
+        x -= centerX;
+        y -= centerY;
+        x /= transform.scaleX;
+        y /= transform.scaleY;
+
+        if (transform.rotate != 0.0f) {
+            const float radians = -transform.rotate * kPi / 180.0f;
+            const float cosine = std::cos(radians);
+            const float sine = std::sin(radians);
+            const float rotatedX = x * cosine - y * sine;
+            const float rotatedY = x * sine + y * cosine;
+            x = rotatedX;
+            y = rotatedY;
+        }
+        x += centerX;
+        y += centerY;
+    }
+
+    localX = x;
+    localY = y;
+    return true;
+}
+
+bool LFNode::containsWindowPoint(float windowX, float windowY) const {
+    if (!m_visible || m_opacity <= 0.0f) {
+        return false;
+    }
+
+    float localX = 0.0f;
+    float localY = 0.0f;
+    if (!convertWindowPointToLocal(windowX, windowY, localX, localY)) {
+        return false;
+    }
+
+    const float width = getLayoutWidth();
+    const float height = getLayoutHeight();
+    if (localX < 0.0f || localX > width || localY < 0.0f || localY > height) {
+        return false;
+    }
+
+    const float radius = m_borderRadius;
+    if (radius <= 0.0f) {
+        return true;
+    }
+
+    return pointInRoundedRect(localX, localY, width, height, radius);
 }
 
 // ==========================================
