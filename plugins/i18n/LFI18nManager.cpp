@@ -365,21 +365,25 @@ std::string LFI18nManager::resolveAvailableLanguageTagLocked(const std::string& 
     const LFLocale requestedLocale = LFLocale::fromTag(normalizedTag);
     std::string languageOnlyMatch;
 
-    for (const auto& entry : m_translations) {
-        const LFLocale candidate = LFLocale::fromTag(entry.first);
+    for (const auto& languageTag : m_languageOrder) {
+        const auto entry = m_translations.find(languageTag);
+        if (entry == m_translations.end()) {
+            continue;
+        }
+        const LFLocale candidate = LFLocale::fromTag(entry->first);
         if (!localeLanguageMatches(candidate, requestedLocale)) {
             continue;
         }
         if (!requestedLocale.scriptCode.empty() &&
             candidate.scriptCode == requestedLocale.scriptCode) {
-            return entry.first;
+            return entry->first;
         }
         if (!requestedLocale.countryCode.empty() &&
             candidate.countryCode == requestedLocale.countryCode) {
-            return entry.first;
+            return entry->first;
         }
         if (languageOnlyMatch.empty()) {
-            languageOnlyMatch = entry.first;
+            languageOnlyMatch = entry->first;
         }
     }
 
