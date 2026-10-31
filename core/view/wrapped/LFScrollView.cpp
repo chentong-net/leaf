@@ -74,6 +74,9 @@ void LFScrollView::initLayout(const LFNode::Ptr& content) {
 }
 
 void LFScrollView::addChild(const LFNode::Ptr& child) {
+    if (!child || !m_content) {
+        return;
+    }
     m_content->addChild(child);
     child->setPositionType(YGPositionTypeRelative);
     child->setPosition(YGEdgeRight, NAN);
