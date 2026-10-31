@@ -67,6 +67,17 @@ public:
     void init(NVGcontext *vg);
 
     /**
+     * 释放当前上下文中由引擎管理的资源，并解除根节点。
+     * 调用前必须保证 NanoVG 上下文仍然有效。
+     */
+    void shutdown();
+
+    /**
+     * 丢弃已经失效的上下文状态，不对旧 GPU 句柄执行删除操作。
+     */
+    void discardContext();
+
+    /**
      * 设置渲染窗口大小
      * 当窗口 resize 时必须调用
      */
@@ -106,7 +117,7 @@ public:
      * 供 LFImage 析构时调用。将废弃的 handle 放入队列，
      * 引擎会在下一帧渲染结束时统一安全释放。
      */
-    void recycleTexture(int imageHandle);
+    void recycleTexture(NVGcontext* context, int imageHandle);
 
     /**
      * Get elapsed time since engine initialization (in seconds)
@@ -129,6 +140,11 @@ public:
     void updateTextInputCursor(float x, float y, float lineHeight);
 
 private:
+    struct PendingTextureDeletion {
+        NVGcontext* context = nullptr;
+        int imageHandle = 0;
+    };
+
     LFEngine() = default;
 
     ~LFEngine() = default;
@@ -143,7 +159,7 @@ private:
     float m_pixelRatio = 1.0f;
 
     // 资源回收队列
-    std::vector<int> m_garbageTextures;
+    std::vector<PendingTextureDeletion> m_garbageTextures;
     std::mutex m_gcMutex; // 保护回收队列，防止多线程析构冲突
 
     // Time base for gesture timing

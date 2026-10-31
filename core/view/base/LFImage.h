@@ -37,6 +37,7 @@ private:
 
     // 渲染状态
     int m_imageHandle = 0;
+    NVGcontext* m_renderContext = nullptr;
     int m_imgWidth = 0;
     int m_imgHeight = 0;
 

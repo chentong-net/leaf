@@ -6,6 +6,10 @@
 extern "C" {
 
 void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loader) {
+    if (LFEngine::getInstance().getNVGContext()) {
+        LFEngine::getInstance().discardContext();
+    }
+
     // 1. 创建 NanoVG 上下文
     int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES;
     NVGcontext* vg = nvgCreateGLES3(flags);

@@ -181,6 +181,7 @@ struct NativeKeyEvent {
 
 - (void)dealloc {
     [self stop];
+    LFEngine::getInstance().shutdown();
 #ifdef LEAF_USE_METAL
     if (_vg) {
         nvgDeleteMTL(_vg);

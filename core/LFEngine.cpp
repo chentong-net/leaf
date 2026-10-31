@@ -12,12 +12,62 @@ LFEngine& LFEngine::getInstance() {
 }
 
 void LFEngine::init(NVGcontext* vg) {
+    if (m_vg && m_vg != vg) {
+        discardContext();
+    }
+
     m_vg = vg;
 
     // Initialize time base for gesture timing synchronization
     m_startTime = std::chrono::steady_clock::now();
 
     LFText::setMeasureContext(m_vg);
+}
+
+void LFEngine::shutdown() {
+    NVGcontext* context = m_vg;
+    LFEventDispatcher::getInstance().clearFocus();
+    m_rootNode.reset();
+
+    std::vector<PendingTextureDeletion> garbageTextures;
+    {
+        std::lock_guard<std::mutex> lock(m_gcMutex);
+        garbageTextures.swap(m_garbageTextures);
+    }
+    if (context) {
+        for (const auto& pending : garbageTextures) {
+            if (pending.context == context && pending.imageHandle > 0) {
+                nvgDeleteImage(context, pending.imageHandle);
+            }
+        }
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(m_taskMutex);
+        m_frameTasks.clear();
+    }
+
+    m_textInputCursorCallback = nullptr;
+    m_vg = nullptr;
+    LFText::setMeasureContext(nullptr);
+}
+
+void LFEngine::discardContext() {
+    LFEventDispatcher::getInstance().clearFocus();
+    m_rootNode.reset();
+
+    {
+        std::lock_guard<std::mutex> lock(m_gcMutex);
+        m_garbageTextures.clear();
+    }
+    {
+        std::lock_guard<std::mutex> lock(m_taskMutex);
+        m_frameTasks.clear();
+    }
+
+    m_textInputCursorCallback = nullptr;
+    m_vg = nullptr;
+    LFText::setMeasureContext(nullptr);
 }
 
 void LFEngine::setWindowSize(float width, float height, float scale) {
@@ -114,27 +164,27 @@ void LFEngine::render() {
 
     // 资源回收
     // 处理上一帧或本帧逻辑中死掉的组件遗留的纹理
-    std::vector<int> garbageTextures;
+    std::vector<PendingTextureDeletion> garbageTextures;
     {
         std::lock_guard<std::mutex> lock(m_gcMutex);
         garbageTextures.swap(m_garbageTextures);
     }
 
-    for (int handle : garbageTextures) {
-        if (handle > 0) {
-            nvgDeleteImage(m_vg, handle);
-            LF_LOGI("GC Texture: %d", handle);
+    for (const auto& pending : garbageTextures) {
+        if (pending.context == m_vg && pending.imageHandle > 0) {
+            nvgDeleteImage(m_vg, pending.imageHandle);
+            LF_LOGI("GC Texture: %d", pending.imageHandle);
         }
     }
 }
 
-void LFEngine::recycleTexture(int imageHandle) {
-    if (imageHandle <= 0) return;
+void LFEngine::recycleTexture(NVGcontext* context, int imageHandle) {
+    if (!context || imageHandle <= 0) return;
 
     // 这是一个可能从任何线程调用的方法（取决于组件在哪析构）
     // 所以需要加锁保护
     std::lock_guard<std::mutex> lock(m_gcMutex);
-    m_garbageTextures.push_back(imageHandle);
+    m_garbageTextures.push_back({context, imageHandle});
 }
 
 double LFEngine::getElapsedTime() const {

@@ -309,6 +309,7 @@ int main() {
         glfwPollEvents();
     }
 
+    LFEngine::getInstance().shutdown();
     nvgDeleteGL3(vg);
     glfwDestroyWindow(window);
     glfwTerminate();

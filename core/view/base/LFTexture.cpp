@@ -69,6 +69,15 @@ void LFTexture::setOnTextureWillRelease(TextureCallback callback) {
 void LFTexture::ensureTexture(NVGcontext* vg) {
     if (!vg) return;
 
+    if (m_nvgContext && m_nvgContext != vg) {
+        m_textureId = 0;
+        m_nvgImageHandle = 0;
+        m_nvgContext = nullptr;
+        m_allocatedWidth = 0;
+        m_allocatedHeight = 0;
+        m_needRecreate = true;
+    }
+
     if (m_textureWidth <= 0 || m_textureHeight <= 0) {
         releaseTexture(vg);
         return;
@@ -111,6 +120,7 @@ void LFTexture::ensureTexture(NVGcontext* vg) {
 
     m_textureId = texture;
     m_nvgImageHandle = imageHandle;
+    m_nvgContext = vg;
     m_allocatedWidth = m_textureWidth;
     m_allocatedHeight = m_textureHeight;
     m_generation++;
@@ -137,7 +147,7 @@ void LFTexture::releaseTexture(NVGcontext* vg) {
         if (vg) {
             nvgDeleteImage(vg, m_nvgImageHandle);
         } else {
-            LFEngine::getInstance().recycleTexture(m_nvgImageHandle);
+            LFEngine::getInstance().recycleTexture(m_nvgContext, m_nvgImageHandle);
         }
     } else if (m_textureId != 0) {
         glDeleteTextures(1, &m_textureId);
@@ -145,6 +155,7 @@ void LFTexture::releaseTexture(NVGcontext* vg) {
 
     m_textureId = 0;
     m_nvgImageHandle = 0;
+    m_nvgContext = nullptr;
     m_allocatedWidth = 0;
     m_allocatedHeight = 0;
 }

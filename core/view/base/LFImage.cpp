@@ -3,6 +3,7 @@
 //
 
 #include "view/base/LFImage.h"
+#include "LFEngine.h"
 #include "stb_image.h"
 
 LFImage::LFImage() {
@@ -10,9 +11,9 @@ LFImage::LFImage() {
 }
 
 LFImage::~LFImage() {
-    // 依然存在析构时无法释放 handle 的问题，这通常由上层管理，
-    // 但至少我们解决了运行时频繁切换图片的泄漏问题。
-    // TODO: 释放纹理
+    if (m_imageHandle > 0) {
+        LFEngine::getInstance().recycleTexture(m_renderContext, m_imageHandle);
+    }
 }
 
 void LFImage::setSrc(const std::string& src) {
@@ -109,6 +110,14 @@ YGSize LFImage::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
 }
 
 void LFImage::onDrawContent(NVGcontext* vg) {
+    if (m_imageHandle > 0 && m_renderContext != vg) {
+        m_imageHandle = 0;
+        m_renderContext = nullptr;
+        if (!m_src.empty()) {
+            startLoading();
+        }
+    }
+
     // 1. 纹理生命周期管理 (上传/删除/替换)
     // 只有在渲染线程持有 vg 时，我们才能安全操作 GPU 资源
     if (m_needUpload) {
@@ -116,11 +125,15 @@ void LFImage::onDrawContent(NVGcontext* vg) {
         if (m_imageHandle > 0) {
             nvgDeleteImage(vg, m_imageHandle);
             m_imageHandle = 0;
+            m_renderContext = nullptr;
         }
 
         // 如果有新数据，创建新纹理
         if (m_pendingData && m_pendingData->data) {
             m_imageHandle = nvgCreateImageMem(vg, 0, m_pendingData->data, m_pendingData->size);
+            if (m_imageHandle > 0) {
+                m_renderContext = vg;
+            }
         }
 
         m_pendingData = nullptr; // 释放 CPU 内存

@@ -60,6 +60,7 @@ private:
 
     GLuint m_textureId = 0;
     int m_nvgImageHandle = 0;
+    NVGcontext* m_nvgContext = nullptr;
     uint64_t m_generation = 0;
 
     bool m_needRecreate = true;
