@@ -217,7 +217,7 @@ LFFileReadResult readChunkFromPath(
     result.bytes.resize(length);
     file.read(reinterpret_cast<char*>(result.bytes.data()), static_cast<std::streamsize>(length));
     const std::streamsize bytesRead = file.gcount();
-    if (bytesRead < 0) {
+    if (file.bad()) {
         return {false, false, {}, "read_path_failed"};
     }
     result.bytes.resize(static_cast<size_t>(bytesRead));
