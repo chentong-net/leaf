@@ -44,7 +44,7 @@ project.plugins.withId("com.android.application") {
     project.tasks.configureEach { task ->
         def consumesLeafAssets =
                 (task.name.startsWith("merge") && task.name.endsWith("Assets")) ||
-                task.name.toLowerCase().contains("lintvital")
+                task.name.toLowerCase().contains("lint")
         if (consumesLeafAssets) {
             task.dependsOn(prepareLeafAssets)
         }
