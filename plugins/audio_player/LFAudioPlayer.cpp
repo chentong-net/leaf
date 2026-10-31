@@ -250,7 +250,9 @@ LFAudioPlayer::~LFAudioPlayer() {
     sendCommand("audio_player.dispose", buildPlayerArgs(m_playerId));
 }
 
-void LFAudioPlayer::setSource(const std::string& source) {
+void LFAudioPlayer::setSource(
+        const std::string& source,
+        LFAudioPlayerSourceCallback callback) {
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_source = source;
@@ -258,7 +260,36 @@ void LFAudioPlayer::setSource(const std::string& source) {
         m_positionSeconds = 0.0;
         m_playing = false;
     }
-    sendCommand("audio_player.set_source", buildSetSourceArgs(m_playerId, source));
+
+    std::weak_ptr<LFAudioPlayer> weakSelf = weak_from_this();
+    LFNativeSender::getInstance().send(
+        "audio_player.set_source",
+        buildSetSourceArgs(m_playerId, source),
+        [weakSelf, callback = std::move(callback)](const LFMethodResult& result) mutable {
+            auto player = weakSelf.lock();
+            if (!player) {
+                return;
+            }
+
+            if (!result.ok) {
+                std::lock_guard<std::mutex> lock(player->m_mutex);
+                player->m_playing = false;
+            }
+
+            if (callback) {
+                const std::string error = result.ok
+                                          ? ""
+                                          : (result.error.empty()
+                                             ? "audio_source_failed"
+                                             : result.error);
+                LFPluginCenter::dispatchToMain(
+                        [callback = std::move(callback), ok = result.ok, error]() mutable {
+                            callback(ok, error);
+                        }
+                );
+            }
+        }
+    );
 }
 
 void LFAudioPlayer::play() {

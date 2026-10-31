@@ -85,7 +85,19 @@ LFAudioPlayer::~LFAudioPlayer() {
     }
 }
 
-void LFAudioPlayer::setSource(const std::string& source) {
+void LFAudioPlayer::setSource(
+        const std::string& source,
+        LFAudioPlayerSourceCallback callback) {
+    auto finishSource = [callback = std::move(callback)](bool success, const std::string& error) mutable {
+        if (callback) {
+            LFPluginCenter::dispatchToMain(
+                    [callback = std::move(callback), success, error]() mutable {
+                        callback(success, error);
+                    }
+            );
+        }
+    };
+
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_source = source;
@@ -94,8 +106,14 @@ void LFAudioPlayer::setSource(const std::string& source) {
         m_playing = false;
     }
 
-    if (!m_platform) return;
-    if (source.empty()) return;
+    if (!m_platform) {
+        finishSource(false, "audio_platform_unavailable");
+        return;
+    }
+    if (source.empty()) {
+        finishSource(false, "source_empty");
+        return;
+    }
 
     if (m_platform->player) {
         [m_platform->player stop];
@@ -118,6 +136,7 @@ void LFAudioPlayer::setSource(const std::string& source) {
         event.ok = false;
         event.error = error ? std::string([[error localizedDescription] UTF8String]) : "audio_open_failed";
         dispatchError(callback, event);
+        finishSource(false, event.error);
         return;
     }
 
@@ -130,6 +149,7 @@ void LFAudioPlayer::setSource(const std::string& source) {
         m_durationSeconds = player.duration;
     }
     setVolume(m_volume);
+    finishSource(true, "");
 }
 
 void LFAudioPlayer::play() {

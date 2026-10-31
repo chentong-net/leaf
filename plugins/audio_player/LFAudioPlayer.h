@@ -19,6 +19,7 @@ struct LFAudioPlayerEvent {
 
 using LFAudioPlayerErrorCallback = std::function<void(const LFAudioPlayerEvent&)>;
 using LFAudioPlayerCompletionCallback = std::function<void(const LFAudioPlayerEvent&)>;
+using LFAudioPlayerSourceCallback = std::function<void(bool success, const std::string& error)>;
 
 class LFAudioPlayer : public std::enable_shared_from_this<LFAudioPlayer> {
 public:
@@ -31,7 +32,9 @@ public:
 
     const std::string& getPlayerId() const { return m_playerId; }
 
-    void setSource(const std::string& source);
+    void setSource(
+            const std::string& source,
+            LFAudioPlayerSourceCallback callback = nullptr);
     void play();
     void pause();
     void stop();

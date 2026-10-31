@@ -1243,31 +1243,53 @@ LFLinear::Ptr buildFunctionDemoPage() {
 
             state->player->setLooping(true);
             state->player->setVolume(1.0f);
-            state->player->setSource(tempAudioPath.u8string());
+            state->player->setSource(
+                    tempAudioPath.u8string(),
+                    [weakAudioState, weakAudioStatus, weakAudioSlider,
+                     weakAudioProgress, weakAudioButton](bool success, const std::string&) {
+                        auto audioState = weakAudioState.lock();
+                        auto audioStatus = weakAudioStatus.lock();
+                        auto audioSlider = weakAudioSlider.lock();
+                        auto audioProgress = weakAudioProgress.lock();
+                        auto audioButton = weakAudioButton.lock();
+                        if (!audioState || !audioStatus || !audioSlider ||
+                            !audioProgress || !audioButton || !audioState->player) {
+                            return;
+                        }
 
-#if defined(_WIN32) || (defined(__APPLE__) && TARGET_OS_OSX)
-            state->durationSeconds = state->player->getDuration();
-            state->durationResolved = state->durationSeconds > 0.0;
-            if (state->durationSeconds <= 0.0) {
-                state->durationSeconds = 1.0;
-            }
-#else
-            state->durationSeconds = 1.0;
-            state->durationResolved = false;
-#endif
-            state->playbackPositionSeconds = 0.0;
-            state->dragPreviewPositionSeconds = 0.0;
-            state->playStartPositionSeconds = 0.0;
-            state->playStartEngineTime = LFEngine::getInstance().getElapsedTime();
-            state->nextDurationProbeTime = state->playStartEngineTime + 0.2;
-            state->ready = true;
-            state->playing = false;
-            state->dragging = false;
+                        if (!success) {
+                            audioState->ready = false;
+                            audioState->playing = false;
+                            audioState->dragging = false;
+                            audioSlider->setEnabled(false);
+                            audioButton->setEnabled(false);
+                            audioStatus->setText("Audio: load failed");
+                            return;
+                        }
 
-            slider->setEnabled(true);
-            button->setEnabled(true);
-            status->setText("Audio: ready");
-            syncAudioProgress(state, slider, progress);
+                        audioState->playbackPositionSeconds = 0.0;
+                        audioState->dragPreviewPositionSeconds = 0.0;
+                        audioState->playStartPositionSeconds = 0.0;
+                        audioState->playStartEngineTime =
+                                LFEngine::getInstance().getElapsedTime();
+                        audioState->nextDurationProbeTime =
+                                audioState->playStartEngineTime + 0.2;
+                        audioState->durationSeconds = 1.0;
+                        audioState->durationResolved = false;
+                        audioState->ready = true;
+                        audioState->playing = false;
+                        audioState->dragging = false;
+
+                        audioSlider->setEnabled(true);
+                        audioButton->setEnabled(true);
+                        audioStatus->setText("Audio: ready");
+                        syncAudioProgress(
+                                audioState,
+                                audioSlider,
+                                audioProgress
+                        );
+                    }
+            );
         });
     });
 

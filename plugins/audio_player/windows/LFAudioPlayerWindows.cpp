@@ -214,7 +214,19 @@ LFAudioPlayer::~LFAudioPlayer() {
     }
 }
 
-void LFAudioPlayer::setSource(const std::string& source) {
+void LFAudioPlayer::setSource(
+        const std::string& source,
+        LFAudioPlayerSourceCallback callback) {
+    auto finishSource = [callback = std::move(callback)](bool success, const std::string& error) mutable {
+        if (callback) {
+            LFPluginCenter::dispatchToMain(
+                    [callback = std::move(callback), success, error]() mutable {
+                        callback(success, error);
+                    }
+            );
+        }
+    };
+
     std::string error;
     {
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -225,6 +237,7 @@ void LFAudioPlayer::setSource(const std::string& source) {
     }
 
     if (source.empty()) {
+        finishSource(false, "source_empty");
         return;
     }
 
@@ -243,6 +256,7 @@ void LFAudioPlayer::setSource(const std::string& source) {
         event.ok = false;
         event.error = error.empty() ? "audio_open_failed" : error;
         dispatchError(callback, event);
+        finishSource(false, event.error);
         return;
     }
 
@@ -253,6 +267,7 @@ void LFAudioPlayer::setSource(const std::string& source) {
         m_durationSeconds = duration;
     }
     setVolume(m_volume);
+    finishSource(true, "");
 }
 
 void LFAudioPlayer::play() {
