@@ -83,17 +83,17 @@ void LFButton::initEvents() {
 
         m_isTouching = false;
 
-        bool validClick = false;
-
-        if (m_isInside) {
-            validClick = true;
+        if (const auto* touch = e.getPrimaryTouch()) {
+            m_isInside = containsWindowPoint(touch->x, touch->y);
+        } else {
+            m_isInside = false;
         }
 
         // 恢复状态
         updateState(LFButtonState::Normal);
 
         // 触发回调
-        if (validClick && m_onClick) {
+        if (m_isInside && m_onClick) {
             m_onClick(this);
         }
     });
