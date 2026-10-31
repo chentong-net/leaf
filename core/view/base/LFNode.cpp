@@ -47,6 +47,9 @@ LFNode::~LFNode() {
 // 树管理实现
 // ==========================================
 void LFNode::addChild(const Ptr& child) {
+    if (!child || child.get() == this) {
+        return;
+    }
     if (child->getParent()) {
         child->removeFromParent();
     }
@@ -57,6 +60,9 @@ void LFNode::addChild(const Ptr& child) {
 }
 
 void LFNode::insertChild(const Ptr& child, uint32_t index) {
+    if (!child || child.get() == this) {
+        return;
+    }
     if (child->getParent()) {
         child->removeFromParent();
     }
