@@ -43,6 +43,7 @@ const REQUEST_ERROR_FILE_NOT_FOUND = -404;
 export class FilePickerPlugin implements LeafPlugin {
   private readonly context: Context;
   private readonly pickedFiles: Map<string, PickedFileRecord> = new Map<string, PickedFileRecord>();
+  private readonly openFiles: Map<string, fileIo.File> = new Map<string, fileIo.File>();
   private pendingPick: PendingPick | null = null;
   private nextFileId: number = 1;
 
@@ -180,6 +181,14 @@ export class FilePickerPlugin implements LeafPlugin {
 
     try {
       const file = this.openFileForRead(openTarget);
+      const previousFile = this.openFiles.get(record.fileId);
+      if (previousFile) {
+        try {
+          fileIo.closeSync(previousFile);
+        } catch (_err) {
+        }
+      }
+      this.openFiles.set(record.fileId, file);
       const fd = file.fd;
       result.success(call.requestId, this.buildOpenFdResultJson(record.fileId, fd, record.path));
     } catch (_err) {
@@ -205,6 +214,14 @@ export class FilePickerPlugin implements LeafPlugin {
         }
       }
       this.pickedFiles.delete(args.fileId);
+    }
+    const openFile = this.openFiles.get(args.fileId);
+    if (openFile) {
+      try {
+        fileIo.closeSync(openFile);
+      } catch (_err) {
+      }
+      this.openFiles.delete(args.fileId);
     }
     result.success(call.requestId, '{}');
   }
