@@ -41,9 +41,12 @@ project.plugins.withId("com.android.application") {
         }
     }
 
-    project.tasks.matching { task ->
-        task.name.startsWith("merge") && task.name.endsWith("Assets")
-    }.configureEach { task ->
-        task.dependsOn(prepareLeafAssets)
+    project.tasks.configureEach { task ->
+        def consumesLeafAssets =
+                (task.name.startsWith("merge") && task.name.endsWith("Assets")) ||
+                task.name.toLowerCase().contains("lintvital")
+        if (consumesLeafAssets) {
+            task.dependsOn(prepareLeafAssets)
+        }
     }
 }
