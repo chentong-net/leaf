@@ -38,7 +38,8 @@ public:
         float deltaX,
         float deltaY,
         uint32_t modifiers,
-        std::shared_ptr<LFNode> root
+        std::shared_ptr<LFNode> root,
+        LFScrollInputType inputType = LFScrollInputType::Discrete
     );
 
     void dispatchKeyEvent(LFKeyEventType type, LFKeyCode keyCode, uint32_t modifiers = LFKeyModNone, bool repeat = false);

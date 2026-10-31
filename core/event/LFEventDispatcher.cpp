@@ -121,7 +121,8 @@ bool LFEventDispatcher::dispatchScrollEvent(
     float deltaX,
     float deltaY,
     uint32_t modifiers,
-    std::shared_ptr<LFNode> root
+    std::shared_ptr<LFNode> root,
+    LFScrollInputType inputType
 ) {
     if (!root || (deltaX == 0.0f && deltaY == 0.0f)) return false;
 
@@ -134,6 +135,7 @@ bool LFEventDispatcher::dispatchScrollEvent(
     event.deltaX = deltaX;
     event.deltaY = deltaY;
     event.modifiers = modifiers;
+    event.inputType = inputType;
     event.target = hitResult.getTarget();
 
     performScrollDispatch(event, root);

@@ -25,6 +25,11 @@ enum class LFEventPhase {
     Bubble      // Bubble phase (from target to root)
 };
 
+enum class LFScrollInputType {
+    Discrete,   // Detented wheel or line-based scrolling device
+    Precise     // High-resolution touchpad or precise pointer
+};
+
 // Touch event type
 enum class LFTouchEventType {
     Down,       // Finger down
@@ -153,6 +158,7 @@ public:
     float deltaX = 0.0f;  // Logical pixels, positive toward the end of the content.
     float deltaY = 0.0f;
     uint32_t modifiers = LFKeyModNone;
+    LFScrollInputType inputType = LFScrollInputType::Discrete;
     LFEventPhase phase = LFEventPhase::None;
 
     bool propagationStopped = false;
