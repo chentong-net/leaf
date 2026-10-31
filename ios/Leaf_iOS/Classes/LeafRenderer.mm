@@ -4,6 +4,7 @@
 
 #import "LeafRenderer.h"
 #import "LFNativePluginBridge.h"
+#import "LeafView.h"
 
 #ifdef LEAF_USE_METAL
 #import <Metal/Metal.h>
@@ -293,6 +294,17 @@ struct NativeKeyEvent {
 #endif
 
     LFEngine::getInstance().init(_vg);
+    __weak LeafView* weakView = (LeafView*)self.view;
+    LFEngine::getInstance().setTextInputCursorCallback([weakView](float x, float y, float lineHeight) {
+        auto updateCursor = ^{
+            [weakView updateTextInputCursorX:x y:y lineHeight:lineHeight];
+        };
+        if ([NSThread isMainThread]) {
+            updateCursor();
+        } else {
+            dispatch_async(dispatch_get_main_queue(), updateCursor);
+        }
+    });
     [LFNativePluginBridge install];
     LFResourceProvider::getInstance().setAssetLoader(
         [](const std::string& path, std::function<void(std::shared_ptr<LFData>)> callback) {

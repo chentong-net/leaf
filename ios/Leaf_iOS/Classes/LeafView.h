@@ -11,6 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)startRendering;
 - (void)stopRendering;
+- (void)updateTextInputCursorX:(CGFloat)x y:(CGFloat)y lineHeight:(CGFloat)lineHeight;
 
 @end
 

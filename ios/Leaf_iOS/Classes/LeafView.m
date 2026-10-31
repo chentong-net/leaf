@@ -76,6 +76,8 @@
     UIReturnKeyType _leafReturnKeyType;
     BOOL _leafSecureTextEntry;
     BOOL _leafEnablesReturnKeyAutomatically;
+    BOOL _hasTextInputCursorRect;
+    CGRect _textInputCursorRect;
 }
 
 + (Class)layerClass {
@@ -544,6 +546,10 @@
     if (offset == NSNotFound) {
         return CGRectZero;
     }
+    if (_hasTextInputCursorRect &&
+        offset == (NSInteger)self.selectedRangeValue.location) {
+        return _textInputCursorRect;
+    }
 
     const CGFloat inset = 8.0f;
     const CGFloat glyphWidth = 8.0f;
@@ -556,6 +562,12 @@
     }
     CGFloat y = MAX(inset, self.bounds.size.height - inset - caretHeight);
     return CGRectMake(x, y, caretWidth, caretHeight);
+}
+
+- (void)updateTextInputCursorX:(CGFloat)x y:(CGFloat)y lineHeight:(CGFloat)lineHeight {
+    const CGFloat height = MAX(16.0, lineHeight);
+    _textInputCursorRect = CGRectMake(x, MAX(0.0, y - height), 2.0, height);
+    _hasTextInputCursorRect = YES;
 }
 
 - (NSArray<UITextSelectionRect *> *)selectionRectsForRange:(UITextRange *)range {
@@ -684,6 +696,8 @@
         }
     } else {
         [self resignFirstResponder];
+        _hasTextInputCursorRect = NO;
+        _textInputCursorRect = CGRectZero;
         [self notifySelectionWillChange];
         self.markedRangeValue = NSMakeRange(NSNotFound, 0);
         [self.textBuffer setString:@""];
