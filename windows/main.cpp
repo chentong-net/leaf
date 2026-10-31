@@ -299,8 +299,13 @@ int main() {
     glfwGetFramebufferSize(window, &width, &height);
     framebufferSizeCallback(window, width, height);
 
+    double lastFrameTime = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
-        LFEngine::getInstance().update(0.016f);
+        const double frameTime = glfwGetTime();
+        const float dt = static_cast<float>(std::clamp(frameTime - lastFrameTime, 0.0, 0.1));
+        lastFrameTime = frameTime;
+
+        LFEngine::getInstance().update(dt > 0.0f ? dt : 1.0f / 60.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         LFEngine::getInstance().render();
         glfwSwapBuffers(window);

@@ -518,7 +518,14 @@ EM_BOOL on_resize(int eventType, const EmscriptenUiEvent *uiEvent, void *userDat
 }
 
 void loop_callback() {
-    LFEngine::getInstance().update(0.016f);
+    static double lastFrameTime = 0.0;
+    const double frameTime = emscripten_get_now();
+    const float dt = lastFrameTime > 0.0
+                     ? static_cast<float>(std::clamp((frameTime - lastFrameTime) / 1000.0, 0.0, 0.1))
+                     : 1.0f / 60.0f;
+    lastFrameTime = frameTime;
+
+    LFEngine::getInstance().update(dt > 0.0f ? dt : 1.0f / 60.0f);
     LFEngine::getInstance().render();
     sync_text_input_focus();
 }

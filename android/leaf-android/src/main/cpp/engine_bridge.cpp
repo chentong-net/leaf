@@ -52,8 +52,19 @@ void leaf_update_size(float w, float h, float d) {
 }
 
 void leaf_render() {
-    // Update logic (gesture timing, etc.)
-    LFEngine::getInstance().update(0.016f);  // Assume 60fps (~16ms)
+    static auto lastFrameTime = std::chrono::steady_clock::now();
+    static bool hasFrameTime = false;
+    const auto frameTime = std::chrono::steady_clock::now();
+    const float dt = hasFrameTime
+                     ? std::clamp(
+                             std::chrono::duration<float>(frameTime - lastFrameTime).count(),
+                             0.0f,
+                             0.1f)
+                     : 1.0f / 60.0f;
+    lastFrameTime = frameTime;
+    hasFrameTime = true;
+
+    LFEngine::getInstance().update(dt > 0.0f ? dt : 1.0f / 60.0f);
 
     // Render frame
     LFEngine::getInstance().render();
