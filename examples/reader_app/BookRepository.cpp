@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -183,12 +184,41 @@ bool writeTextFile(const std::string& path, const std::string& content) {
         return false;
     }
 
-    std::ofstream output(std::filesystem::u8path(path), std::ios::binary | std::ios::trunc);
+    const std::filesystem::path targetPath = std::filesystem::u8path(path);
+    std::filesystem::path temporaryPath = targetPath;
+    temporaryPath += ".tmp";
+
+    std::ofstream output(temporaryPath, std::ios::binary | std::ios::trunc);
     if (!output.is_open()) {
         return false;
     }
     output.write(content.data(), static_cast<std::streamsize>(content.size()));
-    return output.good();
+    output.flush();
+    const bool writeSucceeded = output.good();
+    output.close();
+    if (!writeSucceeded) {
+        std::error_code removeError;
+        std::filesystem::remove(temporaryPath, removeError);
+        return false;
+    }
+
+#if defined(_WIN32)
+    const bool replaced = MoveFileExW(
+            temporaryPath.wstring().c_str(),
+            targetPath.wstring().c_str(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH
+    ) != 0;
+#else
+    const bool replaced = std::rename(
+            temporaryPath.string().c_str(),
+            targetPath.string().c_str()
+    ) == 0;
+#endif
+    if (!replaced) {
+        std::error_code removeError;
+        std::filesystem::remove(temporaryPath, removeError);
+    }
+    return replaced;
 }
 
 std::string trimExtension(const std::string& fileName) {
@@ -222,7 +252,11 @@ bool BookRepository::initialize(const std::string& appSupportPath) {
     }
 
     m_initialized = true;
-    return loadFromDiskLocked();
+    if (!loadFromDiskLocked()) {
+        m_initialized = false;
+        return false;
+    }
+    return true;
 }
 
 bool BookRepository::isInitialized() const {
@@ -276,6 +310,7 @@ bool BookRepository::upsertBook(const BookRecord& incoming) {
         return false;
     };
 
+    const std::vector<BookRecord> previousBooks = m_books;
     auto it = std::find_if(m_books.begin(), m_books.end(), sameBook);
     if (it != m_books.end()) {
         const std::string existedId = it->id;
@@ -291,7 +326,11 @@ bool BookRepository::upsertBook(const BookRecord& incoming) {
         m_books.push_back(book);
     }
 
-    return persistToDiskLocked();
+    if (!persistToDiskLocked()) {
+        m_books = previousBooks;
+        return false;
+    }
+    return true;
 }
 
 bool BookRepository::removeBook(const std::string& bookId) {
@@ -300,6 +339,7 @@ bool BookRepository::removeBook(const std::string& bookId) {
         return false;
     }
 
+    const std::vector<BookRecord> previousBooks = m_books;
     const auto oldSize = m_books.size();
     m_books.erase(
         std::remove_if(m_books.begin(), m_books.end(), [&bookId](const BookRecord& book) {
@@ -312,7 +352,11 @@ bool BookRepository::removeBook(const std::string& bookId) {
         return false;
     }
 
-    return persistToDiskLocked();
+    if (!persistToDiskLocked()) {
+        m_books = previousBooks;
+        return false;
+    }
+    return true;
 }
 
 bool BookRepository::findBook(const std::string& bookId, BookRecord& outBook) const {
@@ -345,8 +389,13 @@ bool BookRepository::touchBook(const std::string& bookId, double timestamp) {
         return false;
     }
 
+    const double previousTimestamp = it->lastReadAt;
     it->lastReadAt = timestamp;
-    return persistToDiskLocked();
+    if (!persistToDiskLocked()) {
+        it->lastReadAt = previousTimestamp;
+        return false;
+    }
+    return true;
 }
 
 bool BookRepository::loadFromDiskLocked() {
@@ -460,7 +509,18 @@ std::string BookRepository::escapeJson(const std::string& text) {
                 escaped += "\\t";
                 break;
             default:
-                escaped += c;
+                if (static_cast<unsigned char>(c) < 0x20) {
+                    char buffer[7];
+                    std::snprintf(
+                            buffer,
+                            sizeof(buffer),
+                            "\\u%04x",
+                            static_cast<unsigned char>(c)
+                    );
+                    escaped += buffer;
+                } else {
+                    escaped += c;
+                }
                 break;
         }
     }
