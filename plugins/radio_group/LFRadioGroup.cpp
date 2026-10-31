@@ -84,6 +84,10 @@ void LFRadioGroup::setOptionDirection(LFOrientation orientation) {
 
     m_optionDirection = orientation;
     LFLinear::setOrientation(orientation);
+    setFlexWrap(orientation == LFOrientation::Horizontal
+                ? YGWrapWrap
+                : YGWrapNoWrap);
+    setAlignContent(YGAlignFlexStart);
     updateVisualState();
 }
 
