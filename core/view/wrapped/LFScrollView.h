@@ -32,19 +32,22 @@ public:
     void addOverlayChild(const LFNode::Ptr& child, LFBoxAlign align = LFBoxAlign::TopLeft, float offsetX = 0.0, float offsetY = 0.0);
 
     /**
-     * 滚动到指定位置
-     * @param y 偏移量 (通常是负数或0，0表示顶部)
-     * @param animate 是否开启动画
+     * 滚动到指定轴向位置。纵向滚动时 0 表示顶部，横向滚动时 0 表示最左端。
+     * @param position 相对于内容起点的偏移量
+     * @param animate 是否平滑滚动
      */
-    void scrollTo(float y, bool animate = true);
+    void scrollTo(float position, bool animate = true);
 
     /**
      * 按逻辑像素滚动，deltaY 大于 0 表示向内容末尾滚动。
      * @return 滚动位置是否发生变化
      */
-    bool scrollBy(float deltaY, bool smooth = false);
+    bool scrollBy(float delta, bool smooth = false);
 
-    float getScrollY() const { return m_scrollY; }
+    float getScrollPosition() const { return m_scrollPosition; }
+    float getScrollX() const { return m_isHorizontal ? m_scrollPosition : 0.0f; }
+    float getScrollY() const { return m_isHorizontal ? 0.0f : m_scrollPosition; }
+    bool isHorizontal() const { return m_isHorizontal; }
 
     void setScrollBarEnabled(bool enabled);
     bool isScrollBarEnabled() const { return m_scrollBarEnabled; }
@@ -78,17 +81,19 @@ private:
 
     // 边界检查与修正
     // 返回值: 目标修正位置（如果不需要修正则返回当前位置）
-    float getBoundaryY(float targetY) const;
-    bool isOutOfBounds(float y) const;
+    float getBoundaryPosition(float targetPosition) const;
+    bool isOutOfBounds(float position) const;
+    void updateContentTranslation();
 
     // 内部容器，承载所有子节点
     std::shared_ptr<LFNode> m_content;
 
     // --- 滚动状态 ---
-    float m_scrollY = 0.0f;       // 当前滚动位置 (通常 <= 0)
+    bool m_isHorizontal = false;
+    float m_scrollPosition = 0.0f; // 当前滚动位置 (通常 <= 0)
     float m_velocity = 0.0f;      // 当前速度 (像素/秒)
     bool m_isDragging = false;    // 是否正在被手指拖拽
-    float m_smoothScrollTargetY = 0.0f;
+    float m_smoothScrollTargetPosition = 0.0f;
 
     // --- 物理参数 ---
     const float FRICTION = 0.92f; // 摩擦系数 (0.0~1.0)
