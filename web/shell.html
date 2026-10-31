@@ -2,7 +2,7 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Leaf Engine Web Demo</title>
     <style>
         /* 1. 页面背景：深色，Flex 居中 */
@@ -28,7 +28,14 @@
     </style>
 </head>
 <body>
-<canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+<canvas
+    class="emscripten"
+    id="canvas"
+    role="application"
+    aria-label="Leaf Engine Web Demo"
+    tabindex="0"
+    oncontextmenu="event.preventDefault()"
+></canvas>
 
 <script type='text/javascript'>
     var Module = {
