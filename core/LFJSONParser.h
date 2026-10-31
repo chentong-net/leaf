@@ -445,7 +445,7 @@ private:
         if (fractionalDigits > 10000 || fractionalDigits < -10000) {
             throw std::runtime_error("LFJSON: Invalid number at index " + std::to_string(start));
         }
-        if (fractionalDigits != 0) {
+        if (value != 0.0L && fractionalDigits != 0) {
             value *= std::pow(10.0L, -static_cast<long double>(fractionalDigits));
         }
         if (negative) {
