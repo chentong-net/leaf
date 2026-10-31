@@ -115,7 +115,8 @@ void LFScrollView::initScrollHandling() {
         auto self = weakSelf.lock();
         if (!self) return;
 
-        const bool moved = self->scrollBy(event.deltaY);
+        const bool smooth = event.inputType == LFScrollInputType::Discrete;
+        const bool moved = self->scrollBy(event.deltaY, smooth);
         if (moved || self->m_preventAncestorScroll) {
             event.preventDefault();
             event.stopPropagation();
