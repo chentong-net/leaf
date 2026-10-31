@@ -17,7 +17,11 @@ export struct LeafView {
       })
         .onLoad((context: object) => {
           if (!this.isEngineInitialized) {
-            const resMgr = getContext(this).resourceManager;
+            const hostContext = this.getUIContext().getHostContext();
+            if (!hostContext) {
+              return;
+            }
+            const resMgr = hostContext.resourceManager;
             let displayClass = display.getDefaultDisplaySync();
             let density = displayClass.densityPixels;
 

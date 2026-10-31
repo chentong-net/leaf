@@ -14,7 +14,10 @@ struct Index {
     if (this.pluginRegistered) {
       return;
     }
-    const context = getContext(this) as Context;
+    const context = this.getUIContext().getHostContext() as Context;
+    if (!context) {
+      return;
+    }
     PluginRegistry.getInstance().register(new FilePickerPlugin(context));
     PluginRegistry.getInstance().register(new PathProviderPlugin(context));
     PluginRegistry.getInstance().register(new AudioPlayerPlugin());
