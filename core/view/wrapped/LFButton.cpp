@@ -12,6 +12,12 @@
 
 #include <cmath>
 
+namespace {
+
+constexpr float kClickMoveThreshold = 10.0f;
+
+}
+
 LFButton::Ptr LFButton::create(const std::string& text, ClickCallback onClick) {
     auto btn = std::make_shared<LFButton>();
     if (!text.empty()) {
@@ -54,10 +60,16 @@ LFButton::~LFButton() {
 void LFButton::initEvents() {
     // 1. 按下 (TouchDown)
     setOnTouchDown([this](const LFTouchEvent& e) {
-        if (!m_isEnabled) return;
+        if (!m_isEnabled || m_isTouching) return;
+
+        const LFTouchPoint* touch = e.getPrimaryTouch();
+        if (!touch) return;
 
         m_isTouching = true;
         m_isInside = true;
+        m_clickCanceled = false;
+        m_activeTouchId = touch->id;
+        m_touchDownPosition = LFPoint(touch->x, touch->y);
 
         // 进入按下状态
         updateState(LFButtonState::Pressed);
@@ -68,10 +80,19 @@ void LFButton::initEvents() {
         if (!m_isEnabled || !m_isTouching) return;
 
         const LFTouchPoint* touch = e.getPrimaryTouch();
-        if (!touch) return;
+        if (!touch || touch->id != m_activeTouchId) return;
+
+        const float distance = m_touchDownPosition.distance(
+                LFPoint(touch->x, touch->y));
+        if (distance > kClickMoveThreshold) {
+            m_clickCanceled = true;
+        }
+
         m_isInside = containsWindowPoint(touch->x, touch->y);
         const LFButtonState targetState =
-                m_isInside ? LFButtonState::Pressed : LFButtonState::Normal;
+                m_isInside && !m_clickCanceled
+                ? LFButtonState::Pressed
+                : LFButtonState::Normal;
         if (m_state != targetState) {
             updateState(targetState);
         }
@@ -81,27 +102,36 @@ void LFButton::initEvents() {
     setOnTouchUp([this](const LFTouchEvent& e) {
         if (!m_isEnabled || !m_isTouching) return;
 
-        m_isTouching = false;
+        const auto* touch = e.getPrimaryTouch();
+        if (!touch) return;
+        if (touch->id != m_activeTouchId) return;
 
-        if (const auto* touch = e.getPrimaryTouch()) {
-            m_isInside = containsWindowPoint(touch->x, touch->y);
-        } else {
-            m_isInside = false;
+        m_isTouching = false;
+        m_isInside = containsWindowPoint(touch->x, touch->y);
+        const float distance = m_touchDownPosition.distance(
+                LFPoint(touch->x, touch->y));
+        if (distance > kClickMoveThreshold) {
+            m_clickCanceled = true;
         }
 
         // 恢复状态
         updateState(LFButtonState::Normal);
 
         // 触发回调
-        if (m_isInside && m_onClick) {
+        if (m_isInside && !m_clickCanceled && m_onClick) {
             m_onClick(this);
         }
+        m_activeTouchId = -1;
     });
 
     // 4. 取消 (TouchCancel)
     setOnTouchCancel([this](const LFTouchEvent& e) {
+        const LFTouchPoint* touch = e.getPrimaryTouch();
+        if (touch && touch->id != m_activeTouchId) return;
         m_isTouching = false;
         m_isInside = false;
+        m_clickCanceled = true;
+        m_activeTouchId = -1;
         updateState(LFButtonState::Normal);
     });
 }
@@ -116,6 +146,8 @@ void LFButton::setEnabled(bool enabled) {
     if (!m_isEnabled) {
         m_isTouching = false;
         m_isInside = false;
+        m_clickCanceled = true;
+        m_activeTouchId = -1;
     }
     updateState(m_isEnabled ? LFButtonState::Normal : LFButtonState::Disabled, false);
 }

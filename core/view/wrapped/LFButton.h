@@ -106,6 +106,9 @@ private:
     // 交互状态追踪
     bool m_isTouching = false;      // 物理上是否按着
     bool m_isInside = false;        // 手指是否在范围内
+    bool m_clickCanceled = false;
+    LFTouchID m_activeTouchId = -1;
+    LFPoint m_touchDownPosition;
 
     // 为了简单，我们持有 shared_ptr，并在析构或 stop 时从引擎移除
     // 动画实例
