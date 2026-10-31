@@ -310,6 +310,9 @@ public class AudioPlayerPlugin implements LeafPlugin {
                 record.pendingListener = null;
                 pending.result.success(pending.requestId, eventText);
             } else {
+                while (record.events.size() >= 32) {
+                    record.events.poll();
+                }
                 record.events.add(eventText);
             }
         } catch (Throwable ignored) {

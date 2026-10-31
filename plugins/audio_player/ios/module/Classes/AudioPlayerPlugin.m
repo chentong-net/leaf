@@ -421,6 +421,9 @@ static const int32_t REQUEST_ERROR_LISTEN_IN_PROGRESS = -11;
         record.pendingListenerRequestId = 0;
         [pending success:pendingId data:json];
     } else {
+        while (record.events.count >= 32) {
+            [record.events removeObjectAtIndex:0];
+        }
         [record.events addObject:json];
     }
 }
