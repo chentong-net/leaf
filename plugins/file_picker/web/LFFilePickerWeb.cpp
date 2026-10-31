@@ -325,7 +325,15 @@ EM_JS(void, leafWebReadChunk, (int requestId, int handle, double offset, double 
         let ptr = 0;
         if (len > 0) {
             if (!state.readBufferPtr || state.readBufferCap < len) {
-                state.readBufferPtr = _malloc(len);
+                const allocation = _malloc(len);
+                if (!allocation) {
+                    Module._leafWebFilePickerOnReadResult(requestId, 0, 0, 0, 0, 2);
+                    return;
+                }
+                if (state.readBufferPtr) {
+                    _free(state.readBufferPtr);
+                }
+                state.readBufferPtr = allocation;
                 state.readBufferCap = len;
             }
             ptr = state.readBufferPtr;
