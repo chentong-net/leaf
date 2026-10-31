@@ -1,12 +1,14 @@
 package net.chentong.leaf.android;
 
 import android.content.Context;
+import android.graphics.Matrix;
 import android.opengl.GLSurfaceView;
 import android.text.InputType;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.inputmethod.BaseInputConnection;
+import android.view.inputmethod.CursorAnchorInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
@@ -15,6 +17,10 @@ public class LeafView extends GLSurfaceView implements LeafRenderer.TextInputFoc
 
     private LeafRenderer renderer;
     private final InputMethodManager inputMethodManager;
+    private float lastCursorLeft = Float.NaN;
+    private float lastCursorTop = Float.NaN;
+    private float lastCursorRight = Float.NaN;
+    private float lastCursorBottom = Float.NaN;
 
     public LeafView(Context context) {
         super(context);
@@ -107,6 +113,46 @@ public class LeafView extends GLSurfaceView implements LeafRenderer.TextInputFoc
     }
 
     @Override
+    public void onTextInputCursorChanged(float left, float top, float right, float bottom) {
+        post(() -> {
+            if (inputMethodManager == null || !hasFocus()) {
+                return;
+            }
+            if (left == lastCursorLeft && top == lastCursorTop &&
+                right == lastCursorRight && bottom == lastCursorBottom) {
+                return;
+            }
+
+            lastCursorLeft = left;
+            lastCursorTop = top;
+            lastCursorRight = right;
+            lastCursorBottom = bottom;
+
+            int[] location = new int[2];
+            getLocationOnScreen(location);
+            Matrix matrix = new Matrix();
+            matrix.setTranslate(location[0], location[1]);
+
+            CursorAnchorInfo info = new CursorAnchorInfo.Builder()
+                .setMatrix(matrix)
+                .setInsertionMarkerHorizontal(left)
+                .setInsertionMarkerTop(top)
+                .setInsertionMarkerBottom(bottom)
+                .setInsertionMarkerFlags(CursorAnchorInfo.FLAG_HAS_VISIBLE_REGION)
+                .build();
+            inputMethodManager.updateCursorAnchorInfo(this, info);
+        });
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (renderer != null) {
+            renderer.release();
+        }
+        super.onDetachedFromWindow();
+    }
+
+    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (dispatchAndroidKeyEvent(event)) {
             return true;
@@ -178,6 +224,10 @@ public class LeafView extends GLSurfaceView implements LeafRenderer.TextInputFoc
                 inputMethodManager.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT);
             } else {
                 inputMethodManager.hideSoftInputFromWindow(getWindowToken(), 0);
+                lastCursorLeft = Float.NaN;
+                lastCursorTop = Float.NaN;
+                lastCursorRight = Float.NaN;
+                lastCursorBottom = Float.NaN;
             }
         });
     }

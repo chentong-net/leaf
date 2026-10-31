@@ -15,6 +15,9 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
 
     public interface TextInputFocusListener {
         void onTextInputFocusChanged(boolean focused);
+
+        default void onTextInputCursorChanged(float left, float top, float right, float bottom) {
+        }
     }
 
     private AssetManager assetManager;
@@ -72,6 +75,7 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
     private native void nativeOnSurfaceChanged(int width, int height, float density);
     private native void nativeOnDrawFrame();
     private native boolean nativeIsTextInputFocused();
+    private native void nativeRelease();
 
     // New: Touch event dispatch to native
     private native void nativeDispatchTouchEvent(
@@ -155,6 +159,21 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
         synchronized (queueLock) {
             charInputQueue.offer(codepoint);
         }
+    }
+
+    public void onNativeTextInputCursorChanged(float x, float bottom, float lineHeight) {
+        if (textInputFocusListener != null) {
+            textInputFocusListener.onTextInputCursorChanged(
+                x,
+                bottom - lineHeight,
+                x + 2.0f,
+                bottom
+            );
+        }
+    }
+
+    public void release() {
+        nativeRelease();
     }
 
     /**

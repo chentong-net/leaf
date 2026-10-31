@@ -9,6 +9,9 @@ static JavaVM* g_javaVm = nullptr;
 static jobject g_pluginDispatcherObj = nullptr;
 static jmethodID g_pluginDispatchMethod = nullptr;
 static std::mutex g_pluginBridgeMutex;
+static jweak g_leafRendererObj = nullptr;
+static jmethodID g_textInputCursorMethod = nullptr;
+static std::mutex g_rendererBridgeMutex;
 
 namespace {
 
@@ -215,16 +218,84 @@ Java_net_chentong_leaf_android_PluginDispatcher_nativeNotifyPluginResult(
 
 extern "C" JNIEXPORT void JNICALL
 Java_net_chentong_leaf_android_LeafRenderer_nativeOnSurfaceCreated(JNIEnv* env, jobject thiz, jobject asset_mgr) {
+    {
+        std::lock_guard<std::mutex> lock(g_rendererBridgeMutex);
+        if (g_leafRendererObj) {
+            env->DeleteWeakGlobalRef(g_leafRendererObj);
+            g_leafRendererObj = nullptr;
+        }
+
+        jclass rendererClass = env->GetObjectClass(thiz);
+        g_textInputCursorMethod = env->GetMethodID(
+                rendererClass,
+                "onNativeTextInputCursorChanged",
+                "(FFF)V"
+        );
+        if (g_textInputCursorMethod) {
+            g_leafRendererObj = env->NewWeakGlobalRef(thiz);
+        } else if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+        }
+        env->DeleteLocalRef(rendererClass);
+    }
+
     initPluginBridge(env);
     AAssetManager* mgr = AAssetManager_fromJava(env, asset_mgr);
     auto asset_loader = [mgr](const char* path) -> std::vector<unsigned char>{
         return read_asset(mgr, path);
     };
     leaf_init(asset_loader);
+    LFEngine::getInstance().setTextInputCursorCallback([](float x, float y, float lineHeight) {
+        bool didAttach = false;
+        JNIEnv* callbackEnv = getJNIEnv(&didAttach);
+        if (!callbackEnv) {
+            return;
+        }
+
+        jobject renderer = nullptr;
+        jmethodID method = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(g_rendererBridgeMutex);
+            method = g_textInputCursorMethod;
+            if (g_leafRendererObj && method) {
+                renderer = callbackEnv->NewLocalRef(g_leafRendererObj);
+            }
+        }
+
+        if (renderer && method) {
+            const jfloat density = g_density > 0.0f ? g_density : 1.0f;
+            callbackEnv->CallVoidMethod(
+                    renderer,
+                    method,
+                    x * density,
+                    y * density,
+                    lineHeight * density
+            );
+            if (callbackEnv->ExceptionCheck()) {
+                callbackEnv->ExceptionDescribe();
+                callbackEnv->ExceptionClear();
+            }
+            callbackEnv->DeleteLocalRef(renderer);
+        }
+
+        if (didAttach) {
+            g_javaVm->DetachCurrentThread();
+        }
+    });
     std::string js_code = "js_code";
     if (!js_code.empty()) {
         leaf_eval_js(js_code.c_str());
     }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_net_chentong_leaf_android_LeafRenderer_nativeRelease(JNIEnv* env, jobject thiz) {
+    std::lock_guard<std::mutex> lock(g_rendererBridgeMutex);
+    if (g_leafRendererObj) {
+        env->DeleteWeakGlobalRef(g_leafRendererObj);
+        g_leafRendererObj = nullptr;
+    }
+    g_textInputCursorMethod = nullptr;
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -386,4 +457,12 @@ extern "C" JNIEXPORT void JNICALL JNI_OnUnload(JavaVM* vm, void* reserved) {
     g_pluginDispatchMethod = nullptr;
     LFNativeSender::getInstance().bindTarget(nullptr);
     LFNativeSender::getInstance().clearPending();
+    {
+        std::lock_guard<std::mutex> rendererLock(g_rendererBridgeMutex);
+        if (g_leafRendererObj) {
+            env->DeleteWeakGlobalRef(g_leafRendererObj);
+            g_leafRendererObj = nullptr;
+        }
+        g_textInputCursorMethod = nullptr;
+    }
 }
