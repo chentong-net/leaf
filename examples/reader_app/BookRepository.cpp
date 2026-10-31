@@ -235,6 +235,12 @@ double sanitizeTimestamp(double value) {
     return std::isfinite(value) && value >= 0.0 ? value : 0.0;
 }
 
+bool isSafeInteger(double value, int digits) {
+    return std::isfinite(value) && value >= 0.0 &&
+           std::trunc(value) == value &&
+           value < std::ldexp(1.0, digits);
+}
+
 } // namespace
 
 BookRepository& BookRepository::getInstance() {
@@ -451,8 +457,7 @@ bool BookRepository::loadFromDiskLocked() {
             if (item->contains("mimeType")) book.mimeType = normalizeUtf8(item->at("mimeType").asString());
             if (item->contains("size")) {
                 const double size = item->at("size").asDouble();
-                if (size >= 0.0 &&
-                    size <= static_cast<double>(std::numeric_limits<int64_t>::max())) {
+                if (isSafeInteger(size, std::numeric_limits<int64_t>::digits)) {
                     book.size = static_cast<int64_t>(size);
                 }
             }

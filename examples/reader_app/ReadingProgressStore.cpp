@@ -132,6 +132,12 @@ double sanitizeTimestamp(double value) {
     return std::isfinite(value) && value >= 0.0 ? value : 0.0;
 }
 
+bool isSafeInteger(double value, int digits) {
+    return std::isfinite(value) && value >= 0.0 &&
+           std::trunc(value) == value &&
+           value < std::ldexp(1.0, digits);
+}
+
 } // namespace
 
 FileReadingProgressStore& FileReadingProgressStore::getInstance() {
@@ -234,8 +240,7 @@ bool FileReadingProgressStore::loadFromDiskLocked() {
             ReadingProgress progress;
             if (item->contains("pageStartOffset")) {
                 const double offset = item->at("pageStartOffset").asDouble();
-                if (offset >= 0.0 &&
-                    offset <= static_cast<double>(std::numeric_limits<size_t>::max())) {
+                if (isSafeInteger(offset, std::numeric_limits<size_t>::digits)) {
                     progress.pageStartOffset = static_cast<size_t>(offset);
                 }
             }
