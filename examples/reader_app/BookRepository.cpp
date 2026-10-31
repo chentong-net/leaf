@@ -440,9 +440,18 @@ bool BookRepository::loadFromDiskLocked() {
             if (item->contains("title")) book.title = normalizeUtf8(item->at("title").asString());
             if (item->contains("filePath")) book.filePath = normalizeUtf8(item->at("filePath").asString());
             if (item->contains("mimeType")) book.mimeType = normalizeUtf8(item->at("mimeType").asString());
-            if (item->contains("size")) book.size = static_cast<int64_t>(item->at("size").asDouble());
-            if (item->contains("createdAt")) book.createdAt = item->at("createdAt").asDouble();
-            if (item->contains("lastReadAt")) book.lastReadAt = item->at("lastReadAt").asDouble();
+            if (item->contains("size")) {
+                book.size = std::max<int64_t>(
+                        0,
+                        static_cast<int64_t>(item->at("size").asDouble())
+                );
+            }
+            if (item->contains("createdAt")) {
+                book.createdAt = std::max(0.0, item->at("createdAt").asDouble());
+            }
+            if (item->contains("lastReadAt")) {
+                book.lastReadAt = std::max(0.0, item->at("lastReadAt").asDouble());
+            }
 
             if (!book.id.empty() && !book.filePath.empty()) {
                 m_books.push_back(std::move(book));
