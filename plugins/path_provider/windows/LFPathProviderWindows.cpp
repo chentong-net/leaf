@@ -68,6 +68,23 @@ std::filesystem::path homeDirectory() {
     return {};
 }
 
+std::string applicationDirectoryName() {
+    std::wstring buffer(MAX_PATH, L'\0');
+    const DWORD length = GetModuleFileNameW(
+            nullptr,
+            buffer.data(),
+            static_cast<DWORD>(buffer.size())
+    );
+    if (length == 0 || length >= buffer.size()) {
+        return "leaf";
+    }
+    buffer.resize(length);
+
+    const std::string stem =
+            wideToUtf8(std::filesystem::path(buffer).stem().wstring());
+    return stem.empty() ? "leaf" : stem;
+}
+
 std::string asString(const std::filesystem::path& path) {
     if (path.empty()) return "";
     return wideToUtf8(path.lexically_normal().wstring());
@@ -102,12 +119,12 @@ std::filesystem::path temporaryPath() {
 std::filesystem::path appSupportPath() {
     const std::string appData = getenvOrEmpty("APPDATA");
     if (!appData.empty()) {
-        return std::filesystem::path(appData) / "leaf";
+        return std::filesystem::path(appData) / "leaf" / applicationDirectoryName();
     }
 
     const auto home = homeDirectory();
     if (home.empty()) return {};
-    return home / "AppData" / "Roaming" / "leaf";
+    return home / "AppData" / "Roaming" / "leaf" / applicationDirectoryName();
 }
 
 std::filesystem::path documentsPath() {

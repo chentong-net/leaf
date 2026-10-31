@@ -9,6 +9,9 @@
 #include <filesystem>
 #include <string>
 #include <system_error>
+#include <vector>
+
+#include <mach-o/dyld.h>
 
 namespace {
 
@@ -22,6 +25,23 @@ std::filesystem::path homeDirectory() {
     const std::string home = getenvOrEmpty("HOME");
     if (home.empty()) return {};
     return std::filesystem::path(home);
+}
+
+std::string applicationDirectoryName() {
+    uint32_t size = 0;
+    _NSGetExecutablePath(nullptr, &size);
+    if (size == 0) {
+        return "leaf";
+    }
+
+    std::vector<char> executablePath(size, '\0');
+    if (_NSGetExecutablePath(executablePath.data(), &size) != 0) {
+        return "leaf";
+    }
+
+    const std::string stem =
+            std::filesystem::path(executablePath.data()).stem().string();
+    return stem.empty() ? "leaf" : stem;
 }
 
 std::string asString(const std::filesystem::path& path) {
@@ -58,7 +78,7 @@ std::filesystem::path temporaryPath() {
 std::filesystem::path appSupportPath() {
     const auto home = homeDirectory();
     if (home.empty()) return {};
-    return home / "Library" / "Application Support" / "leaf";
+    return home / "Library" / "Application Support" / "leaf" / applicationDirectoryName();
 }
 
 std::filesystem::path documentsPath() {
