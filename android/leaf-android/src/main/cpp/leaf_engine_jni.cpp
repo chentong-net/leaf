@@ -1,6 +1,9 @@
 #include <jni.h>
 #include <android/asset_manager_jni.h>
 #include <android/log.h>
+#include <cstdint>
+#include <string>
+#include <vector>
 #include "LFEngine.h"
 #include "plugin/LFNativeSender.h"
 
@@ -48,13 +51,137 @@ LFKeyEventType toLFKeyEventType(jint rawType) {
     return rawType == 1 ? LFKeyEventType::Up : LFKeyEventType::Down;
 }
 
+void appendUtf8(std::string& output, uint32_t codepoint) {
+    if (codepoint <= 0x7F) {
+        output.push_back(static_cast<char>(codepoint));
+    } else if (codepoint <= 0x7FF) {
+        output.push_back(static_cast<char>(0xC0 | (codepoint >> 6)));
+        output.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+    } else if (codepoint <= 0xFFFF) {
+        output.push_back(static_cast<char>(0xE0 | (codepoint >> 12)));
+        output.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+        output.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+    } else {
+        output.push_back(static_cast<char>(0xF0 | (codepoint >> 18)));
+        output.push_back(static_cast<char>(0x80 | ((codepoint >> 12) & 0x3F)));
+        output.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+        output.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+    }
+}
+
+void appendUtf16(std::vector<jchar>& output, uint32_t codepoint) {
+    if (codepoint <= 0xFFFF) {
+        output.push_back(static_cast<jchar>(codepoint));
+        return;
+    }
+
+    codepoint -= 0x10000;
+    output.push_back(static_cast<jchar>(0xD800 | (codepoint >> 10)));
+    output.push_back(static_cast<jchar>(0xDC00 | (codepoint & 0x3FF)));
+}
+
 std::string toStdString(JNIEnv* env, jstring value) {
     if (!value) return "";
-    const char* chars = env->GetStringUTFChars(value, nullptr);
-    if (!chars) return "";
-    std::string out(chars);
-    env->ReleaseStringUTFChars(value, chars);
-    return out;
+
+    const jsize length = env->GetStringLength(value);
+    if (length <= 0) return "";
+
+    std::vector<jchar> utf16(static_cast<size_t>(length));
+    env->GetStringRegion(value, 0, length, utf16.data());
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return "";
+    }
+
+    std::string result;
+    result.reserve(static_cast<size_t>(length));
+    for (jsize i = 0; i < length; ++i) {
+        const uint32_t unit = utf16[static_cast<size_t>(i)];
+        if (unit >= 0xD800 && unit <= 0xDBFF) {
+            if (i + 1 < length) {
+                const uint32_t low = utf16[static_cast<size_t>(i + 1)];
+                if (low >= 0xDC00 && low <= 0xDFFF) {
+                    appendUtf8(
+                            result,
+                            0x10000 + ((unit - 0xD800) << 10) + (low - 0xDC00)
+                    );
+                    ++i;
+                    continue;
+                }
+            }
+            appendUtf8(result, 0xFFFD);
+        } else if (unit >= 0xDC00 && unit <= 0xDFFF) {
+            appendUtf8(result, 0xFFFD);
+        } else {
+            appendUtf8(result, unit);
+        }
+    }
+    return result;
+}
+
+jstring toJString(JNIEnv* env, const std::string& value) {
+    std::vector<jchar> utf16;
+    utf16.reserve(value.size());
+
+    size_t offset = 0;
+    while (offset < value.size()) {
+        const uint8_t first = static_cast<uint8_t>(value[offset]);
+        uint32_t codepoint = 0xFFFD;
+        size_t sequenceLength = 1;
+
+        if (first <= 0x7F) {
+            codepoint = first;
+        } else if (first >= 0xC2 && first <= 0xDF &&
+                   offset + 1 < value.size()) {
+            const uint8_t second = static_cast<uint8_t>(value[offset + 1]);
+            if ((second & 0xC0) == 0x80) {
+                codepoint = ((first & 0x1F) << 6) | (second & 0x3F);
+                sequenceLength = 2;
+            }
+        } else if (first >= 0xE0 && first <= 0xEF &&
+                   offset + 2 < value.size()) {
+            const uint8_t second = static_cast<uint8_t>(value[offset + 1]);
+            const uint8_t third = static_cast<uint8_t>(value[offset + 2]);
+            if ((second & 0xC0) == 0x80 && (third & 0xC0) == 0x80) {
+                const uint32_t candidate =
+                        ((first & 0x0F) << 12) |
+                        ((second & 0x3F) << 6) |
+                        (third & 0x3F);
+                if (candidate >= 0x800 &&
+                    !(candidate >= 0xD800 && candidate <= 0xDFFF)) {
+                    codepoint = candidate;
+                    sequenceLength = 3;
+                }
+            }
+        } else if (first >= 0xF0 && first <= 0xF4 &&
+                   offset + 3 < value.size()) {
+            const uint8_t second = static_cast<uint8_t>(value[offset + 1]);
+            const uint8_t third = static_cast<uint8_t>(value[offset + 2]);
+            const uint8_t fourth = static_cast<uint8_t>(value[offset + 3]);
+            if ((second & 0xC0) == 0x80 &&
+                (third & 0xC0) == 0x80 &&
+                (fourth & 0xC0) == 0x80) {
+                const uint32_t candidate =
+                        ((first & 0x07) << 18) |
+                        ((second & 0x3F) << 12) |
+                        ((third & 0x3F) << 6) |
+                        (fourth & 0x3F);
+                if (candidate >= 0x10000 && candidate <= 0x10FFFF) {
+                    codepoint = candidate;
+                    sequenceLength = 4;
+                }
+            }
+        }
+
+        appendUtf16(utf16, codepoint);
+        offset += sequenceLength;
+    }
+
+    if (utf16.empty()) {
+        const jchar empty = 0;
+        return env->NewString(&empty, 0);
+    }
+    return env->NewString(utf16.data(), static_cast<jsize>(utf16.size()));
 }
 
 JNIEnv* getJNIEnv(bool* didAttach) {
@@ -109,8 +236,17 @@ void dispatchMethodCallToJava(const LFMethodCall& call) {
         return;
     }
 
-    jstring method = env->NewStringUTF(call.method.c_str());
-    jstring args = env->NewStringUTF(call.args.c_str());
+    jstring method = toJString(env, call.method);
+    jstring args = toJString(env, call.args);
+    if (!method || !args) {
+        if (method) env->DeleteLocalRef(method);
+        if (args) env->DeleteLocalRef(args);
+        resolveBridgeError(call.requestId, -13, "jni_string_allocation_failed");
+        if (didAttach) {
+            g_javaVm->DetachCurrentThread();
+        }
+        return;
+    }
     env->CallVoidMethod(dispatcherObj, dispatchMethod, method, static_cast<jint>(call.requestId), args);
 
     if (env->ExceptionCheck()) {
