@@ -168,6 +168,15 @@ void finishFdCopyWithError(const std::shared_ptr<FdCopyContext>& context, const 
 void finishFdCopySuccess(const std::shared_ptr<FdCopyContext>& context) {
     if (context->outFile && context->outFile->is_open()) {
         context->outFile->close();
+        if (context->outFile->fail()) {
+            std::error_code ec;
+            std::filesystem::remove(std::filesystem::u8path(context->destPath), ec);
+            LFFilePicker::releaseFile(context->source);
+            if (context->callback) {
+                context->callback(makeError("close_target_failed"));
+            }
+            return;
+        }
     }
 
     BookImportResult result;
@@ -303,6 +312,13 @@ void BookImportService::importPickedFile(const LFFileInfo& sourceFile,
         }
 
         outFile->close();
+        if (outFile->fail()) {
+            std::error_code ec;
+            std::filesystem::remove(std::filesystem::u8path(destPath), ec);
+            LFFilePicker::releaseFile(sourceFile);
+            callback(makeError("close_target_failed"));
+            return;
+        }
 
         BookImportResult result;
         result.ok = true;
