@@ -149,6 +149,11 @@ void LFButton::setBackgroundColor(LFButtonState state, uint32_t color) {
 }
 
 void LFButton::setText(const std::string& text) {
+    ensureTextNode();
+    m_textNode->setText(text);
+}
+
+void LFButton::ensureTextNode() {
     if (!m_textNode) {
         m_textNode = std::make_shared<LFText>();
         // 默认文字样式
@@ -158,15 +163,16 @@ void LFButton::setText(const std::string& text) {
         m_textNode->setTextVAlign(LFTextVAlign::Center);
         addChild(m_textNode, LFBoxAlign::Center);
     }
-    m_textNode->setText(text);
 }
 
 void LFButton::setTextColor(uint32_t color) {
-    if (m_textNode) m_textNode->setTextColor(color);
+    ensureTextNode();
+    m_textNode->setTextColor(color);
 }
 
 void LFButton::setFontSize(float size) {
-    if (m_textNode) m_textNode->setFontSize(size);
+    ensureTextNode();
+    m_textNode->setFontSize(size);
 }
 
 // ==========================================

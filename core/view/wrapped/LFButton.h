@@ -82,6 +82,7 @@ protected:
 private:
     // 初始化事件监听
     void initEvents();
+    void ensureTextNode();
 
     // 状态更新逻辑
     void updateState(LFButtonState newState, bool animate = true);
