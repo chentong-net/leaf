@@ -4,6 +4,7 @@
 
 #include "view/base/LFImage.h"
 #include "LFEngine.h"
+#include "plugin/LFPlugin.h"
 #include "stb_image.h"
 
 LFImage::LFImage() {
@@ -57,23 +58,34 @@ void LFImage::startLoading() {
     auto weakThis = std::weak_ptr<LFImage>(std::static_pointer_cast<LFImage>(shared_from_this()));
 
     LFResourceProvider::getInstance().fetchAsset(m_src, [weakThis, currentId](std::shared_ptr<LFData> imageData) {
-        auto self = weakThis.lock();
-        // 检查 ID 是否匹配，不匹配说明 setSrc 又被调过了，当前结果已过时
-        if (!self || self->m_loadRequestId != currentId) return;
+        LFPluginCenter::dispatchToMain(
+                [weakThis, currentId, imageData = std::move(imageData)]() mutable {
+                    auto self = weakThis.lock();
+                    // 检查 ID 是否匹配，不匹配说明 setSrc 又被调过了，当前结果已过时
+                    if (!self || self->m_loadRequestId != currentId || !imageData) {
+                        return;
+                    }
 
-        if (imageData) {
-            self->m_pendingData = imageData;
-            self->m_needUpload = true; // 标记需要上传
+                    self->m_pendingData = std::move(imageData);
+                    self->m_needUpload = true;
 
+                    int width = 0;
+                    int height = 0;
+                    int channels = 0;
+                    stbi_info_from_memory(
+                            self->m_pendingData->data,
+                            self->m_pendingData->size,
+                            &width,
+                            &height,
+                            &channels
+                    );
+                    self->m_imgWidth = width;
+                    self->m_imgHeight = height;
 
-            int width, height, channels;
-            stbi_info_from_memory(imageData->data, imageData->size, &width, &height, &channels);
-            self->m_imgWidth = width;
-            self->m_imgHeight = height;
-
-            YGNodeMarkDirty(self->getYGNode());
-            self->markDirty();
-        }
+                    YGNodeMarkDirty(self->getYGNode());
+                    self->markDirty();
+                }
+        );
     });
 }
 
