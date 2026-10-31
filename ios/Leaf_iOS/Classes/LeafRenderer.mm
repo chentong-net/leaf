@@ -182,6 +182,7 @@ struct NativeKeyEvent {
 
 - (void)dealloc {
     [self stop];
+    [LFNativePluginBridge uninstall];
     LFEngine::getInstance().shutdown();
 #ifdef LEAF_USE_METAL
     if (_vg) {
@@ -203,8 +204,6 @@ struct NativeKeyEvent {
         [EAGLContext setCurrentContext:nil];
     }
 #endif
-
-    [LFNativePluginBridge uninstall];
 }
 
 #ifndef LEAF_USE_METAL
