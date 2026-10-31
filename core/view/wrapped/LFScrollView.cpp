@@ -52,6 +52,7 @@ LFScrollView::LFScrollView() {
 
 LFScrollView::~LFScrollView() {
     if (m_animator) m_animator->stop();
+    if (m_smoothScrollAnimator) m_smoothScrollAnimator->stop();
     if (m_barHideDelayAnimator) m_barHideDelayAnimator->stop();
 }
 
@@ -90,6 +91,15 @@ void LFScrollView::initAnimator() {
         if (auto self = weakSelf.lock()) {
             self->updatePhysics(dt);
             return self->m_velocity == 0.0f && !self->m_inSpringMode; // 返回 true 结束动画
+        }
+        return true;
+    });
+
+    m_smoothScrollAnimator = std::make_shared<ScrollPhysicsAnimator>();
+    m_smoothScrollAnimator->setUpdateCallback([weakSelf](float dt) {
+        if (auto self = weakSelf.lock()) {
+            self->updateSmoothScroll(dt);
+            return !self->m_smoothScrollAnimator->isRunning();
         }
         return true;
     });
@@ -171,6 +181,7 @@ void LFScrollView::initGestures() {
             auto self = weakSelf.lock();
             if (self) {
                 // 手指按下，立即停止惯性
+                self->stopSmoothScroll();
                 self->m_animator->stop();
                 self->m_isDragging = true;
                 self->m_velocity = 0;
@@ -315,11 +326,13 @@ bool LFScrollView::isOutOfBounds(float y) const {
 void LFScrollView::scrollTo(float y, bool animate) {
     // 还没做主动 scrollTo 的动画，先直接跳过去
     // TODO: 可以复用 m_spring 做平滑滚动
+    stopSmoothScroll();
     m_scrollY = getBoundaryY(y);
+    m_smoothScrollTargetY = m_scrollY;
     m_content->setTranslate(0, m_scrollY);
 }
 
-bool LFScrollView::scrollBy(float deltaY) {
+bool LFScrollView::scrollBy(float deltaY, bool smooth) {
     if (deltaY == 0.0f) return false;
 
     if (m_animator && m_animator->isRunning()) {
@@ -329,16 +342,62 @@ bool LFScrollView::scrollBy(float deltaY) {
     m_inSpringMode = false;
     m_velocity = 0.0f;
 
-    const float nextScrollY = getBoundaryY(m_scrollY - deltaY);
-    if (nextScrollY == m_scrollY) {
+    if (!smooth) {
+        stopSmoothScroll();
+
+        const float nextScrollY = getBoundaryY(m_scrollY - deltaY);
+        if (nextScrollY == m_scrollY) {
+            return false;
+        }
+
+        m_scrollY = nextScrollY;
+        m_smoothScrollTargetY = m_scrollY;
+        m_content->setTranslate(0, m_scrollY);
+        showScrollbar();
+        scheduleScrollbarHide();
+        return true;
+    }
+
+    if (!m_smoothScrollAnimator->isRunning()) {
+        m_smoothScrollTargetY = m_scrollY;
+    }
+
+    const float nextTargetY = getBoundaryY(m_smoothScrollTargetY - deltaY);
+    if (nextTargetY == m_smoothScrollTargetY) {
         return false;
     }
 
-    m_scrollY = nextScrollY;
-    m_content->setTranslate(0, m_scrollY);
+    m_smoothScrollTargetY = nextTargetY;
     showScrollbar();
     scheduleScrollbarHide();
+
+    if (!m_smoothScrollAnimator->isRunning()) {
+        m_smoothScrollAnimator->start();
+        LFGlobalAnimationManager::getInstance().addAnimator(m_smoothScrollAnimator);
+    }
+
     return true;
+}
+
+void LFScrollView::updateSmoothScroll(float dt) {
+    const float distance = m_smoothScrollTargetY - m_scrollY;
+    if (std::abs(distance) <= SMOOTH_SCROLL_STOP_DISTANCE) {
+        m_scrollY = m_smoothScrollTargetY;
+        m_content->setTranslate(0, m_scrollY);
+        m_smoothScrollAnimator->stop();
+        return;
+    }
+
+    const float factor = std::min(1.0f, dt * SMOOTH_SCROLL_RESPONSE);
+    m_scrollY += distance * factor;
+    m_content->setTranslate(0, m_scrollY);
+}
+
+void LFScrollView::stopSmoothScroll() {
+    if (m_smoothScrollAnimator && m_smoothScrollAnimator->isRunning()) {
+        m_smoothScrollAnimator->stop();
+    }
+    m_smoothScrollTargetY = m_scrollY;
 }
 
 // ==========================================

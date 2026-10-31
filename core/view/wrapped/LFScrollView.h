@@ -42,7 +42,7 @@ public:
      * 按逻辑像素滚动，deltaY 大于 0 表示向内容末尾滚动。
      * @return 滚动位置是否发生变化
      */
-    bool scrollBy(float deltaY);
+    bool scrollBy(float deltaY, bool smooth = false);
 
     float getScrollY() const { return m_scrollY; }
 
@@ -73,6 +73,8 @@ private:
 
     // 核心物理引擎 Tick
     void updatePhysics(float dt);
+    void updateSmoothScroll(float dt);
+    void stopSmoothScroll();
 
     // 边界检查与修正
     // 返回值: 目标修正位置（如果不需要修正则返回当前位置）
@@ -86,10 +88,13 @@ private:
     float m_scrollY = 0.0f;       // 当前滚动位置 (通常 <= 0)
     float m_velocity = 0.0f;      // 当前速度 (像素/秒)
     bool m_isDragging = false;    // 是否正在被手指拖拽
+    float m_smoothScrollTargetY = 0.0f;
 
     // --- 物理参数 ---
     const float FRICTION = 0.92f; // 摩擦系数 (0.0~1.0)
     const float MIN_VELOCITY = 10.0f; // 最小速度阈值
+    const float SMOOTH_SCROLL_RESPONSE = 28.0f;
+    const float SMOOTH_SCROLL_STOP_DISTANCE = 1.0f;
 
     // --- 动画控制器 ---
     // 我们使用一个自定义 Animator 来驱动 ScrollView 的物理 tick
@@ -106,6 +111,7 @@ private:
         UpdateCallback m_callback;
     };
     std::shared_ptr<ScrollPhysicsAnimator> m_animator;
+    std::shared_ptr<ScrollPhysicsAnimator> m_smoothScrollAnimator;
 
     // 弹簧模拟器 (用于回弹)
     LFSpring m_spring;
