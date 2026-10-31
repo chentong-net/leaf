@@ -1,13 +1,13 @@
 #pragma once
 
 #include <iostream>
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <map>
 #include <variant>
 #include <stdexcept>
 #include <memory>
-#include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <string_view>
@@ -389,13 +389,67 @@ private:
             }
         }
 
-        const char* begin = s.data() + start;
-        const char* end = s.data() + o;
-        double d = 0.0;
-        const auto result = std::from_chars(begin, end, d, std::chars_format::general);
-        if (result.ec != std::errc() || result.ptr != end || !std::isfinite(d)) {
+        size_t cursor = start;
+        bool negative = false;
+        if (s[cursor] == '-') {
+            negative = true;
+            ++cursor;
+        }
+
+        long double value = 0.0L;
+        bool hasNonZeroDigit = false;
+        long long fractionalDigits = 0;
+        while (cursor < o && s[cursor] >= '0' && s[cursor] <= '9') {
+            const int digit = s[cursor] - '0';
+            hasNonZeroDigit = hasNonZeroDigit || digit != 0;
+            value = value * 10.0L + static_cast<long double>(digit);
+            ++cursor;
+        }
+        if (cursor < o && s[cursor] == '.') {
+            ++cursor;
+            while (cursor < o && s[cursor] >= '0' && s[cursor] <= '9') {
+                const int digit = s[cursor] - '0';
+                hasNonZeroDigit = hasNonZeroDigit || digit != 0;
+                value = value * 10.0L + static_cast<long double>(digit);
+                ++fractionalDigits;
+                ++cursor;
+            }
+        }
+        if (cursor < o && (s[cursor] == 'e' || s[cursor] == 'E')) {
+            ++cursor;
+            bool negativeExponent = false;
+            if (s[cursor] == '+' || s[cursor] == '-') {
+                negativeExponent = s[cursor] == '-';
+                ++cursor;
+            }
+
+            long long exponent = 0;
+            while (cursor < o && s[cursor] >= '0' && s[cursor] <= '9') {
+                exponent = std::min<long long>(10000, exponent * 10 + (s[cursor] - '0'));
+                ++cursor;
+            }
+            if (negativeExponent) {
+                exponent = -exponent;
+            }
+            fractionalDigits -= exponent;
+        }
+
+        if (fractionalDigits > 10000 || fractionalDigits < -10000) {
             throw std::runtime_error("LFJSON: Invalid number at index " + std::to_string(start));
         }
-        return d;
+        if (fractionalDigits != 0) {
+            value *= std::pow(10.0L, -static_cast<long double>(fractionalDigits));
+        }
+        if (negative) {
+            value = -value;
+        }
+
+        const double result = static_cast<double>(value);
+        if (!std::isfinite(result) ||
+            (!hasNonZeroDigit && result != 0.0) ||
+            (hasNonZeroDigit && result == 0.0)) {
+            throw std::runtime_error("LFJSON: Number out of range at index " + std::to_string(start));
+        }
+        return result;
     }
 };
