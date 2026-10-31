@@ -78,55 +78,75 @@ void LFEventDispatcher::dispatchTouchEvent(
         }
     }
 
-    // 4. Perform HitTest (only for Down event)
-    if (type == LFTouchEventType::Down) {
-        for (auto id : changedIDs) {
-            auto it = std::find_if(touches.begin(), touches.end(),
-                [id](const LFTouchPoint& t) { return t.id == id; });
-
-            if (it != touches.end()) {
-                LFHitTestResult hitResult = LFHitTestEngine::hitTest(
-                    root, it->x, it->y
-                );
-
-                if (hitResult.hasTarget()) {
-                    m_touchTargets[id] = hitResult.getTarget();
-                    event.target = hitResult.getTarget();
-                } else {
-                    // No target found, event goes nowhere
-                    event.target.reset();
-                }
-            }
+    // 4. Resolve a target for every changed pointer.
+    std::vector<std::pair<LFTouchID, std::shared_ptr<LFNode>>> dispatchTargets;
+    dispatchTargets.reserve(changedIDs.size());
+    for (auto id : changedIDs) {
+        auto pointIt = std::find_if(event.touches.begin(), event.touches.end(),
+            [id](const LFTouchPoint& t) { return t.id == id; });
+        if (pointIt == event.touches.end()) {
+            continue;
         }
-    } else {
-        // Move/Up/Cancel use cached target
-        for (auto id : changedIDs) {
+
+        std::shared_ptr<LFNode> target;
+        if (type == LFTouchEventType::Down) {
+            LFHitTestResult hitResult = LFHitTestEngine::hitTest(
+                root, pointIt->x, pointIt->y
+            );
+            if (hitResult.hasTarget()) {
+                target = hitResult.getTarget();
+            } else {
+                m_touchTargets.erase(id);
+            }
+        } else {
             auto targetIt = m_touchTargets.find(id);
             if (targetIt != m_touchTargets.end()) {
-                event.target = targetIt->second;
-                break; // Use first valid target
+                target = targetIt->second.lock();
             }
         }
+        dispatchTargets.emplace_back(id, std::move(target));
     }
 
     if (type == LFTouchEventType::Down) {
         auto focused = getFocusedNode();
-        auto target = event.target.lock();
-        if (focused && !isSameOrDescendant(target, focused)) {
-            clearFocus();
+        if (focused) {
+            for (const auto& entry : dispatchTargets) {
+                if (!isSameOrDescendant(entry.second, focused)) {
+                    clearFocus();
+                    break;
+                }
+            }
         }
     }
 
-    // 5. Execute three-phase dispatch
-    if (event.target.lock()) {
-        performDispatch(event, root);
-    }
+    // 5. Dispatch each changed pointer using its own capture/target/bubble path.
+    for (const auto& entry : dispatchTargets) {
+        if (!entry.second) {
+            continue;
+        }
 
-    // Interception may retarget the Down event. Keep subsequent Move/Up/Cancel
-    // events on the same effective target.
-    if (type == LFTouchEventType::Down && changedIDs.size() == 1) {
-        if (auto dispatchedTarget = event.target.lock()) {
-            m_touchTargets[changedIDs.front()] = dispatchedTarget;
+        LFTouchEvent pointerEvent = event;
+        pointerEvent.target = entry.second;
+        pointerEvent.changedTouches = {entry.first};
+        const auto pointIt = std::find_if(
+            event.touches.begin(), event.touches.end(),
+            [id = entry.first](const LFTouchPoint& point) {
+                return point.id == id;
+            });
+        if (pointIt != event.touches.end()) {
+            pointerEvent.timestamp = pointIt->timestamp;
+        }
+
+        performDispatch(pointerEvent, root);
+
+        // Interception may retarget the Down event. Keep subsequent Move/Up/Cancel
+        // events on the same effective target.
+        if (type == LFTouchEventType::Down) {
+            if (auto dispatchedTarget = pointerEvent.target.lock()) {
+                m_touchTargets[entry.first] = dispatchedTarget;
+            } else {
+                m_touchTargets.erase(entry.first);
+            }
         }
     }
 
