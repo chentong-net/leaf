@@ -1,0 +1,9 @@
+{
+  "module": {
+    "name": "i18n",
+    "type": "har",
+    "deviceTypes": [
+      "default"
+    ]
+  }
+}

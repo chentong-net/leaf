@@ -65,6 +65,10 @@
     {
       "name": "audio_player",
       "srcPath": "../plugins/audio_player/ohos/module"
+    },
+    {
+      "name": "i18n",
+      "srcPath": "../plugins/i18n/ohos/module"
     }
   ]
 }

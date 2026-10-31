@@ -1,6 +1,7 @@
 import { FilePickerPlugin } from 'file_picker'
 import { PathProviderPlugin } from 'path_provider'
 import { AudioPlayerPlugin } from 'audio_player'
+import { I18nPlugin } from 'i18n'
 import { Context } from '@kit.AbilityKit'
 import { LeafView, PluginRegistry } from 'leaf_ohos'
 
@@ -17,6 +18,7 @@ struct Index {
     PluginRegistry.getInstance().register(new FilePickerPlugin(context));
     PluginRegistry.getInstance().register(new PathProviderPlugin(context));
     PluginRegistry.getInstance().register(new AudioPlayerPlugin());
+    PluginRegistry.getInstance().register(new I18nPlugin());
     this.pluginRegistered = true;
   }
 

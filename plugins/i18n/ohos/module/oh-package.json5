@@ -1,0 +1,11 @@
+{
+  "name": "i18n",
+  "version": "1.0.0",
+  "description": "Leaf internationalization plugin for HarmonyOS.",
+  "main": "Index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "leaf_plugin": "@module:leaf_plugin"
+  }
+}
