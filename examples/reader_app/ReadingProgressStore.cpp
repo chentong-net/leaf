@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <sstream>
 
 #if defined(_WIN32)
@@ -223,13 +224,17 @@ bool FileReadingProgressStore::loadFromDiskLocked() {
 
             ReadingProgress progress;
             if (item->contains("pageStartOffset")) {
-                progress.pageStartOffset = static_cast<size_t>(item->at("pageStartOffset").asDouble());
+                const double offset = item->at("pageStartOffset").asDouble();
+                if (offset >= 0.0 &&
+                    offset <= static_cast<double>(std::numeric_limits<size_t>::max())) {
+                    progress.pageStartOffset = static_cast<size_t>(offset);
+                }
             }
             if (item->contains("pageIndex")) {
-                progress.pageIndex = item->at("pageIndex").asInt();
+                progress.pageIndex = std::max(0, item->at("pageIndex").asInt());
             }
             if (item->contains("updatedAt")) {
-                progress.updatedAt = item->at("updatedAt").asDouble();
+                progress.updatedAt = std::max(0.0, item->at("updatedAt").asDouble());
             }
 
             m_data[item->at("bookId").asString()] = progress;
