@@ -58,10 +58,6 @@ void LFButton::initEvents() {
 
         m_isTouching = true;
         m_isInside = true;
-        if (const LFTouchPoint* touch = e.getPrimaryTouch()) {
-            m_touchDownX = touch->x;
-            m_touchDownY = touch->y;
-        }
 
         // 进入按下状态
         updateState(LFButtonState::Pressed);
@@ -73,15 +69,11 @@ void LFButton::initEvents() {
 
         const LFTouchPoint* touch = e.getPrimaryTouch();
         if (!touch) return;
-        float dx = touch->x - m_touchDownX;
-        float dy = touch->y - m_touchDownY;
-        float distance = std::sqrt(dx * dx + dy * dy);
-
-        if (distance > m_touchSlop) {
-            m_isInside = false;
-            if (m_state == LFButtonState::Pressed) {
-                updateState(LFButtonState::Normal);
-            }
+        m_isInside = containsWindowPoint(touch->x, touch->y);
+        const LFButtonState targetState =
+                m_isInside ? LFButtonState::Pressed : LFButtonState::Normal;
+        if (m_state != targetState) {
+            updateState(targetState);
         }
     });
 
@@ -121,6 +113,10 @@ void LFButton::initEvents() {
 void LFButton::setEnabled(bool enabled) {
     if (m_isEnabled == enabled) return;
     m_isEnabled = enabled;
+    if (!m_isEnabled) {
+        m_isTouching = false;
+        m_isInside = false;
+    }
     updateState(m_isEnabled ? LFButtonState::Normal : LFButtonState::Disabled, false);
 }
 
