@@ -71,16 +71,17 @@ void LFOverlay::show(const LFNode::Ptr& content, LFBoxAlign align, float offsetX
 }
 
 void LFOverlay::dismiss() {
-    // TODO: 目前没有detach from root，可能会内存泄漏
     if (!m_isShowing) {
         clearActiveContent();
         setVisible(false);
+        removeFromParent();
         return;
     }
 
     clearActiveContent();
     m_isShowing = false;
     setVisible(false);
+    removeFromParent();
 
     if (m_onDismiss) {
         m_onDismiss();
