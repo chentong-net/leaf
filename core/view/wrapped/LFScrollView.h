@@ -59,6 +59,8 @@ public:
     bool getPreventAncestorScroll() const { return m_preventAncestorScroll; }
 
 protected:
+    void onAfterCalculateLayout() override;
+
     // 绘制滚动条
     void onDrawOverlay(NVGcontext* vg) override;
 

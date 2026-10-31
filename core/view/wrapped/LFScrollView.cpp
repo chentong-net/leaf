@@ -341,6 +341,28 @@ bool LFScrollView::isOutOfBounds(float position) const {
     return position != getBoundaryPosition(position);
 }
 
+void LFScrollView::onAfterCalculateLayout() {
+    LFBox::onAfterCalculateLayout();
+    if (!m_content) {
+        return;
+    }
+
+    const float boundary = getBoundaryPosition(m_scrollPosition);
+    if (boundary != m_scrollPosition) {
+        if (m_animator && m_animator->isRunning()) {
+            m_animator->stop();
+        }
+        if (m_smoothScrollAnimator && m_smoothScrollAnimator->isRunning()) {
+            m_smoothScrollAnimator->stop();
+        }
+        m_scrollPosition = boundary;
+        m_smoothScrollTargetPosition = boundary;
+        m_velocity = 0.0f;
+        m_inSpringMode = false;
+        updateContentTranslation();
+    }
+}
+
 void LFScrollView::scrollTo(float position, bool animate) {
     if (m_animator && m_animator->isRunning()) {
         m_animator->stop();
