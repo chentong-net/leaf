@@ -222,7 +222,12 @@ void LFFilePicker::readFile(const LFFileInfo& file, const LFFileReadOptions& opt
             result.bytes.resize(length);
             const off_t offset = static_cast<off_t>(options.offset);
             const ssize_t bytesRead = pread(fd, result.bytes.data(), length, offset);
+#if !defined(__OHOS__)
             close(fd);
+#else
+            // HarmonyOS keeps ownership in the ArkTS File wrapper so its
+            // finalizer cannot close a descriptor that has been reused.
+#endif
             if (bytesRead < 0) {
                 callback(makeReadError("read_fd_failed"));
                 return;
