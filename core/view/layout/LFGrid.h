@@ -38,13 +38,13 @@ public:
      * 重写 addChild
      * 会自动将 child 包装在一个透明的 Cell 中以控制布局
      */
-    void addChild(const LFNode::Ptr& child);
+    void addChild(const LFNode::Ptr& child) override;
 
     /**
      * 移除子节点
      * 会自动移除对应的 Cell 包装器
      */
-    void removeChild(const LFNode::Ptr& child);
+    void removeChild(const LFNode::Ptr& child) override;
 
     /**
      * 设置列数

@@ -27,7 +27,7 @@ public:
      * 重写 addChild
      * 外部调用的 addChild 实际上是添加到内部的 m_content 容器中
      */
-    void addChild(const LFNode::Ptr& child); // 覆盖基类
+    void addChild(const LFNode::Ptr& child) override;
     // 如果需要往 ScrollView 自身添加（比如悬浮按钮），可以用这个
     void addOverlayChild(const LFNode::Ptr& child, LFBoxAlign align = LFBoxAlign::TopLeft, float offsetX = 0.0, float offsetY = 0.0);
 

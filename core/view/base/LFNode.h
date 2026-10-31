@@ -51,9 +51,9 @@ public:
     virtual ~LFNode();
 
     // 树操作
-    void addChild(const Ptr& child);
+    virtual void addChild(const Ptr& child);
     void insertChild(const Ptr& child, uint32_t index);
-    void removeChild(const Ptr& child);
+    virtual void removeChild(const Ptr& child);
     void removeFromParent();
     const std::vector<Ptr>& getChildren() const { return m_children; }
     LFNode* getParent() const { return m_parent; }
