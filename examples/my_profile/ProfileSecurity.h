@@ -37,11 +37,18 @@ namespace ProfileSecurity {
         key[3] = 0x00000000;
         const uint8_t* src = encryptedData.data() + 4;
         size_t srcLen = encryptedData.size() - 4;
+        if (srcLen % 8 != 0) return "";
         std::vector<uint8_t> buffer(srcLen);
         for (size_t i = 0; i < srcLen; i += 8) {
             uint32_t block[2];
-            block[0] = src[i] | (src[i+1] << 8) | (src[i+2] << 16) | (src[i+3] << 24);
-            block[1] = src[i+4] | (src[i+5] << 8) | (src[i+6] << 16) | (src[i+7] << 24);
+            block[0] = static_cast<uint32_t>(src[i]) |
+                       (static_cast<uint32_t>(src[i + 1]) << 8) |
+                       (static_cast<uint32_t>(src[i + 2]) << 16) |
+                       (static_cast<uint32_t>(src[i + 3]) << 24);
+            block[1] = static_cast<uint32_t>(src[i + 4]) |
+                       (static_cast<uint32_t>(src[i + 5]) << 8) |
+                       (static_cast<uint32_t>(src[i + 6]) << 16) |
+                       (static_cast<uint32_t>(src[i + 7]) << 24);
             xtea_decrypt(block, key);
             uint32_t d0 = block[0];
             uint32_t d1 = block[1];
