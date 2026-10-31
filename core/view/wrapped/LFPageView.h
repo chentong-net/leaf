@@ -94,6 +94,7 @@ private:
     void refreshData();         // 数据源变动时完全重置
     void updateViewPositions(); // 根据 m_dragOffset 更新 3 个视图的位置
     void handlePanEnd(float velocityX); // 处理手势结束
+    void stopTransition();
 
     // 内部 helper
     void rotateViews(int direction); // 指针轮转：1(Next), -1(Prev)

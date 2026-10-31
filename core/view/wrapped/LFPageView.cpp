@@ -28,6 +28,7 @@ LFPageView::~LFPageView() {
 }
 
 void LFPageView::setAdapter(LFPageAdapter::Ptr adapter) {
+    stopTransition();
     m_adapter = adapter;
     if (m_adapter) {
         m_totalCount = std::max(0, m_adapter->getCount());
@@ -46,6 +47,7 @@ void LFPageView::setOnPageChangeListener(OnPageChangedCallback callback) {
 
 void LFPageView::setCurrentItem(int index, bool animated) {
     if (index < 0 || index >= m_totalCount) return;
+    stopTransition();
     if (m_currentIndex == index) return;
 
     const int direction = index > m_currentIndex ? 1 : -1;
@@ -149,6 +151,7 @@ void LFPageView::bindPage(LFNode::Ptr node, int index) {
 }
 
 void LFPageView::notifyDataSetChanged() {
+    stopTransition();
     if (!m_adapter) {
         m_totalCount = 0;
         m_currentIndex = 0;
@@ -173,6 +176,13 @@ void LFPageView::notifyDataSetChanged() {
     if (m_onPageChange && previousIndex != m_currentIndex) {
         m_onPageChange(m_currentIndex);
     }
+}
+
+void LFPageView::stopTransition() {
+    if (m_animator && m_animator->isRunning()) {
+        m_animator->stop();
+    }
+    m_dragOffset = 0.0f;
 }
 
 void LFPageView::initGestures() {
