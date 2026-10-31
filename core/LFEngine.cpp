@@ -4,6 +4,8 @@
 
 #include "LFEngine.h"
 
+#include <iterator>
+
 LFEngine& LFEngine::getInstance() {
     static LFEngine instance;
     return instance;
@@ -49,19 +51,39 @@ void LFEngine::update(float dt) {
     // 2. 处理动画系统 (TODO: LFAnimator::update(dt))
     LFGlobalAnimationManager::getInstance().update(dt);
 
-    // 3. 处理帧任务
-    if (!m_frameTasks.empty()) {
+    // 3. 处理帧任务。先交换出本帧快照，任务回调中可安全注册新任务。
+    std::vector<LFFrameTask> frameTasks;
+    {
         std::lock_guard<std::mutex> lock(m_taskMutex);
+        frameTasks.swap(m_frameTasks);
+    }
 
-        // 使用迭代器进行安全删除
-        for (auto it = m_frameTasks.begin(); it != m_frameTasks.end(); ) {
-            bool keepAlive = (*it)(); // 执行任务分片
-            if (!keepAlive) {
-                it = m_frameTasks.erase(it); // 任务完成，移除
-            } else {
-                ++it; // 任务未完，保留至下一帧
-            }
+    std::vector<LFFrameTask> pendingTasks;
+    pendingTasks.reserve(frameTasks.size());
+    for (auto& task : frameTasks) {
+        if (!task) {
+            continue;
         }
+
+        bool keepAlive = false;
+        try {
+            keepAlive = task();
+        } catch (...) {
+            LF_LOGI("Frame task threw an exception and was removed");
+        }
+
+        if (keepAlive && task) {
+            pendingTasks.push_back(std::move(task));
+        }
+    }
+
+    if (!pendingTasks.empty()) {
+        std::lock_guard<std::mutex> lock(m_taskMutex);
+        m_frameTasks.insert(
+                m_frameTasks.begin(),
+                std::make_move_iterator(pendingTasks.begin()),
+                std::make_move_iterator(pendingTasks.end())
+        );
     }
 
     // 3. 处理定时器 (TODO: LFTimer::update(dt))
@@ -92,15 +114,17 @@ void LFEngine::render() {
 
     // 资源回收
     // 处理上一帧或本帧逻辑中死掉的组件遗留的纹理
-    if (!m_garbageTextures.empty()) {
+    std::vector<int> garbageTextures;
+    {
         std::lock_guard<std::mutex> lock(m_gcMutex);
-        for (int handle : m_garbageTextures) {
-            if (handle > 0) {
-                nvgDeleteImage(m_vg, handle);
-                LF_LOGI("GC Texture: %d", handle);
-            }
+        garbageTextures.swap(m_garbageTextures);
+    }
+
+    for (int handle : garbageTextures) {
+        if (handle > 0) {
+            nvgDeleteImage(m_vg, handle);
+            LF_LOGI("GC Texture: %d", handle);
         }
-        m_garbageTextures.clear();
     }
 }
 
