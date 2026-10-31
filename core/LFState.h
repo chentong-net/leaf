@@ -29,12 +29,14 @@ public:
 
     // 设置新值 (如果值变化，触发 bind 的回调)
     void set(const T& newValue) {
+        T currentValue;
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             if (m_value == newValue) return; // 值没变，直接返回
             m_value = newValue;
+            currentValue = m_value;
         }
-        notify(); // 锁外通知
+        notify(currentValue); // 锁外通知，并固定本次通知对应的值
     }
 
     // 绑定监听 (Lambda)
@@ -70,7 +72,7 @@ private:
     LFState(const LFState&) = delete;
     LFState& operator=(const LFState&) = delete;
 
-    void notify() {
+    void notify(const T& value) {
         std::vector<Listener> listenersCopy;
         {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -78,7 +80,7 @@ private:
         }
 
         for (const auto& listener : listenersCopy) {
-            listener(m_value);
+            listener(value);
         }
     }
 
