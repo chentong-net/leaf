@@ -296,6 +296,7 @@ Java_net_chentong_leaf_android_LeafRenderer_nativeRelease(JNIEnv* env, jobject t
         g_leafRendererObj = nullptr;
     }
     g_textInputCursorMethod = nullptr;
+    LFEngine::getInstance().discardContext();
 }
 
 extern "C" JNIEXPORT void JNICALL
