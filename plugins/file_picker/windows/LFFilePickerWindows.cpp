@@ -3,6 +3,7 @@
 //
 
 #include "LFFilePicker.h"
+#include "plugin/LFPlugin.h"
 
 #include <atomic>
 #include <cctype>
@@ -380,6 +381,11 @@ void LFFilePicker::pickFile(
         const LFFilePickerOptions& options,
         LFFilePickCallback callback) {
     if (!callback) return;
+    callback = [callback = std::move(callback)](const LFFilePickResult& result) mutable {
+        LFPluginCenter::dispatchToMain([callback = std::move(callback), result]() mutable {
+            callback(result);
+        });
+    };
 
     bool canceled = false;
     std::string pickError;
@@ -440,6 +446,11 @@ void LFFilePicker::readFile(
         const LFFileReadOptions& options,
         LFFileReadCallback callback) {
     if (!callback) return;
+    callback = [callback = std::move(callback)](const LFFileReadResult& result) mutable {
+        LFPluginCenter::dispatchToMain([callback = std::move(callback), result]() mutable {
+            callback(result);
+        });
+    };
 
     if (!file.path.empty()) {
         callback(readChunkFromPath(file.path, options));

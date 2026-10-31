@@ -3,6 +3,7 @@
 //
 
 #include "LFFilePicker.h"
+#include "plugin/LFPlugin.h"
 
 #include <emscripten/em_js.h>
 #include <emscripten/emscripten.h>
@@ -449,6 +450,11 @@ void LFFilePicker::pickFile(LFFilePickCallback callback) {
 
 void LFFilePicker::pickFile(const LFFilePickerOptions& options, LFFilePickCallback callback) {
     if (!callback) return;
+    callback = [callback = std::move(callback)](const LFFilePickResult& result) mutable {
+        LFPluginCenter::dispatchToMain([callback = std::move(callback), result]() mutable {
+            callback(result);
+        });
+    };
 
     const int requestId = g_requestId.fetch_add(1);
     {
@@ -469,6 +475,11 @@ void LFFilePicker::readFile(
     LFFileReadCallback callback
 ) {
     if (!callback) return;
+    callback = [callback = std::move(callback)](const LFFileReadResult& result) mutable {
+        LFPluginCenter::dispatchToMain([callback = std::move(callback), result]() mutable {
+            callback(result);
+        });
+    };
 
     if (!file.path.empty()) {
         callback(readChunkFromPath(file.path, options));

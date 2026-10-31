@@ -5,6 +5,7 @@
 #include "LFFilePicker.h"
 #include "LFJSONParser.h"
 #include "plugin/LFNativeSender.h"
+#include "plugin/LFPlugin.h"
 
 #include <fstream>
 #include <sstream>
@@ -136,6 +137,11 @@ void LFFilePicker::pickFile(LFFilePickCallback callback) {
 
 void LFFilePicker::pickFile(const LFFilePickerOptions& options, LFFilePickCallback callback) {
     if (!callback) return;
+    callback = [callback = std::move(callback)](const LFFilePickResult& result) mutable {
+        LFPluginCenter::dispatchToMain([callback = std::move(callback), result]() mutable {
+            callback(result);
+        });
+    };
 
     LFNativeSender::getInstance().send(
         "file_picker.pick",
@@ -169,6 +175,11 @@ void LFFilePicker::readFile(const LFFileInfo& file, LFFileReadCallback callback)
 
 void LFFilePicker::readFile(const LFFileInfo& file, const LFFileReadOptions& options, LFFileReadCallback callback) {
     if (!callback) return;
+    callback = [callback = std::move(callback)](const LFFileReadResult& result) mutable {
+        LFPluginCenter::dispatchToMain([callback = std::move(callback), result]() mutable {
+            callback(result);
+        });
+    };
 
     if (!file.path.empty()) {
         callback(readChunkFromPath(file.path, options));
