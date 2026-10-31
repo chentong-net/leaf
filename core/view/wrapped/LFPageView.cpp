@@ -262,10 +262,7 @@ void LFPageView::handlePanEnd(float velocityX) {
         m_animator->setSpring(1.08f, 0.48f);
     }
 
-    // 如果有初速度，传递给 Spring (需要 LFAnimator 支持 setStartVelocity，
-    // 目前 LFSpringAdapter/LFValueAnimator 暂时没有暴露 velocity 接口，
-    // 但 LFSpring 内部其实支持。这里暂时忽略初速度继承，直接用 Spring 逼近)
-    // TODO: 未来在 LFValueAnimator 中添加 setStartVelocity 支持
+    m_animator->setStartVelocity(velocityX);
 
     std::weak_ptr<LFPageView> weakSelf = std::static_pointer_cast<LFPageView>(shared_from_this());
     m_animator->addUpdateListener([weakSelf](float val) {

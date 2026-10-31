@@ -144,6 +144,10 @@ public:
         m_currentValue = start;
     }
 
+    void setStartVelocity(const T& velocity) {
+        m_startVelocity = velocity;
+    }
+
     // 设置回调
     void addUpdateListener(UpdateCallback cb) { m_onUpdate = cb; }
 
@@ -247,7 +251,11 @@ public:
 
         if (m_usePhysics) {
             // 初始化物理引擎
-            m_springAdapter.setTargets(m_startValue, m_endValue, T());
+            m_springAdapter.setTargets(
+                    m_startValue,
+                    m_endValue,
+                    m_startVelocity
+            );
         }
 
         // 调用基类设置状态
@@ -261,6 +269,7 @@ private:
     T m_startValue;
     T m_endValue;
     T m_currentValue;
+    T m_startVelocity{};
 
     UpdateCallback m_onUpdate;
 
