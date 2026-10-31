@@ -116,8 +116,13 @@ public:
     // Timestamp
     double timestamp = 0.0;
 
-    // Get primary touch point (usually the first one)
+    // Get the first changed touch point, falling back to the first active point
     const LFTouchPoint* getPrimaryTouch() const {
+        for (auto id : changedTouches) {
+            if (const auto* touch = getTouchById(id)) {
+                return touch;
+            }
+        }
         return touches.empty() ? nullptr : &touches[0];
     }
 
