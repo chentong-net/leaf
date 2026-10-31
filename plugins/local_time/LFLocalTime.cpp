@@ -3,12 +3,10 @@
 #include "LFLocalTimePlatform.h"
 
 #include <chrono>
-#include <condition_variable>
+#include <cstdlib>
 #include <ctime>
 
 namespace {
-
-constexpr auto kTimezoneWaitTimeout = std::chrono::seconds(2);
 
 std::mutex g_timezoneMutex;
 bool g_timezoneResolved = false;
@@ -48,29 +46,25 @@ int resolveUtcOffsetMinutes(std::time_t epochSeconds, const std::tm& localTm) {
     return static_cast<int>(std::difftime(localAsUtc, epochSeconds) / 60.0);
 }
 
-std::string loadTimezoneSynchronously() {
-    std::mutex waitMutex;
-    std::condition_variable waitCv;
-    bool completed = false;
-    LFLocalTimePlatformTimezoneResult result;
-
-    LFLocalTimePlatform::getTimezone([&](const LFLocalTimePlatformTimezoneResult& platformResult) {
-        {
-            std::lock_guard<std::mutex> lock(waitMutex);
-            result = platformResult;
-            completed = true;
-        }
-        waitCv.notify_one();
-    });
-
-    std::unique_lock<std::mutex> waitLock(waitMutex);
-    if (!waitCv.wait_for(waitLock, kTimezoneWaitTimeout, [&completed]() {
-        return completed;
-    })) {
-        return "";
+std::string resolveHostTimezone() {
+#if defined(__ANDROID__) || defined(__APPLE__) || defined(__linux__) || \
+    defined(__OHOS__) || defined(__WEB__)
+    const char* timezoneEnvironment = std::getenv("TZ");
+    if (timezoneEnvironment && timezoneEnvironment[0]) {
+        return timezoneEnvironment[0] == ':'
+               ? std::string(timezoneEnvironment + 1)
+               : std::string(timezoneEnvironment);
     }
 
-    return result.ok ? result.timezone : "";
+    const std::time_t now = std::time(nullptr);
+    std::tm localTime{};
+    if (localtime_r(&now, &localTime) != nullptr && localTime.tm_zone) {
+        return localTime.tm_zone;
+    }
+    return "";
+#else
+    return "";
+#endif
 }
 
 } // namespace
@@ -128,14 +122,27 @@ std::string LFLocalTime::timezone() {
         }
     }
 
-    const std::string resolvedTimezone = loadTimezoneSynchronously();
+    std::string resolvedTimezone = resolveHostTimezone();
+#if defined(_WIN32)
+    if (resolvedTimezone.empty()) {
+        LFLocalTimePlatformTimezoneResult platformResult;
+        LFLocalTimePlatform::getTimezone(
+                [&platformResult](const LFLocalTimePlatformTimezoneResult& result) {
+                    platformResult = result;
+                }
+        );
+        if (platformResult.ok) {
+            resolvedTimezone = platformResult.timezone;
+        }
+    }
+#endif
 
     {
         std::lock_guard<std::mutex> lock(g_timezoneMutex);
-        if (!g_timezoneResolved) {
+        if (!g_timezoneResolved && !resolvedTimezone.empty()) {
             g_cachedTimezone = resolvedTimezone;
             g_timezoneResolved = true;
         }
-        return g_cachedTimezone;
+        return resolvedTimezone.empty() ? g_cachedTimezone : resolvedTimezone;
     }
 }
