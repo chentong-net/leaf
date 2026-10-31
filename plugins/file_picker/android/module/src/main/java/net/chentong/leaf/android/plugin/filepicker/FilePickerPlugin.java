@@ -198,7 +198,6 @@ public class FilePickerPlugin implements LeafPlugin {
                 return;
             }
             int fd = pfd.detachFd();
-            pfd.close();
 
             JSONObject out = new JSONObject();
             out.put("fileId", fileId);
