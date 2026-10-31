@@ -5,6 +5,8 @@
 
 extern "C" {
 
+void leaf_process_pending_input();
+
 void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loader) {
     if (LFEngine::getInstance().getNVGContext()) {
         LFEngine::getInstance().discardContext();
@@ -59,6 +61,7 @@ void leaf_render() {
     lastFrameTime = frameTime;
     hasFrameTime = true;
 
+    leaf_process_pending_input();
     LFEngine::getInstance().update(dt > 0.0f ? dt : 1.0f / 60.0f);
 
     // Render frame

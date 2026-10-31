@@ -4,6 +4,7 @@
 #include "plugin/LFNativeSender.h"
 #include <thread>
 #include <atomic>
+#include <deque>
 #include <mutex>
 #include <memory>
 
@@ -29,6 +30,8 @@ std::atomic<float> g_density = 1.0f;
 
 std::mutex g_pluginBridgeMutex;
 napi_threadsafe_function g_pluginDispatchTsfn = nullptr;
+std::atomic<uint64_t> g_pluginDispatchGeneration{0};
+std::mutex g_touchQueueMutex;
 
 namespace {
 
@@ -37,6 +40,14 @@ struct PendingMethodCall {
     std::string method;
     std::string args;
 };
+
+struct PendingTouchEvent {
+    LFTouchEventType type;
+    std::vector<LFTouchPoint> touches;
+    std::vector<LFTouchID> changedIds;
+};
+
+std::deque<PendingTouchEvent> g_pendingTouchEvents;
 
 std::string ToStdString(napi_env env, napi_value value) {
     if (!env || !value) {
@@ -96,12 +107,29 @@ void CallPluginDispatcher(napi_env env, napi_value jsCallback, void* context, vo
 }
 
 void TsfnFinalize(napi_env env, void* finalize_data, void* finalize_hint) {
+    (void)env;
+    (void)finalize_hint;
+    auto* generation = static_cast<uint64_t*>(finalize_data);
+    if (!generation) {
+        return;
+    }
+
+    const uint64_t finalizedGeneration = *generation;
+    delete generation;
+
     {
         std::lock_guard<std::mutex> lock(g_pluginBridgeMutex);
+        if (finalizedGeneration != g_pluginDispatchGeneration.load()) {
+            return;
+        }
         g_pluginDispatchTsfn = nullptr;
     }
     LFNativeSender::getInstance().bindTarget(nullptr);
     LFNativeSender::getInstance().clearPending();
+    {
+        std::lock_guard<std::mutex> lock(g_touchQueueMutex);
+        g_pendingTouchEvents.clear();
+    }
 }
 
 void DispatchMethodCallToArkTS(const LFMethodCall& call) {
@@ -185,7 +213,10 @@ void RenderThreadLoop() {
             leaf_update_size(g_width, g_height, g_density);
             g_isWindowChanged = false;
         }
-        
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         // 渲染一帧
         leaf_render();
 
@@ -203,6 +234,10 @@ void RenderThreadLoop() {
 // XComponent 回调
 
 void OnSurfaceCreated(OH_NativeXComponent* component, void* window) {
+    if (g_renderThread) {
+        return;
+    }
+
     g_window = (OHNativeWindow*)window;
     
     uint64_t w, h;
@@ -275,17 +310,60 @@ void DispatchTouchEvent(OH_NativeXComponent* component, void* window) {
         tp.pressure = touchEvent.touchPoints[i].force;
         tp.timestamp = timestamp;
         touches.push_back(tp);
-        
-        // 标记变化的 ID (简单逻辑，复杂情况需根据 type 判断)
-        if (i == touchEvent.numPoints - 1) { 
+
+        if (leafType == LFTouchEventType::Move ||
+            leafType == LFTouchEventType::Cancel) {
             changedIDs.push_back(tp.id);
         }
     }
 
-    // 分发给引擎
+    if (leafType == LFTouchEventType::Down || leafType == LFTouchEventType::Up) {
+        for (uint32_t i = 0; i < touchEvent.numPoints; ++i) {
+            if (touchEvent.touchPoints[i].id == touchEvent.id) {
+                changedIDs.push_back(touchEvent.touchPoints[i].id);
+                break;
+            }
+        }
+        if (changedIDs.empty() && touchEvent.numPoints > 0) {
+            changedIDs.push_back(touchEvent.touchPoints[touchEvent.numPoints - 1].id);
+        }
+    }
+
+    if (changedIDs.empty()) {
+        return;
+    }
+
+    PendingTouchEvent pending;
+    pending.type = leafType;
+    pending.touches = std::move(touches);
+    pending.changedIds = std::move(changedIDs);
+
+    std::lock_guard<std::mutex> lock(g_touchQueueMutex);
+    if (g_pendingTouchEvents.size() >= 256) {
+        g_pendingTouchEvents.pop_front();
+    }
+    g_pendingTouchEvents.push_back(std::move(pending));
+}
+
+extern "C" void leaf_process_pending_input() {
+    std::deque<PendingTouchEvent> pendingEvents;
+    {
+        std::lock_guard<std::mutex> lock(g_touchQueueMutex);
+        pendingEvents.swap(g_pendingTouchEvents);
+    }
+
     auto root = LFEngine::getInstance().getRoot();
-    if (root) {
-        LFEventDispatcher::getInstance().dispatchTouchEvent(leafType, touches, changedIDs, root);
+    if (!root) {
+        return;
+    }
+
+    for (const auto& event : pendingEvents) {
+        LFEventDispatcher::getInstance().dispatchTouchEvent(
+                event.type,
+                event.touches,
+                event.changedIds,
+                root
+        );
     }
 }
 
@@ -344,6 +422,8 @@ static napi_value RegisterPluginDispatcher(napi_env env, napi_callback_info info
             g_pluginDispatchTsfn = nullptr;
         }
 
+        auto* generation =
+                new uint64_t(g_pluginDispatchGeneration.fetch_add(1) + 1);
         napi_status status = napi_create_threadsafe_function(
                 env,
                 args[0],
@@ -351,13 +431,14 @@ static napi_value RegisterPluginDispatcher(napi_env env, napi_callback_info info
                 resourceName,
                 0,
                 1,
-                nullptr,
+                generation,
                 TsfnFinalize,
-                nullptr,
+                generation,
                 CallPluginDispatcher,
                 &g_pluginDispatchTsfn
         );
         if (status != napi_ok || g_pluginDispatchTsfn == nullptr) {
+            delete generation;
             LFNativeSender::getInstance().bindTarget(nullptr);
             LFNativeSender::getInstance().clearPending();
             return nullptr;
