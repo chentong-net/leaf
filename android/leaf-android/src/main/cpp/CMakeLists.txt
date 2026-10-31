@@ -23,7 +23,6 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
-        leaf-core
         leaf-application
         GLESv3
         android

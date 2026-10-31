@@ -38,7 +38,6 @@ add_executable(leaf-macos
 
 target_link_libraries(leaf-macos PRIVATE
         glfw
-        leaf-core
         leaf-application
 )
 

@@ -38,7 +38,6 @@ add_executable(leaf-windows
 
 target_link_libraries(leaf-windows PRIVATE
         glfw
-        leaf-core
         leaf-application
 )
 

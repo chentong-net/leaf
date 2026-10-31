@@ -28,8 +28,9 @@ target_include_directories(leaf-application
 )
 
 target_link_libraries(leaf-application
-        PRIVATE
+        PUBLIC
         leaf-core
+        PRIVATE
         component-lab
         reader-app
         my-profile

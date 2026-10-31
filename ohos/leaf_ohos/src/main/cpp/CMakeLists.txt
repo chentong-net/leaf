@@ -34,7 +34,6 @@ add_library(leaf_ohos SHARED
 )
 
 target_link_libraries(leaf_ohos PUBLIC
-        leaf-core
         leaf-application
         libace_ndk.z.so
         libace_napi.z.so

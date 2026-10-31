@@ -32,7 +32,6 @@ add_executable(leaf-web
 )
 
 target_link_libraries(leaf-web PRIVATE
-        leaf-core
         leaf-application
 )
 
