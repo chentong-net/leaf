@@ -482,7 +482,10 @@ bool LFScrollView::shouldParticipateInPan(const LFTouchEvent& event) const {
 
 LFScrollView* LFScrollView::findNestedPriorityScrollView(float x, float y) const {
     auto walk = [&](const LFNode* node, auto&& selfRef) -> LFScrollView* {
-        if (!node) return nullptr;
+        if (!node || !node->isVisible() || node->getOpacity() <= 0.0f ||
+            !node->isHitTestEnabled()) {
+            return nullptr;
+        }
 
         for (const auto& child : node->getChildren()) {
             if (!child) continue;
@@ -490,6 +493,7 @@ LFScrollView* LFScrollView::findNestedPriorityScrollView(float x, float y) const
             if (auto scroll = dynamic_cast<LFScrollView*>(child.get())) {
                 if (scroll != this &&
                     scroll->getPreventAncestorScroll() &&
+                    scroll->isVisible() &&
                     scroll->containsGlobalPoint(x, y)) {
                     return scroll;
                 }
