@@ -112,6 +112,7 @@ public class FilePickerPlugin implements LeafPlugin {
             record.mimeType = mimeType;
             record.path = sandboxPath;
             record.size = size;
+            record.permissionFlags = grantedFlags;
             pickedFiles.put(fileId, record);
 
             JSONObject out = new JSONObject();
@@ -218,6 +219,16 @@ public class FilePickerPlugin implements LeafPlugin {
                 File cachedCopy = new File(record.path);
                 if (cachedCopy.exists()) {
                     cachedCopy.delete();
+                }
+            }
+            if (record != null && record.uri != null && !record.uri.isEmpty() &&
+                record.permissionFlags != 0) {
+                try {
+                    activity.getContentResolver().releasePersistableUriPermission(
+                        Uri.parse(record.uri),
+                        record.permissionFlags
+                    );
+                } catch (Throwable ignored) {
                 }
             }
             result.success(call.getRequestId(), "{}");
@@ -342,5 +353,6 @@ public class FilePickerPlugin implements LeafPlugin {
         String mimeType;
         String path;
         long size;
+        int permissionFlags;
     }
 }
