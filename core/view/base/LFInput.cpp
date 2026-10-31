@@ -304,24 +304,7 @@ void LFInput::ensureCursorVisible(float contentWidth) {
 std::pair<float, float> LFInput::localToWindow(float x, float y) const {
     float outX = x;
     float outY = y;
-
-    const LFNode* current = this;
-    while (current) {
-        outX += current->getLayoutX();
-        outY += current->getLayoutY();
-
-        const LFTransform& transform = current->getTransform();
-        outX += transform.translateX;
-        outY += transform.translateY;
-
-        float width = current->getLayoutWidth();
-        float height = current->getLayoutHeight();
-        outX += width * transform.translatePercentX / 100.0f;
-        outY += height * transform.translatePercentY / 100.0f;
-
-        current = current->getParent();
-    }
-
+    convertLocalPointToWindow(outX, outY);
     return {outX, outY};
 }
 

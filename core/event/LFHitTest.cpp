@@ -6,6 +6,12 @@
 #include "LFHitTest.h"
 #include <cmath>
 
+namespace {
+
+constexpr float kPi = 3.14159265358979323846f;
+
+}
+
 LFHitTestResult LFHitTestEngine::hitTest(
     std::shared_ptr<LFNode> root,
     float x, float y
@@ -115,16 +121,14 @@ bool LFHitTestEngine::inverseTransformPoint(
         x -= cx;
         y -= cy;
 
-        // Inverse scale
         if (std::abs(t.scaleX) < 0.001f || std::abs(t.scaleY) < 0.001f) {
             return false;  // Scale is 0, transform not invertible
         }
-        x /= t.scaleX;
-        y /= t.scaleY;
 
-        // Inverse rotate
+        // Rendering composes rotate * scale, so the inverse must apply
+        // inverse rotate before inverse scale.
         if (t.rotate != 0) {
-            float rad = -(t.rotate * M_PI / 180.0f);  // Reverse rotation
+            float rad = -t.rotate * kPi / 180.0f;  // Reverse rotation
             float cosA = std::cos(rad);
             float sinA = std::sin(rad);
             float nx = x * cosA - y * sinA;
@@ -132,6 +136,8 @@ bool LFHitTestEngine::inverseTransformPoint(
             x = nx;
             y = ny;
         }
+        x /= t.scaleX;
+        y /= t.scaleY;
 
         // Move back to origin
         x += cx;

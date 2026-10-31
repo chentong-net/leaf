@@ -503,8 +503,6 @@ bool LFNode::convertWindowPointToLocal(float windowX, float windowY,
         const float centerY = height * 0.5f;
         x -= centerX;
         y -= centerY;
-        x /= transform.scaleX;
-        y /= transform.scaleY;
 
         if (transform.rotate != 0.0f) {
             const float radians = -transform.rotate * kPi / 180.0f;
@@ -515,6 +513,8 @@ bool LFNode::convertWindowPointToLocal(float windowX, float windowY,
             x = rotatedX;
             y = rotatedY;
         }
+        x /= transform.scaleX;
+        y /= transform.scaleY;
         x += centerX;
         y += centerY;
     }
@@ -522,6 +522,42 @@ bool LFNode::convertWindowPointToLocal(float windowX, float windowY,
     localX = x;
     localY = y;
     return true;
+}
+
+void LFNode::convertLocalPointToWindow(float& localX, float& localY) const {
+    float x = localX;
+    float y = localY;
+    for (const LFNode* node = this; node; node = node->m_parent) {
+        const LFTransform& transform = node->m_transform;
+        const float width = node->getLayoutWidth();
+        const float height = node->getLayoutHeight();
+        const float centerX = width * 0.5f;
+        const float centerY = height * 0.5f;
+
+        x -= centerX;
+        y -= centerY;
+        x *= transform.scaleX;
+        y *= transform.scaleY;
+        if (transform.rotate != 0.0f) {
+            const float radians = transform.rotate * kPi / 180.0f;
+            const float cosine = std::cos(radians);
+            const float sine = std::sin(radians);
+            const float rotatedX = x * cosine - y * sine;
+            const float rotatedY = x * sine + y * cosine;
+            x = rotatedX;
+            y = rotatedY;
+        }
+        x += centerX;
+        y += centerY;
+
+        x += transform.translateX + width * transform.translatePercentX / 100.0f;
+        y += transform.translateY + height * transform.translatePercentY / 100.0f;
+        x += node->getLayoutX();
+        y += node->getLayoutY();
+    }
+
+    localX = x;
+    localY = y;
 }
 
 bool LFNode::containsWindowPoint(float windowX, float windowY) const {

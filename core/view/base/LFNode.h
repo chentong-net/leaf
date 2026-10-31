@@ -141,6 +141,7 @@ public:
     const LFTransform& getTransform() const { return m_transform; }
     bool convertWindowPointToLocal(float windowX, float windowY,
                                    float& localX, float& localY) const;
+    void convertLocalPointToWindow(float& localX, float& localY) const;
     bool containsWindowPoint(float windowX, float windowY) const;
 
     // 可见性检查
