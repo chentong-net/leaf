@@ -10,17 +10,40 @@
 #include <vector>
 #include <mutex>
 #include <utility>
+#include <cstddef>
+#include <cstdlib>
+#include <variant>
 
 // TODO: 为以后扩展参数做准备，目前没有这个需求
 using LFVariant = std::variant<int, float, std::string, std::vector<unsigned char>>;
 
 struct LFData {
-    unsigned char *data;
-    size_t size;
+    unsigned char* data = nullptr;
+    size_t size = 0;
+
+    LFData() = default;
+    LFData(const LFData&) = delete;
+    LFData& operator=(const LFData&) = delete;
+    LFData(LFData&& other) noexcept
+        : data(other.data), size(other.size) {
+        other.data = nullptr;
+        other.size = 0;
+    }
+    LFData& operator=(LFData&& other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+        std::free(data);
+        data = other.data;
+        size = other.size;
+        other.data = nullptr;
+        other.size = 0;
+        return *this;
+    }
 
     ~LFData() {
         if (data) {
-            free(data);
+            std::free(data);
         }
     }
 };
