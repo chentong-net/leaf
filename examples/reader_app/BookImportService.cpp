@@ -159,6 +159,7 @@ void finishFdCopyWithError(const std::shared_ptr<FdCopyContext>& context, const 
         std::error_code ec;
         std::filesystem::remove(std::filesystem::u8path(context->destPath), ec);
     }
+    LFFilePicker::releaseFile(context->source);
     if (context->callback) {
         context->callback(makeError(error));
     }
@@ -179,6 +180,7 @@ void finishFdCopySuccess(const std::shared_ptr<FdCopyContext>& context) {
     result.book.createdAt = nowSeconds();
     result.book.lastReadAt = result.book.createdAt;
 
+    LFFilePicker::releaseFile(context->source);
     if (context->callback) {
         context->callback(result);
     }
@@ -254,11 +256,13 @@ void BookImportService::importPickedFile(const LFFileInfo& sourceFile,
     if (!callback) return;
 
     if (booksDirectory.empty()) {
+        LFFilePicker::releaseFile(sourceFile);
         callback(makeError("books_directory_empty"));
         return;
     }
 
     if (!ensureDirectory(booksDirectory)) {
+        LFFilePicker::releaseFile(sourceFile);
         callback(makeError("create_books_directory_failed"));
         return;
     }
@@ -282,6 +286,7 @@ void BookImportService::importPickedFile(const LFFileInfo& sourceFile,
 
     auto outFile = std::make_shared<std::ofstream>(std::filesystem::u8path(destPath), std::ios::binary | std::ios::trunc);
     if (!outFile->is_open()) {
+        LFFilePicker::releaseFile(sourceFile);
         callback(makeError("open_target_failed"));
         return;
     }
@@ -292,6 +297,7 @@ void BookImportService::importPickedFile(const LFFileInfo& sourceFile,
             outFile->close();
             std::error_code ec;
             std::filesystem::remove(std::filesystem::u8path(destPath), ec);
+            LFFilePicker::releaseFile(sourceFile);
             callback(makeError("copy_from_path_failed"));
             return;
         }
@@ -307,12 +313,14 @@ void BookImportService::importPickedFile(const LFFileInfo& sourceFile,
         result.book.size = copiedBytes > 0 ? copiedBytes : sourceFile.size;
         result.book.createdAt = nowSeconds();
         result.book.lastReadAt = result.book.createdAt;
+        LFFilePicker::releaseFile(sourceFile);
         callback(result);
         return;
     }
 
     if (sourceFile.fileId.empty()) {
         outFile->close();
+        LFFilePicker::releaseFile(sourceFile);
         callback(makeError("read_source_unavailable"));
         return;
     }
