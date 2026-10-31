@@ -345,6 +345,41 @@ private:
                 }
             } else if (static_cast<unsigned char>(c) < 0x20) {
                 throw std::runtime_error("LFJSON: Unescaped control character in string");
+            } else if (static_cast<unsigned char>(c) >= 0x80) {
+                const unsigned char first = static_cast<unsigned char>(c);
+                size_t continuationCount = 0;
+                if (first >= 0xC2 && first <= 0xDF) {
+                    continuationCount = 1;
+                } else if (first >= 0xE0 && first <= 0xEF) {
+                    continuationCount = 2;
+                } else if (first >= 0xF0 && first <= 0xF4) {
+                    continuationCount = 3;
+                } else {
+                    throw std::runtime_error("LFJSON: Invalid UTF-8 leading byte");
+                }
+
+                if (continuationCount > s.size() - o) {
+                    throw std::runtime_error("LFJSON: Incomplete UTF-8 sequence");
+                }
+
+                const unsigned char second = static_cast<unsigned char>(s[o]);
+                if ((first == 0xE0 && second < 0xA0) ||
+                    (first == 0xED && second >= 0xA0) ||
+                    (first == 0xF0 && second < 0x90) ||
+                    (first == 0xF4 && second >= 0x90)) {
+                    throw std::runtime_error("LFJSON: Invalid UTF-8 code point");
+                }
+
+                res.push_back(c);
+                for (size_t i = 0; i < continuationCount; ++i) {
+                    const unsigned char continuation =
+                            static_cast<unsigned char>(s[o + i]);
+                    if ((continuation & 0xC0) != 0x80) {
+                        throw std::runtime_error("LFJSON: Invalid UTF-8 continuation byte");
+                    }
+                    res.push_back(static_cast<char>(continuation));
+                }
+                o += continuationCount;
             } else {
                 res.push_back(c);
             }
