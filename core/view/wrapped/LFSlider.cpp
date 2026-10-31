@@ -220,9 +220,8 @@ void LFSlider::initInteractions() {
         m_isDragging = false;
 
         if (const auto* touch = event.getPrimaryTouch()) {
-            updateStateFromLocalX(toLocalPoint(*touch).x, false, false);
+            updateStateFromLocalX(toLocalPoint(*touch).x, true, true);
         }
-        setValue(m_value, true);
         if (m_onDragEnd) {
             m_onDragEnd(m_value);
         }
@@ -230,7 +229,7 @@ void LFSlider::initInteractions() {
 
     setOnTouchCancel([this](const LFTouchEvent&) {
         m_isDragging = false;
-        setValue(m_value, false);
+        setValue(m_value, true);
     });
 }
 
