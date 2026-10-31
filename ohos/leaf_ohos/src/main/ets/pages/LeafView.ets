@@ -36,6 +36,10 @@ export struct LeafView {
             console.log('[Leaf]: Engine initialized, render thread should be running.');
           }
         })
+        .onDestroy(() => {
+          this.isEngineInitialized = false;
+          this.isPluginBridgeInitialized = false;
+        })
         .width('100%')
         .height('100%')
     }
