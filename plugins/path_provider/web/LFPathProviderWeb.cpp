@@ -3,6 +3,7 @@
 //
 
 #include "LFPathProvider.h"
+#include "plugin/LFPlugin.h"
 
 #include <emscripten/em_js.h>
 
@@ -30,7 +31,9 @@ void emitPath(const std::string& path, LFPathProviderCallback callback) {
     LFPathProviderResult result;
     result.ok = true;
     result.path = path;
-    callback(result);
+    LFPluginCenter::dispatchToMain([callback = std::move(callback), result]() mutable {
+        callback(result);
+    });
 }
 
 } // namespace

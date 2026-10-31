@@ -5,6 +5,7 @@
 #include "LFPathProvider.h"
 #include "LFJSONParser.h"
 #include "plugin/LFNativeSender.h"
+#include "plugin/LFPlugin.h"
 
 namespace {
 
@@ -22,8 +23,16 @@ void requestPath(const char* method, LFPathProviderCallback callback) {
         method ? method : "",
         "{}",
         [callback = std::move(callback)](const LFMethodResult& nativeResult) mutable {
+            auto deliver = [callback = std::move(callback)](const LFPathProviderResult& result) mutable {
+                LFPluginCenter::dispatchToMain(
+                        [callback = std::move(callback), result]() mutable {
+                            callback(result);
+                        }
+                );
+            };
+
             if (!nativeResult.ok) {
-                callback(makeErrorResult(
+                deliver(makeErrorResult(
                     nativeResult.error.empty() ? "path_provider_failed" : nativeResult.error
                 ));
                 return;
@@ -36,9 +45,9 @@ void requestPath(const char* method, LFPathProviderCallback callback) {
                 if (json && json->contains("path")) {
                     result.path = json->at("path").asString();
                 }
-                callback(result);
+                deliver(result);
             } catch (...) {
-                callback(makeErrorResult("path_result_parse_failed"));
+                deliver(makeErrorResult("path_result_parse_failed"));
             }
         }
     );

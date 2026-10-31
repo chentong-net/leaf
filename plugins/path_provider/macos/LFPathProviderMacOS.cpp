@@ -3,6 +3,7 @@
 //
 
 #include "LFPathProvider.h"
+#include "plugin/LFPlugin.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -42,7 +43,9 @@ void emitPath(
     LFPathProviderResult result;
     result.ok = true;
     result.path = asString(path);
-    callback(result);
+    LFPluginCenter::dispatchToMain([callback = std::move(callback), result]() mutable {
+        callback(result);
+    });
 }
 
 std::filesystem::path temporaryPath() {
