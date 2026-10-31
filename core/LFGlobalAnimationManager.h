@@ -33,6 +33,8 @@ public:
      */
     void removeAnimator(LFAnimator::Ptr animator);
 
+    void cancelAll();
+
     /**
      * 驱动所有动画 (由 Engine 每帧调用)
      * @param dt Delta Time (Seconds)

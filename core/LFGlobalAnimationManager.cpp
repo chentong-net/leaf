@@ -27,6 +27,19 @@ void LFGlobalAnimationManager::removeAnimator(LFAnimator::Ptr animator) {
     }
 }
 
+void LFGlobalAnimationManager::cancelAll() {
+    std::vector<LFAnimator::Ptr> animators;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        animators.swap(m_animators);
+    }
+    for (auto& animator : animators) {
+        if (animator) {
+            animator->cancel();
+        }
+    }
+}
+
 void LFGlobalAnimationManager::update(float dt) {
     std::vector<LFAnimator::Ptr> activeList;
     {

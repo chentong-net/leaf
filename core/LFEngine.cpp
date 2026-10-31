@@ -27,6 +27,7 @@ void LFEngine::init(NVGcontext* vg) {
 void LFEngine::shutdown() {
     NVGcontext* context = m_vg;
     LFEventDispatcher::getInstance().clearFocus();
+    LFGlobalAnimationManager::getInstance().cancelAll();
     m_rootNode.reset();
 
     std::vector<PendingTextureDeletion> garbageTextures;
@@ -54,6 +55,7 @@ void LFEngine::shutdown() {
 
 void LFEngine::discardContext() {
     LFEventDispatcher::getInstance().clearFocus();
+    LFGlobalAnimationManager::getInstance().cancelAll();
     m_rootNode.reset();
 
     {
