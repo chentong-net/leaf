@@ -7,7 +7,7 @@ Leaf i18n plugin for iOS. Implements i18n.get_system_language.
   DESC
 
   s.homepage         = 'https://github.com/chentong-net/leaf'
-  s.license          = { :type => 'Proprietary', :text => 'Leaf i18n iOS plugin' }
+  s.license          = { :type => 'Apache-2.0', :file => '../../../../LICENSE' }
   s.author           = { 'Leaf Team' => 'contact@chentong.net' }
   s.source           = { :git => 'https://github.com/chentong-net/leaf.git', :tag => s.version.to_s }
 

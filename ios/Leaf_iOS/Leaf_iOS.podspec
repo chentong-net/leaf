@@ -7,7 +7,7 @@ Leaf iOS SDK module with LeafView/LeafRenderer, plugin dispatcher, and prebuilt 
   DESC
 
   s.homepage         = 'https://github.com/chentong-net/leaf'
-  s.license          = { :type => 'Proprietary', :text => 'Leaf iOS SDK' }
+  s.license          = { :type => 'Apache-2.0', :file => '../../LICENSE' }
   s.author           = { 'Leaf Team' => 'contact@chentong.net' }
   s.source           = { :git => 'https://github.com/chentong-net/leaf.git', :tag => s.version.to_s }
 

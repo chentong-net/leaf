@@ -39,10 +39,17 @@ The following notices are provided for attribution and compliance.
    Path: third_party/yoga
    Upstream: https://github.com/facebook/yoga
    License: MIT
-   License file: third_party/yoga/LICENSE.txt
+   License file: third_party/yoga/LICENSE
 
 5) MetalNanoVG
    Path: third_party/MetalNanoVG
    Upstream: https://github.com/ollix/MetalNanoVG
    License: MIT
    License file: third_party/MetalNanoVG/LICENSE
+
+6) Alibaba PuHuiTi
+   Path: application/assets/fonts/Alibaba-PuHuiTi-Regular.ttf
+   Copyright 2020 Alibaba (China) Co., Ltd.
+   Upstream: https://www.alibabafonts.com/
+   Legal statement: https://www.yuque.com/yiguang-wkqc2/hgpff0/nus9wiinq4aeiegy
+   The font is distributed under separate terms from the Apache License.

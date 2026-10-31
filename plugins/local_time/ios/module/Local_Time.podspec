@@ -7,7 +7,7 @@ Leaf local time plugin for iOS. Implements local_time.get_timezone.
   DESC
 
   s.homepage         = 'https://github.com/chentong-net/leaf'
-  s.license          = { :type => 'Proprietary', :text => 'Leaf local time iOS plugin' }
+  s.license          = { :type => 'Apache-2.0', :file => '../../../../LICENSE' }
   s.author           = { 'Leaf Team' => 'contact@chentong.net' }
   s.source           = { :git => 'https://github.com/chentong-net/leaf.git', :tag => s.version.to_s }
 
