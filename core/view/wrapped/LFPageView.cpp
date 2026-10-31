@@ -30,7 +30,7 @@ LFPageView::~LFPageView() {
 void LFPageView::setAdapter(LFPageAdapter::Ptr adapter) {
     m_adapter = adapter;
     if (m_adapter) {
-        m_totalCount = m_adapter->getCount();
+        m_totalCount = std::max(0, m_adapter->getCount());
     } else {
         m_totalCount = 0;
     }
@@ -121,33 +121,26 @@ void LFPageView::bindPage(LFNode::Ptr node, int index) {
 void LFPageView::notifyDataSetChanged() {
     if (!m_adapter) {
         m_totalCount = 0;
+        m_currentIndex = 0;
+        refreshData();
         return;
     }
 
-    // 1. 获取最新的数据总量
-    int newCount = m_adapter->getCount();
-    if (newCount == m_totalCount) return; // 无变化则跳过
+    const int previousIndex = m_currentIndex;
+    const int newCount = std::max(0, m_adapter->getCount());
 
     m_totalCount = newCount;
+    m_currentIndex = newCount > 0
+                     ? std::clamp(m_currentIndex, 0, newCount - 1)
+                     : 0;
 
-    // 2. 核心：更新当前可见的三张页面的状态
-    // 如果当前在最后一页，由于总数变多，原本隐藏的 m_nextView 需要被激活。
-
-    // 刷新前一页可见性与内容
+    // 全量重新绑定三个常驻视图，保证数量不变但内容变化时也能刷新。
     bindPage(m_prevView, m_currentIndex - 1);
-
-    // 刷新当前页内容
     bindPage(m_currView, m_currentIndex);
-
-    // 刷新下一页：这是流式加载最关键的一步
-    // 如果 currentIndex + 1 原本越界，现在不越界了，bindPage 内部会将其可见性设为 true
     bindPage(m_nextView, m_currentIndex + 1);
-
-    // 3. 重新计算布局位置
-    // 在 updateViewPositions 中，滑动阻尼限制会根据新的 m_totalCount 自动解除
     updateViewPositions();
 
-    if (m_onPageChange) {
+    if (m_onPageChange && previousIndex != m_currentIndex) {
         m_onPageChange(m_currentIndex);
     }
 }
