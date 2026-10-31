@@ -235,6 +235,9 @@ void LFEventDispatcher::performDispatch(
 
     // Build path from root to target
     std::vector<std::shared_ptr<LFNode>> path = buildEventPath(root, target);
+    if (path.empty()) {
+        return;
+    }
 
     // 1. Capture phase (from root to target, excluding target)
     capturePhase(event, path);
@@ -258,6 +261,9 @@ void LFEventDispatcher::performScrollDispatch(
     if (!target) return;
 
     auto path = buildEventPath(root, target);
+    if (path.empty()) {
+        return;
+    }
     captureScrollPhase(event, path);
 
     if (!event.propagationStopped && target) {
@@ -448,14 +454,26 @@ std::vector<std::shared_ptr<LFNode>> LFEventDispatcher::buildEventPath(
     std::shared_ptr<LFNode> target
 ) {
     std::vector<std::shared_ptr<LFNode>> path;
+    if (!root || !target) {
+        return path;
+    }
 
     // Build path from target to root
     LFNode* current = target.get();
     while (current) {
-        path.insert(path.begin(), current->shared_from_this());
+        path.push_back(current->shared_from_this());
+        if (current == root.get()) {
+            break;
+        }
         current = current->getParent();
     }
 
+    if (path.empty() || path.back() != root) {
+        path.clear();
+        return path;
+    }
+
+    std::reverse(path.begin(), path.end());
     return path;
 }
 
