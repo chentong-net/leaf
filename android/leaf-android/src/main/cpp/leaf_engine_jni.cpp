@@ -1,7 +1,9 @@
 #include <jni.h>
 #include <android/asset_manager_jni.h>
 #include <android/log.h>
+#include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 #include "LFEngine.h"
@@ -324,10 +326,31 @@ std::vector<unsigned char> read_asset(AAssetManager* mgr, const char* path) {
     AAsset* asset = AAssetManager_open(mgr, p.c_str(), AASSET_MODE_BUFFER);
     if (!asset) return std::vector<unsigned char>();
 
-    size_t size = AAsset_getLength(asset);
+    const off_t length = AAsset_getLength(asset);
+    if (length < 0) {
+        AAsset_close(asset);
+        return {};
+    }
+
+    const size_t size = static_cast<size_t>(length);
     std::vector<unsigned char> content(size);
-    AAsset_read(asset, content.data(), size);
+    size_t offset = 0;
+    while (offset < size) {
+        const size_t chunk = std::min(
+                size - offset,
+                static_cast<size_t>(std::numeric_limits<int>::max())
+        );
+        const int read = AAsset_read(asset, content.data() + offset, chunk);
+        if (read <= 0) {
+            break;
+        }
+        offset += static_cast<size_t>(read);
+    }
     AAsset_close(asset);
+
+    if (offset != size) {
+        return {};
+    }
     return content;
 }
 
