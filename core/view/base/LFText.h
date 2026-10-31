@@ -35,7 +35,7 @@ public:
      * 设置全局测量上下文
      * 用于在 Yoga 布局阶段（此时可能还没有 render 发生）获取 NanoVG 上下文进行测量
      */
-    static void setMeasureContext(NVGcontext* vg) { s_measureContext = vg; }
+    static void setMeasureContext(NVGcontext* vg);
 
 protected:
     /**

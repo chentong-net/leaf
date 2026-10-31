@@ -106,6 +106,12 @@ public:
         }
     }
 
+    void clear() {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_entries.clear();
+        m_recency.clear();
+    }
+
 private:
     std::mutex m_mutex;
     std::list<std::string> m_recency;
@@ -282,6 +288,15 @@ std::shared_ptr<const LFTextLayout> getTextLayout(
 
 LFText::LFText() {
     YGNodeSetMeasureFunc(getYGNode(), LFText::measure);
+}
+
+void LFText::setMeasureContext(NVGcontext* vg) {
+    if (s_measureContext == vg) {
+        return;
+    }
+
+    getTextLayoutCache().clear();
+    s_measureContext = vg;
 }
 
 void LFText::setText(const std::string& text) {
