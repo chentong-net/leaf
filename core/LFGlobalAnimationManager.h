@@ -43,8 +43,7 @@ private:
     LFGlobalAnimationManager() = default;
 
     std::vector<LFAnimator::Ptr> m_animators;
-    // 如果你的应用涉及多线程添加动画，建议加锁；如果都在主线程，可不加。
-    // TODO: 为了稳健，这里预留 Mutex 思路，暂不实现复杂锁逻辑。
+    mutable std::mutex m_mutex;
 };
 
 #endif //LEAF_LFGLOBALANIMATIONMANAGER_H

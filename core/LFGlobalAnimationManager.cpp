@@ -10,6 +10,7 @@
 
 void LFGlobalAnimationManager::addAnimator(LFAnimator::Ptr animator) {
     if (!animator) return;
+    std::lock_guard<std::mutex> lock(m_mutex);
     // 简单查重
     auto it = std::find(m_animators.begin(), m_animators.end(), animator);
     if (it == m_animators.end()) {
@@ -19,6 +20,7 @@ void LFGlobalAnimationManager::addAnimator(LFAnimator::Ptr animator) {
 
 void LFGlobalAnimationManager::removeAnimator(LFAnimator::Ptr animator) {
     if (!animator) return;
+    std::lock_guard<std::mutex> lock(m_mutex);
     auto it = std::find(m_animators.begin(), m_animators.end(), animator);
     if (it != m_animators.end()) {
         m_animators.erase(it);
@@ -26,20 +28,29 @@ void LFGlobalAnimationManager::removeAnimator(LFAnimator::Ptr animator) {
 }
 
 void LFGlobalAnimationManager::update(float dt) {
-    if (m_animators.empty()) return;
+    std::vector<LFAnimator::Ptr> activeList;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_animators.empty()) return;
+        // 拷贝列表，防止在 tick 回调中 add/remove 动画导致 Crash
+        activeList = m_animators;
+    }
 
-    // 1. 拷贝列表，防止在 tick 回调中 add/remove 动画导致 Crash
-    auto activeList = m_animators;
-
-    // 2. 遍历执行
+    // 遍历执行。已在本帧开始后移除的动画不再推进。
     for (auto& anim : activeList) {
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if (std::find(m_animators.begin(), m_animators.end(), anim) == m_animators.end()) {
+                continue;
+            }
+        }
         if (anim && anim->isRunning()) {
             anim->tick(dt);
         }
     }
 
-    // 3. 清理已结束的动画
-    // 使用 erase-remove
+    // 清理已结束的动画
+    std::lock_guard<std::mutex> lock(m_mutex);
     auto it = std::remove_if(m_animators.begin(), m_animators.end(),
          [](const LFAnimator::Ptr& anim) {
              if (!anim) return true;
