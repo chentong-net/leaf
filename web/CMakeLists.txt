@@ -42,5 +42,19 @@ target_link_options(leaf-web PRIVATE
 
 set_target_properties(leaf-web PROPERTIES SUFFIX ".html")
 
+set(LEAF_WEB_ASSET_SOURCE_DIR "${APPLICATION_DIR}/assets")
+set(LEAF_WEB_ASSET_OUTPUT_DIR "$<TARGET_FILE_DIR:leaf-web>/assets")
+
+add_custom_target(leaf-web-prepare-assets ALL
+        COMMAND ${CMAKE_COMMAND}
+                "-DLEAF_WEB_ASSET_SOURCE_DIR=${LEAF_WEB_ASSET_SOURCE_DIR}"
+                "-DLEAF_WEB_ASSET_OUTPUT_DIR=${LEAF_WEB_ASSET_OUTPUT_DIR}"
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/prepare_assets.cmake"
+        COMMENT "Preparing Leaf Web on-demand assets"
+        VERBATIM
+)
+
+add_dependencies(leaf-web leaf-web-prepare-assets)
+
 target_link_options(leaf-web PRIVATE --preload-file ${APPLICATION_DIR}/assets@/assets)
 target_link_options(leaf-web PRIVATE --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html)
