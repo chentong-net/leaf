@@ -44,8 +44,8 @@ void LFRadioGroup::setOptions(const std::vector<std::string>& options) {
 }
 
 void LFRadioGroup::setSelectedIndex(int index, bool notify) {
-    if (!isValidIndex(index)) {
-        index = -1;
+    if (index < -1 || index >= static_cast<int>(m_options.size())) {
+        return;
     }
     if (m_selectedIndex == index) return;
 
