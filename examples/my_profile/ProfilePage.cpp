@@ -576,7 +576,7 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
                 auto row = LFLinear::createHorizontal();
                 row->matchParentWidth();
                 row->setMargin(YGEdgeBottom, 6);
-                row->setGravity(LFAlignment::Start, LFAlignment::Start);
+                row->setGravity(LFAlignment::Start, LFAlignment::Baseline);
 
                 // 圆点
                 auto dot = createLabel("•", 14, COL_PRIMARY);
