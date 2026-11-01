@@ -15,6 +15,9 @@
 
 namespace {
 
+constexpr const char* kPathUnavailable = "path_unavailable";
+constexpr const char* kCreateDirectoryFailed = "create_directory_failed";
+
 std::string getenvOrEmpty(const char* name) {
     if (!name) return "";
     const char* value = std::getenv(name);
@@ -49,23 +52,42 @@ std::string asString(const std::filesystem::path& path) {
     return path.lexically_normal().string();
 }
 
-void ensureDirectory(const std::filesystem::path& path) {
-    if (path.empty()) return;
+bool ensureDirectory(const std::filesystem::path& path) {
+    if (path.empty()) return false;
+
     std::error_code ec;
     std::filesystem::create_directories(path, ec);
+    if (ec) return false;
+    return std::filesystem::is_directory(path, ec) && !ec;
+}
+
+void emitResult(
+        const std::filesystem::path& path,
+        const std::string& error,
+        LFPathProviderCallback callback) {
+    if (!callback) return;
+
+    LFPathProviderResult result;
+    result.ok = error.empty();
+    result.path = result.ok ? asString(path) : "";
+    result.error = result.ok ? "" : error;
+    LFPluginCenter::dispatchToMain([callback = std::move(callback), result]() mutable {
+        callback(result);
+    });
 }
 
 void emitPath(
         const std::filesystem::path& path,
         LFPathProviderCallback callback) {
-    if (!callback) return;
+    if (path.empty()) {
+        emitResult({}, kPathUnavailable, std::move(callback));
+        return;
+    }
+    emitResult(path, "", std::move(callback));
+}
 
-    LFPathProviderResult result;
-    result.ok = true;
-    result.path = asString(path);
-    LFPluginCenter::dispatchToMain([callback = std::move(callback), result]() mutable {
-        callback(result);
-    });
+void emitError(const std::string& error, LFPathProviderCallback callback) {
+    emitResult({}, error, std::move(callback));
 }
 
 std::filesystem::path temporaryPath() {
@@ -101,7 +123,14 @@ void LFPathProvider::getTemporaryPath(LFPathProviderCallback callback) {
 
 void LFPathProvider::getApplicationSupportPath(LFPathProviderCallback callback) {
     const auto path = appSupportPath();
-    ensureDirectory(path);
+    if (path.empty()) {
+        emitError(kPathUnavailable, std::move(callback));
+        return;
+    }
+    if (!ensureDirectory(path)) {
+        emitError(kCreateDirectoryFailed, std::move(callback));
+        return;
+    }
     emitPath(path, std::move(callback));
 }
 
@@ -114,5 +143,5 @@ void LFPathProvider::getDownloadsPath(LFPathProviderCallback callback) {
 }
 
 void LFPathProvider::getExternalStoragePath(LFPathProviderCallback callback) {
-    emitPath({}, std::move(callback));
+    emitError(kPathUnavailable, std::move(callback));
 }
