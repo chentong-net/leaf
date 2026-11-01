@@ -43,7 +43,9 @@ emcmake cmake -S web -B build_web -DCMAKE_BUILD_TYPE=Release
 cmake --build build_web --parallel
 ```
 
-`application/assets` 下的全部资源会打包到虚拟 `/assets` 目录。
+`application/assets/fonts` 下的字体会预加载到虚拟 `/assets/fonts` 目录。其他应用资源
+会复制到 `build_web/assets`，并通过 `emscripten_fetch` 在运行时按需加载。Web 产物需要
+通过 HTTP 服务从 `build_web` 启动，直接使用 `file://` 打开生成的 HTML 将无法按需请求资源。
 
 #### Android
 

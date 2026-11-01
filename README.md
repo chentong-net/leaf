@@ -43,7 +43,10 @@ emcmake cmake -S web -B build_web -DCMAKE_BUILD_TYPE=Release
 cmake --build build_web --parallel
 ```
 
-All files under `application/assets` are packaged into the virtual `/assets` directory.
+Fonts under `application/assets/fonts` are preloaded into the virtual `/assets/fonts`
+directory. Other application assets are copied to `build_web/assets` and loaded on
+demand with `emscripten_fetch`. Serve `build_web` over HTTP; opening the generated
+HTML file directly with `file://` will prevent on-demand requests.
 
 #### Android
 
