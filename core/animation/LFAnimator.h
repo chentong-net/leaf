@@ -10,6 +10,9 @@
 #include "LFSpring.h"
 #include "LFSpringAdapter.h"
 
+#include <algorithm>
+#include <cmath>
+
 enum class LFAnimatorState {
     Created,
     Running,
@@ -193,52 +196,47 @@ public:
         m_elapsedTime += dt;
         m_totalTime += dt;
 
-        float fraction = m_duration > 0.0f
-                         ? m_elapsedTime / m_duration
-                         : 1.0f;
-        bool cycleEnded = false;
+        auto evaluateAt = [this](float fraction) {
+            fraction = std::clamp(fraction, 0.0f, 1.0f);
+            const float interpolation = m_isReversing
+                                        ? LFEasing::get(m_easingType, 1.0f - fraction)
+                                        : LFEasing::get(m_easingType, fraction);
+            if (m_evaluator) {
+                auto eval = std::static_pointer_cast<LFEvaluator<T>>(m_evaluator);
+                m_currentValue = eval->evaluate(interpolation, m_startValue, m_endValue);
+            }
+            if (m_onUpdate) m_onUpdate(m_currentValue);
+        };
 
-        // 处理完成或循环
-        if (fraction >= 1.0f) {
-            if (m_loopCount == -1 || m_currentLoop < m_loopCount) {
-                // 进入下一次循环
-                m_currentLoop++;
-                m_elapsedTime = 0.0f; // 或者 fmod 保留余数
-                cycleEnded = true;
+        const bool zeroDuration = m_duration <= 0.0f;
+        float fraction = zeroDuration ? 1.0f : m_elapsedTime / m_duration;
 
-                if (m_repeatMode == LFAnimRepeatMode::Reverse) {
-                    m_isReversing = !m_isReversing;
-                }
+        while (fraction >= 1.0f) {
+            evaluateAt(1.0f);
 
-                notifyRepeat();
-            } else {
-                // 彻底结束
-                fraction = 1.0f;
+            const bool canRepeat = !zeroDuration &&
+                                   (m_loopCount == -1 || m_currentLoop < m_loopCount);
+            if (!canRepeat) {
                 notifyEnd();
                 m_state = LFAnimatorState::Ended;
+                return true;
+            }
+
+            ++m_currentLoop;
+            m_elapsedTime = std::fmod(std::max(m_elapsedTime, 0.0f), m_duration);
+            if (m_repeatMode == LFAnimRepeatMode::Reverse) {
+                m_isReversing = !m_isReversing;
+            }
+            notifyRepeat();
+
+            fraction = m_elapsedTime / m_duration;
+            if (fraction <= 0.0f) {
+                return false;
             }
         }
 
-        // 计算缓动进度
-        float interpolation;
-        if (m_isReversing) {
-            // 倒放阶段：进度从 1 -> 0
-            // 注意：Easing 函数通常输入 0->1。倒放意味着时间倒流。
-            // interpolation = get(1 - fraction)
-            interpolation = LFEasing::get(m_easingType, 1.0f - fraction);
-        } else {
-            interpolation = LFEasing::get(m_easingType, fraction);
-        }
-
-        // 计算具体值
-        if (m_evaluator) {
-            auto eval = std::static_pointer_cast<LFEvaluator<T>>(m_evaluator);
-            m_currentValue = eval->evaluate(interpolation, m_startValue, m_endValue);
-        }
-
-        if (m_onUpdate) m_onUpdate(m_currentValue);
-
-        return m_state == LFAnimatorState::Ended;
+        evaluateAt(fraction);
+        return false;
     }
 
     void start() override {
