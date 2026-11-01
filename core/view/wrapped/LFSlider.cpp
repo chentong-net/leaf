@@ -36,10 +36,32 @@ LFSlider::LFSlider() {
 }
 
 void LFSlider::setRange(float minValue, float maxValue) {
-    if (almostEqual(minValue, maxValue)) {
-        maxValue = minValue + 1.0f;
-    } else if (maxValue < minValue) {
+    if (!std::isfinite(minValue) || !std::isfinite(maxValue)) {
+        return;
+    }
+
+    if (maxValue < minValue) {
         std::swap(minValue, maxValue);
+    }
+
+    if (almostEqual(minValue, maxValue)) {
+        float expandedMax = minValue + 1.0f;
+        if (!std::isfinite(expandedMax) || expandedMax == minValue) {
+            expandedMax = std::nextafter(maxValue, INFINITY);
+        }
+        if (std::isfinite(expandedMax) && expandedMax > minValue) {
+            maxValue = expandedMax;
+        } else {
+            const float expandedMin = std::nextafter(minValue, -INFINITY);
+            if (!std::isfinite(expandedMin)) {
+                return;
+            }
+            minValue = expandedMin;
+        }
+    }
+
+    if (!std::isfinite(maxValue - minValue)) {
+        return;
     }
 
     if (almostEqual(m_minValue, minValue) && almostEqual(m_maxValue, maxValue)) {
@@ -53,6 +75,10 @@ void LFSlider::setRange(float minValue, float maxValue) {
 }
 
 void LFSlider::setValue(float value, bool notify) {
+    if (!std::isfinite(value)) {
+        return;
+    }
+
     float nextValue = clampValue(quantizeValue(value));
     if (almostEqual(m_value, nextValue)) {
         return;
@@ -67,6 +93,12 @@ void LFSlider::setValue(float value, bool notify) {
 }
 
 float LFSlider::getNormalizedValue() const {
+    if (!std::isfinite(m_minValue) ||
+        !std::isfinite(m_maxValue) ||
+        !std::isfinite(m_value)) {
+        return 0.0f;
+    }
+
     float range = m_maxValue - m_minValue;
     if (almostEqual(range, 0.0f)) {
         return 0.0f;
@@ -75,6 +107,10 @@ float LFSlider::getNormalizedValue() const {
 }
 
 void LFSlider::setStep(float step) {
+    if (!std::isfinite(step)) {
+        return;
+    }
+
     step = std::max(0.0f, step);
     if (almostEqual(m_step, step)) {
         return;
@@ -97,6 +133,10 @@ void LFSlider::setEnabled(bool enabled) {
 }
 
 void LFSlider::setTrackThickness(float thickness) {
+    if (!std::isfinite(thickness)) {
+        return;
+    }
+
     thickness = std::max(kMinTrackThickness, thickness);
     if (almostEqual(m_trackThickness, thickness)) return;
 
@@ -106,6 +146,10 @@ void LFSlider::setTrackThickness(float thickness) {
 }
 
 void LFSlider::setThumbDiameter(float diameter) {
+    if (!std::isfinite(diameter)) {
+        return;
+    }
+
     diameter = std::max(kMinThumbDiameter, diameter);
     if (almostEqual(m_thumbDiameter, diameter)) return;
 
@@ -134,6 +178,10 @@ void LFSlider::setThumbColor(uint32_t color) {
 }
 
 void LFSlider::setDisabledOpacity(float opacity) {
+    if (!std::isfinite(opacity)) {
+        return;
+    }
+
     opacity = std::clamp(opacity, 0.0f, 1.0f);
     if (almostEqual(m_disabledOpacity, opacity)) return;
 
@@ -324,6 +372,10 @@ void LFSlider::updateStateFromLocalX(float localX, bool notify, bool snapToStep)
 }
 
 void LFSlider::setRawValue(float value, bool notify) {
+    if (!std::isfinite(value)) {
+        return;
+    }
+
     float nextValue = clampValue(value);
     if (almostEqual(m_value, nextValue)) {
         return;
@@ -338,6 +390,10 @@ void LFSlider::setRawValue(float value, bool notify) {
 }
 
 float LFSlider::valueFromLocalX(float localX) const {
+    if (!std::isfinite(localX)) {
+        return m_value;
+    }
+
     float trackWidth = std::max(kMinWidth, resolveTrackWidth());
     float thumbDiameter = std::max(kMinThumbDiameter, m_thumbDiameter);
     float travel = std::max(0.0f, trackWidth - thumbDiameter);
@@ -363,10 +419,17 @@ float LFSlider::resolveTrackWidth() const {
 }
 
 float LFSlider::clampValue(float value) const {
+    if (!std::isfinite(value)) {
+        return m_value;
+    }
     return std::clamp(value, m_minValue, m_maxValue);
 }
 
 float LFSlider::quantizeValue(float value) const {
+    if (!std::isfinite(value)) {
+        return m_value;
+    }
+
     value = clampValue(value);
     if (m_step <= 0.0f) {
         return value;
@@ -377,6 +440,9 @@ float LFSlider::quantizeValue(float value) const {
 }
 
 float LFSlider::clampNormalized(float normalized) const {
+    if (!std::isfinite(normalized)) {
+        return 0.0f;
+    }
     return std::clamp(normalized, 0.0f, 1.0f);
 }
 
