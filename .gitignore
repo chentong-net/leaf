@@ -44,5 +44,6 @@ ios/Leaf_iOS/Assets
 Fix*.md
 Test*.md
 /report/
+/tmp/
 
 emsdk/
