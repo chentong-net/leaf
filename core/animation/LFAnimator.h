@@ -11,7 +11,6 @@
 #include "LFSpringAdapter.h"
 
 #include <algorithm>
-#include <cmath>
 
 enum class LFAnimatorState {
     Created,
@@ -223,13 +222,13 @@ public:
             }
 
             ++m_currentLoop;
-            m_elapsedTime = std::fmod(std::max(m_elapsedTime, 0.0f), m_duration);
+            fraction -= 1.0f;
+            m_elapsedTime = std::max(fraction, 0.0f) * m_duration;
             if (m_repeatMode == LFAnimRepeatMode::Reverse) {
                 m_isReversing = !m_isReversing;
             }
             notifyRepeat();
 
-            fraction = m_elapsedTime / m_duration;
             if (fraction <= 0.0f) {
                 return false;
             }
