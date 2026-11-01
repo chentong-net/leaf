@@ -269,11 +269,11 @@ std::shared_ptr<LFNode> ProfilePage::createStatsBar() {
 std::shared_ptr<LFNode> ProfilePage::createSectionTitle(const std::string& title) {
     auto text = createLabel(title, FS_HEAD, COL_TEXT_MAIN, true);
     text->setTextHAlign(LFTextHAlign::Left);
-    text->setMargin(YGEdgeTop, 15);
-    text->setMargin(YGEdgeBottom, 12);
     // 左侧加一个小竖条装饰，增加设计感
     auto wrapper = LFLinear::createHorizontal();
     wrapper->setGravity(LFAlignment::Start, LFAlignment::Center);
+    wrapper->setMargin(YGEdgeTop, 15);
+    wrapper->setMargin(YGEdgeBottom, 12);
 
     auto bar = LFBox::create();
     bar->setWidth(4);
