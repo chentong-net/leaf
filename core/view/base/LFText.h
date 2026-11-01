@@ -49,6 +49,7 @@ private:
     // Yoga 测量回调函数
     static YGSize measure(YGNodeRef node, float width, YGMeasureMode widthMode,
                           float height, YGMeasureMode heightMode);
+    static float baseline(YGNodeRef node, float width, float height);
     // 成员变量
     std::string m_text;
     float m_fontSize = 16.0f;

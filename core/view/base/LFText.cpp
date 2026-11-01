@@ -134,6 +134,53 @@ float sanitizeEdge(float value) {
     return std::max(0.0f, value);
 }
 
+struct TextContentBox {
+    float x = 0.0f;
+    float y = 0.0f;
+    float width = 0.0f;
+    float height = 0.0f;
+};
+
+TextContentBox getTextContentBox(YGNodeRef node, float layoutWidth, float layoutHeight) {
+    const float paddingLeft = sanitizeEdge(
+        YGNodeLayoutGetPadding(node, YGEdgeLeft)
+    );
+    const float paddingTop = sanitizeEdge(
+        YGNodeLayoutGetPadding(node, YGEdgeTop)
+    );
+    const float paddingRight = sanitizeEdge(
+        YGNodeLayoutGetPadding(node, YGEdgeRight)
+    );
+    const float paddingBottom = sanitizeEdge(
+        YGNodeLayoutGetPadding(node, YGEdgeBottom)
+    );
+    const float borderLeft = sanitizeEdge(
+        YGNodeLayoutGetBorder(node, YGEdgeLeft)
+    );
+    const float borderTop = sanitizeEdge(
+        YGNodeLayoutGetBorder(node, YGEdgeTop)
+    );
+    const float borderRight = sanitizeEdge(
+        YGNodeLayoutGetBorder(node, YGEdgeRight)
+    );
+    const float borderBottom = sanitizeEdge(
+        YGNodeLayoutGetBorder(node, YGEdgeBottom)
+    );
+
+    TextContentBox content;
+    content.x = paddingLeft + borderLeft;
+    content.y = paddingTop + borderTop;
+    content.width = std::max(
+        0.0f,
+        layoutWidth - content.x - paddingRight - borderRight
+    );
+    content.height = std::max(
+        0.0f,
+        layoutHeight - content.y - paddingBottom - borderBottom
+    );
+    return content;
+}
+
 float snapToPixel(float value, float pixelRatio) {
     if (!std::isfinite(value) || !std::isfinite(pixelRatio) || pixelRatio <= 0.0f) {
         return value;
@@ -288,6 +335,7 @@ std::shared_ptr<const LFTextLayout> getTextLayout(
 
 LFText::LFText() {
     YGNodeSetMeasureFunc(getYGNode(), LFText::measure);
+    YGNodeSetBaselineFunc(getYGNode(), LFText::baseline);
 }
 
 void LFText::setMeasureContext(NVGcontext* vg) {
@@ -400,39 +448,52 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
     return result;
 }
 
+float LFText::baseline(YGNodeRef node, float width, float height) {
+    auto* baseNode = static_cast<LFNode*>(YGNodeGetContext(node));
+    auto* textNode = static_cast<LFText*>(baseNode);
+    if (!textNode || textNode->m_text.empty()) {
+        return std::max(0.0f, height);
+    }
+
+    const TextContentBox content = getTextContentBox(node, width, height);
+
+    const auto layout = getTextLayout(
+        s_measureContext,
+        textNode->m_text,
+        textNode->m_fontFamily,
+        textNode->m_fontSize,
+        textNode->m_lineHeight,
+        content.width,
+        textNode->m_maxLines
+    );
+    if (!layout || layout->empty()) {
+        return std::max(0.0f, height);
+    }
+
+    float drawY = content.y;
+    switch (textNode->m_textVAlign) {
+        case LFTextVAlign::Center:
+            drawY += (content.height - layout->height) * 0.5f;
+            break;
+        case LFTextVAlign::Bottom:
+            drawY += content.height - layout->height;
+            break;
+        case LFTextVAlign::Top:
+        default:
+            break;
+    }
+    return drawY + layout->firstBaseline;
+}
+
 void LFText::onDrawContent(NVGcontext* vg) {
     if (m_text.empty() || !vg) return;
 
-    const float paddingLeft = sanitizeEdge(
-        YGNodeLayoutGetPadding(getYGNode(), YGEdgeLeft)
+    const TextContentBox content = getTextContentBox(
+        getYGNode(),
+        getLayoutWidth(),
+        getLayoutHeight()
     );
-    const float paddingTop = sanitizeEdge(
-        YGNodeLayoutGetPadding(getYGNode(), YGEdgeTop)
-    );
-    const float paddingRight = sanitizeEdge(
-        YGNodeLayoutGetPadding(getYGNode(), YGEdgeRight)
-    );
-    const float paddingBottom = sanitizeEdge(
-        YGNodeLayoutGetPadding(getYGNode(), YGEdgeBottom)
-    );
-    const float borderLeft = sanitizeEdge(
-        YGNodeLayoutGetBorder(getYGNode(), YGEdgeLeft)
-    );
-    const float borderTop = sanitizeEdge(
-        YGNodeLayoutGetBorder(getYGNode(), YGEdgeTop)
-    );
-    const float borderRight = sanitizeEdge(
-        YGNodeLayoutGetBorder(getYGNode(), YGEdgeRight)
-    );
-    const float borderBottom = sanitizeEdge(
-        YGNodeLayoutGetBorder(getYGNode(), YGEdgeBottom)
-    );
-
-    const float contentX = paddingLeft + borderLeft;
-    const float contentY = paddingTop + borderTop;
-    const float contentWidth = getLayoutWidth() - contentX - paddingRight - borderRight;
-    const float contentHeight = getLayoutHeight() - contentY - paddingBottom - borderBottom;
-    if (contentWidth < 0.0f || contentHeight < 0.0f) {
+    if (content.width <= 0.0f || content.height <= 0.0f) {
         return;
     }
 
@@ -442,24 +503,24 @@ void LFText::onDrawContent(NVGcontext* vg) {
         m_fontFamily,
         m_fontSize,
         m_lineHeight,
-        contentWidth,
+        content.width,
         m_maxLines
     );
     if (!layout || layout->empty()) {
         return;
     }
 
-    float drawY = contentY;
+    float drawY = content.y;
     switch (m_textVAlign) {
         case LFTextVAlign::Center:
-            drawY = contentY + (contentHeight - layout->height) * 0.5f;
+            drawY = content.y + (content.height - layout->height) * 0.5f;
             break;
         case LFTextVAlign::Bottom:
-            drawY = contentY + contentHeight - layout->height;
+            drawY = content.y + content.height - layout->height;
             break;
         case LFTextVAlign::Top:
         default:
-            drawY = contentY;
+            drawY = content.y;
             break;
     }
 
@@ -485,7 +546,7 @@ void LFText::onDrawContent(NVGcontext* vg) {
         }
 
         const float originX = snapToPixel(
-            line.resolveOriginX(contentX, contentWidth, layoutAlign),
+            line.resolveOriginX(content.x, content.width, layoutAlign),
             pixelRatio
         );
         const float lineY =
