@@ -44,6 +44,7 @@ set_target_properties(leaf-web PROPERTIES SUFFIX ".html")
 
 set(LEAF_WEB_ASSET_SOURCE_DIR "${APPLICATION_DIR}/assets")
 set(LEAF_WEB_ASSET_OUTPUT_DIR "$<TARGET_FILE_DIR:leaf-web>/assets")
+set(LEAF_WEB_PRELOAD_FONT_DIR "${APPLICATION_DIR}/assets/fonts")
 
 add_custom_target(leaf-web-prepare-assets ALL
         COMMAND ${CMAKE_COMMAND}
@@ -56,5 +57,8 @@ add_custom_target(leaf-web-prepare-assets ALL
 
 add_dependencies(leaf-web leaf-web-prepare-assets)
 
-target_link_options(leaf-web PRIVATE --preload-file ${APPLICATION_DIR}/assets@/assets)
+target_link_options(leaf-web PRIVATE
+        "--preload-file"
+        "${LEAF_WEB_PRELOAD_FONT_DIR}@/assets/fonts"
+)
 target_link_options(leaf-web PRIVATE --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html)

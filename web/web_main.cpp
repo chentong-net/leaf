@@ -7,10 +7,17 @@
 #include "LFEngine.h"
 #include <emscripten.h>
 #include <emscripten/em_js.h>
+#include <emscripten/fetch.h>
 #include <emscripten/html5.h>
 #include "LFAppLaunch.h"
 
-#include <fstream>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <memory>
+#include <string>
+#include <utility>
 
 static const char* CANVAS_ID = "#canvas";
 double dpr = 1.0f;
@@ -35,6 +42,103 @@ static const int LF_KEY_UP = 1003;
 static const int LF_KEY_DOWN = 1004;
 static const int LF_KEY_HOME = 1005;
 static const int LF_KEY_END = 1006;
+
+std::string encodeWebAssetPath(const std::string& path) {
+    static constexpr char kHex[] = "0123456789ABCDEF";
+    std::string encoded;
+    encoded.reserve(path.size());
+
+    for (const unsigned char character : path) {
+        if (std::isalnum(character) ||
+            character == '/' ||
+            character == '-' ||
+            character == '_' ||
+            character == '.' ||
+            character == '~') {
+            encoded.push_back(static_cast<char>(character));
+            continue;
+        }
+
+        encoded.push_back('%');
+        encoded.push_back(kHex[character >> 4]);
+        encoded.push_back(kHex[character & 0x0F]);
+    }
+    return encoded;
+}
+
+std::string resolveWebAssetUrl(const std::string& path) {
+    if (path.empty()) {
+        return "";
+    }
+    if (path.find("://") != std::string::npos ||
+        path.rfind("data:", 0) == 0 ||
+        path.rfind("blob:", 0) == 0) {
+        return path;
+    }
+
+    const size_t firstNonSlash = path.find_first_not_of('/');
+    if (firstNonSlash == std::string::npos) {
+        return "";
+    }
+
+    std::string relativePath = path.substr(firstNonSlash);
+    if (relativePath.rfind("assets/", 0) != 0) {
+        relativePath.insert(0, "assets/");
+    }
+    return encodeWebAssetPath(relativePath);
+}
+
+struct WebAssetFetchState {
+    std::function<void(std::shared_ptr<LFData>)> callback;
+};
+
+void finishWebAssetFetch(
+        emscripten_fetch_t* fetch,
+        std::shared_ptr<LFData> data) {
+    if (!fetch) {
+        return;
+    }
+
+    auto* state = static_cast<WebAssetFetchState*>(fetch->userData);
+    fetch->userData = nullptr;
+    emscripten_fetch_close(fetch);
+
+    if (!state) {
+        return;
+    }
+
+    auto callback = std::move(state->callback);
+    delete state;
+    if (callback) {
+        callback(std::move(data));
+    }
+}
+
+void onWebAssetFetchSuccess(emscripten_fetch_t* fetch) {
+    std::shared_ptr<LFData> data;
+    if (fetch && fetch->numBytes > 0 && fetch->data) {
+        data = std::make_shared<LFData>();
+        data->size = static_cast<size_t>(fetch->numBytes);
+        data->data = static_cast<unsigned char*>(std::malloc(data->size));
+        if (data->data) {
+            std::memcpy(data->data, fetch->data, data->size);
+        } else {
+            data.reset();
+        }
+    }
+    finishWebAssetFetch(fetch, std::move(data));
+}
+
+void onWebAssetFetchError(emscripten_fetch_t* fetch) {
+    if (fetch) {
+        LF_LOGI(
+                "Failed to fetch Web asset: %s (status=%d)",
+                fetch->url,
+                fetch->status
+        );
+    }
+    finishWebAssetFetch(fetch, nullptr);
+}
 
 EM_JS(void, leaf_web_install_text_input_bridge, (), {
     if (Module.__leafTextInputBridge) {
@@ -567,36 +671,25 @@ int main() {
     LFResourceProvider::getInstance().setAssetLoader(
             [](const std::string &path,
                std::function<void(std::shared_ptr<LFData>)> callback) {
-                const std::string assetPath =
-                        !path.empty() && path.front() == '/'
-                        ? path
-                        : "/assets/" + path;
-                std::ifstream file(assetPath, std::ios::binary | std::ios::ate);
-                if (!file.is_open()) {
+                const std::string url = resolveWebAssetUrl(path);
+                if (url.empty()) {
                     callback(nullptr);
                     return;
                 }
 
-                const std::streamsize size = file.tellg();
-                if (size <= 0) {
-                    callback(nullptr);
-                    return;
-                }
+                emscripten_fetch_attr_t attributes;
+                emscripten_fetch_attr_init(&attributes);
+                std::strcpy(attributes.requestMethod, "GET");
+                attributes.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+                attributes.timeoutMsecs = 30000;
 
-                auto data = std::make_shared<LFData>();
-                data->size = static_cast<size_t>(size);
-                data->data = static_cast<unsigned char*>(malloc(data->size));
-                if (!data->data) {
-                    callback(nullptr);
-                    return;
-                }
+                auto state = std::make_unique<WebAssetFetchState>();
+                state->callback = std::move(callback);
+                attributes.userData = state.release();
+                attributes.onsuccess = onWebAssetFetchSuccess;
+                attributes.onerror = onWebAssetFetchError;
 
-                file.seekg(0, std::ios::beg);
-                if (!file.read(reinterpret_cast<char*>(data->data), size)) {
-                    callback(nullptr);
-                    return;
-                }
-                callback(data);
+                emscripten_fetch(&attributes, url.c_str());
             }
     );
 
