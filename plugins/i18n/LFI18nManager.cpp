@@ -69,6 +69,7 @@ void LFI18nManager::initializeFromAsset(const std::string& assetPath, LFI18nInit
             m_initCallbacks.push_back(std::move(callback));
         }
 
+        m_initializationStarted = true;
         if (m_ready && m_assetPath == resolvedAssetPath) {
             alreadyReady = true;
         } else if (!m_loading) {
@@ -109,17 +110,21 @@ bool LFI18nManager::setLanguage(const std::string& languageTag) {
     std::string cacheLanguageTag = normalizedTag;
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_pendingLanguageTag = normalizedTag;
         isReady = m_ready;
         if (m_ready) {
-            applied = applyCurrentLanguageLocked(normalizedTag);
-            if (!m_currentLanguageTag.empty()) {
-                cacheLanguageTag = m_currentLanguageTag;
+            const std::string resolvedTag =
+                    resolveAvailableLanguageTagLocked(normalizedTag);
+            if (!resolvedTag.empty()) {
+                m_currentLanguageTag = resolvedTag;
+                cacheLanguageTag = resolvedTag;
+                applied = true;
             }
+        } else {
+            m_pendingLanguageTag = normalizedTag;
         }
     }
 
-    if (isReady) {
+    if (isReady && applied) {
         persistCachedLanguage(cacheLanguageTag);
     }
     return applied;
@@ -160,7 +165,21 @@ std::string LFI18nManager::tr(const std::string& key) {
 }
 
 void LFI18nManager::ensureInitializationStarted() {
-    initializeFromAsset(kDefaultAssetPath, nullptr);
+    bool shouldStart = false;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_initializationStarted) {
+            m_initializationStarted = true;
+            m_loading = true;
+            m_assetPath = kDefaultAssetPath;
+            m_ready = false;
+            shouldStart = true;
+        }
+    }
+
+    if (shouldStart) {
+        startInitialization(kDefaultAssetPath);
+    }
 }
 
 void LFI18nManager::startInitialization(const std::string& resolvedAssetPath) {

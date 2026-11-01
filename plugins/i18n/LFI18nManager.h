@@ -54,6 +54,7 @@ private:
     bool persistCachedLanguage(const std::string& languageTag) const;
 
     mutable std::mutex m_mutex;
+    bool m_initializationStarted = false;
     bool m_loading = false;
     bool m_ready = false;
     std::string m_assetPath = "i18n.json";
