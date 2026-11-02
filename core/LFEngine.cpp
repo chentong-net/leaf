@@ -11,21 +11,21 @@ LFEngine& LFEngine::getInstance() {
     return instance;
 }
 
-void LFEngine::init(NVGcontext* vg) {
-    if (m_vg && m_vg != vg) {
+void LFEngine::init(LFRenderer& renderer) {
+    if (m_renderer && m_renderer != &renderer) {
         discardContext();
     }
 
-    m_vg = vg;
+    m_renderer = &renderer;
 
     // Initialize time base for gesture timing synchronization
     m_startTime = std::chrono::steady_clock::now();
 
-    LFText::setMeasureContext(m_vg);
+    LFText::setMeasureContext(m_renderer);
 }
 
 void LFEngine::shutdown() {
-    NVGcontext* context = m_vg;
+    LFRenderer* renderer = m_renderer;
     LFEventDispatcher::getInstance().reset();
     LFGlobalAnimationManager::getInstance().cancelAll();
     m_rootNode.reset();
@@ -35,10 +35,10 @@ void LFEngine::shutdown() {
         std::lock_guard<std::mutex> lock(m_gcMutex);
         garbageTextures.swap(m_garbageTextures);
     }
-    if (context) {
+    if (renderer) {
         for (const auto& pending : garbageTextures) {
-            if (pending.context == context && pending.imageHandle > 0) {
-                nvgDeleteImage(context, pending.imageHandle);
+            if (pending.renderer == renderer && pending.texture > 0) {
+                renderer->releaseTexture(pending.texture);
             }
         }
     }
@@ -49,7 +49,7 @@ void LFEngine::shutdown() {
     }
 
     m_textInputCursorCallback = nullptr;
-    m_vg = nullptr;
+    m_renderer = nullptr;
     LFText::setMeasureContext(nullptr);
 }
 
@@ -68,7 +68,7 @@ void LFEngine::discardContext() {
     }
 
     m_textInputCursorCallback = nullptr;
-    m_vg = nullptr;
+    m_renderer = nullptr;
     LFText::setMeasureContext(nullptr);
 }
 
@@ -144,25 +144,19 @@ void LFEngine::update(float dt) {
 
 
 void LFEngine::render() {
-    if (!m_vg || !m_rootNode) return;
+    if (!m_renderer || !m_rootNode) return;
 
-#ifndef LEAF_USE_METAL
-    int phyWidth = (int)(m_windowWidth * m_pixelRatio);
-    int phyHeight = (int)(m_windowHeight * m_pixelRatio);
-    glViewport(0, 0, phyWidth, phyHeight);
-#endif
-
-    // 先建立本帧的NanoVG上下文，确保文本测量和绘制使用相同的DPR
-    nvgBeginFrame(m_vg, m_windowWidth, m_windowHeight, m_pixelRatio);
+    // 先建立本帧渲染上下文，确保文本测量和绘制使用相同的DPR
+    m_renderer->beginFrame(m_windowWidth, m_windowHeight, m_pixelRatio);
 
     // 布局
     // Yoga内部有缓存机制，如果根节点没有markDirty，calculateLayout几乎无消耗
     // 所以每帧调用是安全的，确保布局始终正确
     m_rootNode->calculateLayout(m_windowWidth, m_windowHeight);
 
-    m_rootNode->render(m_vg);
+    m_rootNode->render(*m_renderer);
 
-    nvgEndFrame(m_vg);
+    m_renderer->endFrame();
 
     // 资源回收
     // 处理上一帧或本帧逻辑中死掉的组件遗留的纹理
@@ -173,20 +167,21 @@ void LFEngine::render() {
     }
 
     for (const auto& pending : garbageTextures) {
-        if (pending.context == m_vg && pending.imageHandle > 0) {
-            nvgDeleteImage(m_vg, pending.imageHandle);
-            LF_LOGI("GC Texture: %d", pending.imageHandle);
+        if (pending.renderer == m_renderer && pending.texture > 0) {
+            m_renderer->releaseTexture(pending.texture);
+            LF_LOGI("GC Texture: %llu",
+                    static_cast<unsigned long long>(pending.texture));
         }
     }
 }
 
-void LFEngine::recycleTexture(NVGcontext* context, int imageHandle) {
-    if (!context || imageHandle <= 0) return;
+void LFEngine::recycleTexture(LFRenderer* renderer, LFTextureHandle texture) {
+    if (!renderer || texture == 0) return;
 
     // 这是一个可能从任何线程调用的方法（取决于组件在哪析构）
     // 所以需要加锁保护
     std::lock_guard<std::mutex> lock(m_gcMutex);
-    m_garbageTextures.push_back({context, imageHandle});
+    m_garbageTextures.push_back({renderer, texture});
 }
 
 double LFEngine::getElapsedTime() const {

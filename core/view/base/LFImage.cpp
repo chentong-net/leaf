@@ -12,8 +12,8 @@ LFImage::LFImage() {
 }
 
 LFImage::~LFImage() {
-    if (m_imageHandle > 0) {
-        LFEngine::getInstance().recycleTexture(m_renderContext, m_imageHandle);
+    if (m_texture > 0) {
+        LFEngine::getInstance().recycleTexture(m_renderer, m_texture);
     }
 }
 
@@ -24,7 +24,7 @@ void LFImage::setSrc(const std::string& src) {
     // ID 自增，任何之前的加载回调回来后发现 ID 对不上都会被丢弃
     m_loadRequestId++;
 
-    // 不要在这里 m_imageHandle = 0 !
+    // 不要在这里 m_texture = 0 !
     // 保留旧图片显示，直到新图片下载完成 (Seamless Swap)。
     // 不要重置宽高，防止布局在加载过程中跳变。
 
@@ -127,30 +127,36 @@ YGSize LFImage::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
     return result;
 }
 
-void LFImage::onDrawContent(NVGcontext* vg) {
-    if (m_imageHandle > 0 && m_renderContext != vg) {
-        m_imageHandle = 0;
-        m_renderContext = nullptr;
+void LFImage::onDrawContent(LFPaint& paint) {
+    LFRenderer* renderer = LFEngine::getInstance().getRenderer();
+    if (!renderer) return;
+
+    if (m_texture > 0 && m_renderer != renderer) {
+        m_texture = 0;
+        m_renderer = nullptr;
         if (!m_src.empty()) {
             startLoading();
         }
     }
 
     // 1. 纹理生命周期管理 (上传/删除/替换)
-    // 只有在渲染线程持有 vg 时，我们才能安全操作 GPU 资源
+    // 只有在渲染线程持有 Renderer 时，才能安全操作 GPU 资源
     if (m_needUpload) {
         // 无论是要换新图，还是单纯清空，只要 handle 存在，先删掉旧的
-        if (m_imageHandle > 0) {
-            nvgDeleteImage(vg, m_imageHandle);
-            m_imageHandle = 0;
-            m_renderContext = nullptr;
+        if (m_texture > 0) {
+            renderer->releaseTexture(m_texture);
+            m_texture = 0;
+            m_renderer = nullptr;
         }
 
         // 如果有新数据，创建新纹理
         if (m_pendingData && m_pendingData->data) {
-            m_imageHandle = nvgCreateImageMem(vg, 0, m_pendingData->data, m_pendingData->size);
-            if (m_imageHandle > 0) {
-                m_renderContext = vg;
+            m_texture = renderer->createTextureFromMemory(
+                m_pendingData->data,
+                m_pendingData->size
+            );
+            if (m_texture > 0) {
+                m_renderer = renderer;
             }
         }
 
@@ -158,7 +164,7 @@ void LFImage::onDrawContent(NVGcontext* vg) {
         m_needUpload = false;    // 处理完毕
     }
 
-    if (m_imageHandle <= 0) return;
+    if (m_texture == 0) return;
 
     // 2. 计算 Content Box
     float paddingL = YGNodeLayoutGetPadding(getYGNode(), YGEdgeLeft);
@@ -208,9 +214,6 @@ void LFImage::onDrawContent(NVGcontext* vg) {
     float finalY = contentY + drawY;
 
     // 4. 绘制
-    // 使用 nvgImagePattern 将纹理映射到计算出的 draw 矩形中
-    NVGpaint imgPaint = nvgImagePattern(vg, finalX, finalY, drawW, drawH, 0.0f, m_imageHandle, 1.0f);
-
     float radius = getRadius();
     // 计算"内圆角"。
     // 几何上，如果外边框圆角是 R，边框宽是 W，那么内部内容的圆角应该是 R - W。
@@ -220,28 +223,17 @@ void LFImage::onDrawContent(NVGcontext* vg) {
     if (radius > 0) {
         effectiveRadius = std::max(0.0f, radius - borderL);
     }
-    nvgBeginPath(vg);
-
+    LFDrawRect clipRect;
     if (m_fit == LFImageFit::Cover) {
-        // Cover 模式下，纹理是放大的，但我们需要将绘制限制在 contentBox 内
-        if (effectiveRadius > 0) {
-            // Cover 模式下，我们填充的是 ContentBox 区域
-            // 如果有圆角，使用 nvgRoundedRect
-            nvgRoundedRect(vg, contentX, contentY, contentW, contentH, effectiveRadius);
-        } else {
-            nvgRect(vg, contentX, contentY, contentW, contentH);
-        }
+        clipRect = {contentX, contentY, contentW, contentH};
     } else {
-        // Contain 或其他模式，我们绘制的是计算出的图片实际矩形 (finalX/Y)
-        // 注意：通常在 Contain 模式下，如果图片很小悬浮在中间，是否要圆角取决于你的设计需求。
-        // 这里假设只要设置了圆角，图片本身就应该应用圆角。
-        if (effectiveRadius > 0) {
-            nvgRoundedRect(vg, finalX, finalY, drawW, drawH, effectiveRadius);
-        } else {
-            nvgRect(vg, finalX, finalY, drawW, drawH);
-        }
+        clipRect = {finalX, finalY, drawW, drawH};
     }
 
-    nvgFillPaint(vg, imgPaint);
-    nvgFill(vg);
+    LFImageDraw imageDraw;
+    imageDraw.texture = m_texture;
+    imageDraw.imageRect = {finalX, finalY, drawW, drawH};
+    imageDraw.clipRect = clipRect;
+    imageDraw.radius = effectiveRadius;
+    paint.drawImage(imageDraw);
 }

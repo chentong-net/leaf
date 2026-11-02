@@ -327,7 +327,7 @@ void LFNode::finalizeLayoutTree() {
 /**
  * 核心渲染流程 (Template Method)
  */
-void LFNode::render(NVGcontext* vg) {
+void LFNode::render(LFPaint& paint) {
     // 0. 基础过滤：如果隐藏或透明度为0，直接跳过
     // 注意：YGDisplayNone 的节点 Yoga 布局宽高会是 0，也会在这里被过滤
     if (!m_visible || m_opacity <= 0.0f) return;
@@ -336,13 +336,13 @@ void LFNode::render(NVGcontext* vg) {
     float h = getLayoutHeight();
     if (w <= 0 || h <= 0) return;
 
-    // 1. 保存当前 GL 状态 (Transform, Alpha, Scissor 等)
-    nvgSave(vg);
+    // 1. 保存当前绘制状态
+    paint.pushState();
 
     // 2. 应用布局坐标 (Layout X/Y)
     float x = getLayoutX();
     float y = getLayoutY();
-    nvgTranslate(vg, x, y);
+    paint.translate(x, y);
 
     // 3. 应用视觉变换 (Transform: Translate -> Rotate -> Scale)
     // 变换原点默认中心
@@ -350,99 +350,80 @@ void LFNode::render(NVGcontext* vg) {
     float ty = m_transform.translateY;
     tx += w * (m_transform.translatePercentX / 100.0f);
     ty += h * (m_transform.translatePercentY / 100.0f);
-    if (tx != 0 || ty != 0) nvgTranslate(vg, tx, ty);
+    if (tx != 0 || ty != 0) paint.translate(tx, ty);
 
     if (m_transform.rotate != 0 || m_transform.scaleX != 1.0f || m_transform.scaleY != 1.0f) {
         float cx = w * 0.5f;
         float cy = h * 0.5f;
-        nvgTranslate(vg, cx, cy);
-        if (m_transform.rotate != 0) nvgRotate(vg, nvgDegToRad(m_transform.rotate));
-        if (m_transform.scaleX != 1.0f || m_transform.scaleY != 1.0f) nvgScale(vg, m_transform.scaleX, m_transform.scaleY);
-        nvgTranslate(vg, -cx, -cy);
+        paint.translate(cx, cy);
+        if (m_transform.rotate != 0) paint.rotate(m_transform.rotate);
+        if (m_transform.scaleX != 1.0f || m_transform.scaleY != 1.0f) {
+            paint.scale(m_transform.scaleX, m_transform.scaleY);
+        }
+        paint.translate(-cx, -cy);
     }
 
     // 4. 应用透明度
     if (m_opacity < 1.0f) {
-        nvgGlobalAlpha(vg, m_opacity);
+        paint.setOpacity(m_opacity);
     }
 
     // 5. 绘制阴影 (在背景之前)
-    drawShadow(vg, w, h);
+    drawShadow(paint, w, h);
 
     // 6. 绘制背景
-    drawBackground(vg, w, h);
+    drawBackground(paint, w, h);
 
     // 8. 裁剪 (Overflow: Hidden)
     if (m_masksToBounds) {
-        // IntersectScissor 是基于当前 Transform 的
-        nvgIntersectScissor(vg, 0, 0, w, h);
+        paint.clipRect({0.0f, 0.0f, w, h});
     }
 
     // 7. 绘制内容 (子类如 Text/Image)
-    onDrawContent(vg);
+    onDrawContent(paint);
 
     // 9. 递归绘制子节点
     for (auto& child : m_children) {
-        child->render(vg);
+        child->render(paint);
     }
 
     // 10. 绘制边框 (在子节点之上，防止被内容遮挡)
-    drawBorder(vg, w, h);
+    drawBorder(paint, w, h);
 
-    onDrawOverlay(vg);
+    onDrawOverlay(paint);
 
     // 11. 恢复状态
-    nvgRestore(vg);
+    paint.popState();
 }
 
 // ==========================================
 // 内部绘制实现
 // ==========================================
-void LFNode::drawShadow(NVGcontext* vg, float w, float h) {
+void LFNode::drawShadow(LFPaint& paint, float w, float h) {
     if ((m_shadow.color >> 24) & 0xFF) {
-        // 阴影绘制比较复杂，通常使用 BoxGradient
-        // 这里只是一个简单的实现思路
-        float spread = m_shadow.spread;
-        float blur = m_shadow.blurRadius;
-
-        // 阴影矩形的位置
-        float sx = m_shadow.offsetX - spread;
-        float sy = m_shadow.offsetY - spread;
-        float sw = w + spread * 2;
-        float sh = h + spread * 2;
-        float r = m_borderRadius + spread;
-
-        NVGpaint shadowPaint = nvgBoxGradient(vg,
-                                              m_shadow.offsetX, m_shadow.offsetY + 2, // 微调光照位置
-                                              w, h,
-                                              m_borderRadius, blur,
-                                              colorToNVG(m_shadow.color), nvgRGBA(0,0,0,0));
-
-        nvgBeginPath(vg);
-        nvgRect(vg, sx - blur, sy - blur, sw + blur*2, sh + blur*2);
-        // 使用 PathWinding 镂空中间部分，防止阴影叠加在背景下导致变色
-        nvgRoundedRect(vg, 0, 0, w, h, m_borderRadius);
-        nvgPathWinding(vg, NVG_HOLE);
-
-        nvgFillPaint(vg, shadowPaint);
-        nvgFill(vg);
+        LFShadowDraw shadow;
+        shadow.rect = {0.0f, 0.0f, w, h};
+        shadow.radius = m_borderRadius;
+        shadow.offsetX = m_shadow.offsetX;
+        shadow.offsetY = m_shadow.offsetY;
+        shadow.blur = m_shadow.blurRadius;
+        shadow.spread = m_shadow.spread;
+        shadow.color = m_shadow.color;
+        paint.drawShadow(shadow);
     }
 }
 
-void LFNode::drawBackground(NVGcontext* vg, float w, float h) {
+void LFNode::drawBackground(LFPaint& paint, float w, float h) {
     if ((m_backgroundColor >> 24) & 0xFF) {
-        nvgBeginPath(vg);
         if (m_borderRadius > 0) {
-            nvgRoundedRect(vg, 0, 0, w, h, m_borderRadius);
+            paint.drawRoundedRect({0.0f, 0.0f, w, h}, m_borderRadius, m_backgroundColor);
         } else {
-            nvgRect(vg, 0, 0, w, h);
+            paint.drawRect({0.0f, 0.0f, w, h}, m_backgroundColor);
         }
-        nvgFillColor(vg, colorToNVG(m_backgroundColor));
-        nvgFill(vg);
     }
 }
 
-void LFNode::drawBorder(NVGcontext* vg, float w, float h) {
+void LFNode::drawBorder(LFPaint& paint, float w, float h) {
     // 统一边框绘制
     // 只有当设置了边框宽且颜色不透明时才绘制
     if (m_borderWidth > 0.0f && ((m_borderColor >> 24) & 0xFF)) {
@@ -450,23 +431,23 @@ void LFNode::drawBorder(NVGcontext* vg, float w, float h) {
         // 我们需要向内缩半个边框宽度。
         float half = m_borderWidth * 0.5f;
 
-        nvgBeginPath(vg);
         if (m_borderRadius > 0) {
             // 圆角也要相应收缩，防止内部圆角异常
             float innerRadius = std::max(0.0f, m_borderRadius - half);
-            nvgRoundedRect(vg, half, half, w - m_borderWidth, h - m_borderWidth, innerRadius);
+            paint.strokeRoundedRect(
+                {half, half, w - m_borderWidth, h - m_borderWidth},
+                innerRadius,
+                m_borderColor,
+                m_borderWidth
+            );
         } else {
-            nvgRect(vg, half, half, w - m_borderWidth, h - m_borderWidth);
+            paint.strokeRect(
+                {half, half, w - m_borderWidth, h - m_borderWidth},
+                m_borderColor,
+                m_borderWidth
+            );
         }
-
-        nvgStrokeColor(vg, colorToNVG(m_borderColor));
-        nvgStrokeWidth(vg, m_borderWidth);
-        nvgStroke(vg);
     }
-}
-
-NVGcolor LFNode::colorToNVG(uint32_t c) {
-    return nvgRGBA((c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF, (c >> 24) & 0xFF);
 }
 
 bool LFNode::convertWindowPointToLocal(float windowX, float windowY,

@@ -8,7 +8,7 @@
 
 #include <string>
 #include <vector>
-#include "LFEngine.h" // 需要引用引擎以获取 NanoVG 上下文
+#include "LFEngine.h" // 需要引用引擎以获取当前渲染后端
 
 /**
  * 分页配置参数

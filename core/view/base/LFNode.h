@@ -6,6 +6,7 @@
 #define LEAF_LFNODE_H
 
 #include "LFDef.h"
+#include "render/LFPaint.h"
 #include <functional>
 
 // Forward declarations
@@ -123,7 +124,7 @@ public:
     // 核心管线
     void markDirty(); // 脏标记
     void calculateLayout(float ownerWidth, float ownerHeight); // 布局
-    void render(NVGcontext* vg); // 渲染
+    void render(LFPaint& paint); // 渲染
 
     // 供子类使用
     YGNodeRef getYGNode() const { return m_ygNode; }
@@ -225,8 +226,6 @@ public:
                      RotateCallback onEnd = nullptr);
     void setOnSwipe(SwipeCallback callback, int allowedDirections = 15); // 15 = Any direction
 
-    static NVGcolor colorToNVG(uint32_t argb);
-
 protected:
     // 布局前钩子，允许子类在正式布局前做尺寸准备
     virtual void onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {}
@@ -239,11 +238,11 @@ protected:
 
     // 子类实现具体内容绘制
     // 内容绘制在背景之上，子视图之下
-    virtual void onDrawContent(NVGcontext* vg) {}
+    virtual void onDrawContent(LFPaint& paint) {}
 
     // 子类实现顶层绘制 (如滚动条、角标)
     // 绘制在子视图和边框之上
-    virtual void onDrawOverlay(NVGcontext* vg) {}
+    virtual void onDrawOverlay(LFPaint& paint) {}
 
 private:
     friend class LFEventDispatcher;
@@ -254,9 +253,9 @@ private:
     void finalizeLayoutTree();
 
     // 内部绘制实现
-    void drawShadow(NVGcontext* vg, float w, float h);
-    void drawBackground(NVGcontext* vg, float w, float h);
-    void drawBorder(NVGcontext* vg, float w, float h);
+    void drawShadow(LFPaint& paint, float w, float h);
+    void drawBackground(LFPaint& paint, float w, float h);
+    void drawBorder(LFPaint& paint, float w, float h);
 
     // Core Data
     YGNodeRef m_ygNode;

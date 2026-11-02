@@ -1,7 +1,6 @@
-#define NANOVG_GL3_IMPLEMENTATION
-
 #include "LFAppLaunch.h"
 #include "LFEngine.h"
+#include "render/nanovg/LFNanoVGRenderer.h"
 #include "text/LFFont.h"
 
 #include <GLFW/glfw3.h>
@@ -244,15 +243,14 @@ int main() {
         return -1;
     }
 
-    const int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES;
-    NVGcontext* vg = nvgCreateGL3(flags);
-    if (!vg) {
+    auto renderer = LFNanoVGRenderer::createOpenGL();
+    if (!renderer) {
         glfwDestroyWindow(window);
         glfwTerminate();
         return -1;
     }
 
-    LFEngine::getInstance().init(vg);
+    LFEngine::getInstance().init(*renderer);
     LFEngine::getInstance().setTextInputCursorCallback([window](float x, float y, float lineHeight) {
         (void)lineHeight;
         glfwSetInputMethodCursorPos(window, static_cast<double>(x), static_cast<double>(y));
@@ -262,7 +260,7 @@ int main() {
         const std::filesystem::path fontPath =
                 resolveAssetPath("fonts/" + std::string(font.fileName));
         const std::string fontPathUtf8 = pathToUtf8(fontPath);
-        if (nvgCreateFont(vg, font.familyName, fontPathUtf8.c_str()) < 0) {
+        if (renderer->createFontFromFile(font.familyName, fontPathUtf8) == 0) {
             LF_LOGI("Failed to load font: %s", fontPathUtf8.c_str());
         }
     }
@@ -310,14 +308,14 @@ int main() {
         lastFrameTime = frameTime;
 
         LFEngine::getInstance().update(dt > 0.0f ? dt : 1.0f / 60.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        renderer->clear(0x00000000);
         LFEngine::getInstance().render();
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     LFEngine::getInstance().shutdown();
-    nvgDeleteGL3(vg);
+    renderer.reset();
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;

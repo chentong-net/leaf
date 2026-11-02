@@ -1,7 +1,3 @@
-#ifndef LEAF_USE_METAL
-#define NANOVG_GLES3_IMPLEMENTATION
-#endif
-
 #import "LeafRenderer.h"
 #import "LFNativePluginBridge.h"
 #import "LeafView.h"
@@ -19,6 +15,7 @@
 #include "LFEngine.h"
 #include "LFResourceProvider.h"
 #include "LFAppLaunch.h"
+#include "render/nanovg/LFNanoVGRenderer.h"
 #include "text/LFFont.h"
 #include <cstring>
 #include <deque>
@@ -136,7 +133,7 @@ struct NativeKeyEvent {
 #endif
 
     CADisplayLink* _displayLink;
-    NVGcontext* _vg;
+    std::unique_ptr<LFRenderer> _renderer;
     BOOL _engineInitialized;
     CFTimeInterval _lastFrameTimestamp;
 
@@ -165,7 +162,7 @@ struct NativeKeyEvent {
     _backingWidth = 0;
     _backingHeight = 0;
 #endif
-    _vg = nullptr;
+    _renderer.reset();
     _engineInitialized = NO;
     _lastFrameTimestamp = 0;
     _nextTouchId = 1;
@@ -185,21 +182,15 @@ struct NativeKeyEvent {
     [self stop];
     [LFNativePluginBridge uninstall];
     LFEngine::getInstance().shutdown();
-#ifdef LEAF_USE_METAL
-    if (_vg) {
-        nvgDeleteMTL(_vg);
-        _vg = nullptr;
-    }
-#else
+#ifndef LEAF_USE_METAL
     if (_glContext) {
         [EAGLContext setCurrentContext:_glContext];
     }
+#endif
 
-    if (_vg) {
-        nvgDeleteGLES3(_vg);
-        _vg = nullptr;
-    }
+    _renderer.reset();
 
+#ifndef LEAF_USE_METAL
     [self destroyRenderBuffers];
     if ([EAGLContext currentContext] == _glContext) {
         [EAGLContext setCurrentContext:nil];
@@ -275,9 +266,8 @@ struct NativeKeyEvent {
 #ifdef LEAF_USE_METAL
     if (_engineInitialized || !_metalLayer) return;
 
-    int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_TRIPLE_BUFFER;
-    _vg = nvgCreateMTL((__bridge void*)_metalLayer, flags);
-    if (!_vg) {
+    _renderer = LFNanoVGRenderer::createMetal((__bridge void*)_metalLayer);
+    if (!_renderer) {
         LF_LOGI("LeafRenderer: failed to create NanoVG Metal context");
         return;
     }
@@ -285,15 +275,14 @@ struct NativeKeyEvent {
     if (_engineInitialized || !_glContext) return;
     [EAGLContext setCurrentContext:_glContext];
 
-    int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES;
-    _vg = nvgCreateGLES3(flags);
-    if (!_vg) {
+    _renderer = LFNanoVGRenderer::createOpenGL();
+    if (!_renderer) {
         LF_LOGI("LeafRenderer: failed to create NanoVG GLES3 context");
         return;
     }
 #endif
 
-    LFEngine::getInstance().init(_vg);
+    LFEngine::getInstance().init(*_renderer);
     __weak LeafView* weakView = (LeafView*)self.view;
     LFEngine::getInstance().setTextInputCursorCallback([weakView](float x, float y, float lineHeight) {
         auto updateCursor = ^{
@@ -322,7 +311,9 @@ struct NativeKeyEvent {
                 [NSString stringWithFormat:@"fonts/%s", font.fileName];
         NSString* fontPath = leafResolveAssetPath(relativePath);
         if (fontPath.length > 0) {
-            if (nvgCreateFont(_vg, font.familyName, fontPath.UTF8String) < 0) {
+            if (_renderer->createFontFromFile(
+                    font.familyName,
+                    fontPath.UTF8String) == 0) {
                 LF_LOGI("LeafRenderer: failed to load bundled font: %s", font.fileName);
             }
         } else {
@@ -386,18 +377,17 @@ struct NativeKeyEvent {
 
 - (void)drawFrame {
 #ifdef LEAF_USE_METAL
-    if (!_engineInitialized || !_vg) return;
+    if (!_engineInitialized || !_renderer) return;
 
-    mnvgClearWithColor(_vg, nvgRGBA(0, 0, 0, 0));
+    _renderer->clear(0x00000000);
 #else
-    if (!_engineInitialized || !_glContext || _frameBuffer == 0) return;
+    if (!_engineInitialized || !_glContext || !_renderer || _frameBuffer == 0) return;
 
     [EAGLContext setCurrentContext:_glContext];
 
     glBindFramebuffer(GL_FRAMEBUFFER, _frameBuffer);
     glViewport(0, 0, _backingWidth, _backingHeight);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    _renderer->clear(0x00000000);
 #endif
 
     CFTimeInterval now = CACurrentMediaTime();

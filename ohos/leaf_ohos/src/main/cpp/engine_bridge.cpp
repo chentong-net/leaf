@@ -1,8 +1,13 @@
-#define NANOVG_GLES3_IMPLEMENTATION
-
 #include "LFEngine.h"
 #include "LFAppLaunch.h"
+#include "render/nanovg/LFNanoVGRenderer.h"
 #include "text/LFFont.h"
+
+namespace {
+
+std::unique_ptr<LFRenderer> g_renderer;
+
+} // namespace
 
 extern "C" {
 
@@ -10,43 +15,42 @@ void leaf_process_pending_input();
 
 void leaf_shutdown() {
     LFEngine& engine = LFEngine::getInstance();
-    NVGcontext* vg = engine.getNVGContext();
-    if (!vg) {
+    if (!engine.getRenderer()) {
         return;
     }
 
     engine.shutdown();
-    nvgDeleteGLES3(vg);
+    g_renderer.reset();
 }
 
 void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loader) {
-    if (LFEngine::getInstance().getNVGContext()) {
+    if (LFEngine::getInstance().getRenderer()) {
         leaf_shutdown();
     }
 
-    int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES;
-    NVGcontext* vg = nvgCreateGLES3(flags);
+    g_renderer = LFNanoVGRenderer::createOpenGL();
+    if (!g_renderer) return;
 
-    if (!vg) return;
-
-    LFEngine::getInstance().init(vg);
+    LFEngine::getInstance().init(*g_renderer);
 
     for (const LFBundledFont& font : kLFBundledFonts) {
         const std::string path = "fonts/" + std::string(font.fileName);
         std::vector<unsigned char> fontData = loader(path.c_str());
         if (!fontData.empty()) {
-            unsigned char* fontDataCopy =
-                    static_cast<unsigned char*>(malloc(fontData.size()));
-            if (fontDataCopy) {
-                memcpy(fontDataCopy, fontData.data(), fontData.size());
-                nvgCreateFontMem(
-                        vg,
-                        font.familyName,
-                        fontDataCopy,
-                        static_cast<int>(fontData.size()),
-                        1);
-            }
+            g_renderer->createFontFromMemory(
+                font.familyName,
+                fontData.data(),
+                fontData.size(),
+                true
+            );
         }
+    }
+
+    if (g_renderer->findFont(kLFDefaultFontFamily) == 0) {
+        g_renderer->createFontFromFile(
+            kLFDefaultFontFamily,
+            "/system/fonts/NotoSansCJK-Regular.ttc"
+        );
     }
 
     LFResourceProvider::getInstance().setAssetLoader(
@@ -88,6 +92,9 @@ void leaf_render() {
     LFEngine::getInstance().update(dt > 0.0f ? dt : 1.0f / 60.0f);
 
     // Render frame
+    if (g_renderer) {
+        g_renderer->clear(0xFF000000);
+    }
     LFEngine::getInstance().render();
 }
 

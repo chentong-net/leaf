@@ -6,6 +6,19 @@
 #include "LFEngine.h"
 #include "text/LFTextLayout.h"
 
+namespace {
+
+LFFontHandle resolveFont(LFRenderer* renderer, const std::string& family) {
+    if (!renderer) return 0;
+    LFFontHandle font = renderer->findFont(family);
+    if (font == 0) {
+        font = renderer->findFont("sans");
+    }
+    return font;
+}
+
+} // namespace
+
 LFInput::LFInput() {
     setFocusable(true);
     setTouchEnabled(true);
@@ -249,18 +262,17 @@ size_t LFInput::cursorCodepointIndex() const {
 
 float LFInput::measureTextWidth(const std::string& text) const {
     if (text.empty()) return 0.0f;
-    NVGcontext* vg = LFEngine::getInstance().getNVGContext();
-    if (!vg) return 0.0f;
+    LFRenderer* renderer = LFEngine::getInstance().getRenderer();
+    const LFFontHandle font = resolveFont(renderer, m_fontFamily);
+    if (!renderer || font == 0) return 0.0f;
 
-    float bounds[4];
-    nvgSave(vg);
-    nvgFontSize(vg, m_fontSize);
-    nvgFontFace(vg, m_fontFamily.c_str());
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-    nvgTextBounds(vg, 0, 0, text.c_str(), nullptr, bounds);
-    nvgRestore(vg);
-
-    return std::max(0.0f, bounds[2] - bounds[0]);
+    const LFTextBounds bounds = renderer->measureTextBounds(
+        font,
+        m_fontSize,
+        LFTextOrigin::Top,
+        text
+    );
+    return std::max(0.0f, bounds.maxX - bounds.minX);
 }
 
 float LFInput::measureCursorOffset() const {
@@ -364,7 +376,13 @@ std::string LFInput::utf8FromCodepoint(uint32_t codepoint) {
     return out;
 }
 
-void LFInput::onDrawContent(NVGcontext* vg) {
+void LFInput::onDrawContent(LFPaint& paint) {
+    LFRenderer* renderer = LFEngine::getInstance().getRenderer();
+    if (!renderer) return;
+
+    const LFFontHandle font = resolveFont(renderer, m_fontFamily);
+    if (font == 0) return;
+
     float layoutW = getLayoutWidth();
     float layoutH = getLayoutHeight();
 
@@ -389,22 +407,34 @@ void LFInput::onDrawContent(NVGcontext* vg) {
 
     ensureCursorVisible(contentW);
 
-    nvgSave(vg);
-    nvgFontSize(vg, m_fontSize);
-    nvgFontFace(vg, m_fontFamily.c_str());
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+    paint.pushState();
 
-    float bounds[4] = {0};
     float textHeight = 0.0f;
     if (!drawText.empty()) {
-        nvgTextBounds(vg, 0, 0, drawText.c_str(), nullptr, bounds);
-        textHeight = std::max(0.0f, bounds[3] - bounds[1]);
+        const LFTextBounds bounds = renderer->measureTextBounds(
+            font,
+            m_fontSize,
+            LFTextOrigin::Top,
+            drawText
+        );
+        textHeight = std::max(0.0f, bounds.maxY - bounds.minY);
     }
     float drawY = contentY + std::max(0.0f, (contentH - textHeight) * 0.5f);
 
-    nvgIntersectScissor(vg, contentX, contentY, contentW, contentH);
-    nvgFillColor(vg, colorToNVG(drawPlaceholder ? m_placeholderColor : m_textColor));
-    nvgText(vg, contentX - m_scrollX, drawY, drawText.c_str(), nullptr);
+    paint.clipRect({contentX, contentY, contentW, contentH});
+
+    if (!drawText.empty()) {
+        LFTextDraw text;
+        text.font = font;
+        text.text = drawText;
+        text.x = contentX - m_scrollX;
+        text.y = drawY;
+        text.fontSize = m_fontSize;
+        text.lineHeight = 1.0f;
+        text.color = drawPlaceholder ? m_placeholderColor : m_textColor;
+        text.origin = LFTextOrigin::Top;
+        paint.drawText(text);
+    }
 
     if (hasFocus()) {
         float cursorX = contentX + measureCursorOffset() - m_scrollX;
@@ -418,16 +448,18 @@ void LFInput::onDrawContent(NVGcontext* vg) {
             float cursorTop = contentY + std::max(0.0f, (contentH - m_fontSize) * 0.5f);
             float cursorBottom = cursorTop + m_fontSize;
 
-            nvgBeginPath(vg);
-            nvgMoveTo(vg, cursorX, cursorTop);
-            nvgLineTo(vg, cursorX, cursorBottom);
-            nvgStrokeWidth(vg, 1.2f);
-            nvgStrokeColor(vg, colorToNVG(m_cursorColor));
-            nvgStroke(vg);
+            paint.drawLine(
+                cursorX,
+                cursorTop,
+                cursorX,
+                cursorBottom,
+                m_cursorColor,
+                1.2f
+            );
         }
     }
 
-    nvgRestore(vg);
+    paint.popState();
 }
 
 void LFInput::onFocusChanged(bool focused) {

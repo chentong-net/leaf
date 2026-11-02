@@ -61,6 +61,7 @@ set(LEAF_CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/animation/LFAnimationSet.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/plugin/LFNativeSender.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/text/LFTextLayout.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/render/nanovg/LFNanoVGRenderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/LFGlobalAnimationManager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/LFEngine.cpp
 )
@@ -91,8 +92,12 @@ set_target_properties(leaf-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(leaf-core
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${NANOVG_DIR}
         ${YOGA_DIR}
+)
+
+target_include_directories(leaf-core
+        PRIVATE
+        ${NANOVG_DIR}
 )
 
 if(LEAF_USE_GL3)
@@ -102,7 +107,7 @@ if(LEAF_USE_GL3)
 endif()
 
 if(LEAF_USE_METAL)
-    target_include_directories(leaf-core PUBLIC
+    target_include_directories(leaf-core PRIVATE
             ${METALNANOVG_DIR}
     )
 endif()

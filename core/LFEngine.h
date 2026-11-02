@@ -6,6 +6,7 @@
 #define LEAF_LFENGINE_H
 
 #include "LFDef.h"
+#include "render/LFRenderer.h"
 #include "view/base/LFNode.h"
 #include "view/base/LFImage.h"
 #ifndef LEAF_USE_METAL
@@ -62,13 +63,13 @@ public:
 
     /**
      * 初始化引擎
-     * @param vg NanoVG 上下文指针
+     * @param renderer 渲染后端
      */
-    void init(NVGcontext *vg);
+    void init(LFRenderer& renderer);
 
     /**
      * 释放当前上下文中由引擎管理的资源，并解除根节点。
-     * 调用前必须保证 NanoVG 上下文仍然有效。
+     * 调用前必须保证渲染后端仍然有效。
      */
     void shutdown();
 
@@ -91,9 +92,9 @@ public:
     LFNode::Ptr getRoot() const { return m_rootNode; }
 
     /**
-     * 获取 NanoVG 上下文
+     * 获取渲染后端
      */
-    NVGcontext *getNVGContext() const { return m_vg; }
+    LFRenderer *getRenderer() const { return m_renderer; }
 
     // --- 核心循环 (Game Loop) ---
 
@@ -117,7 +118,7 @@ public:
      * 供 LFImage 析构时调用。将废弃的 handle 放入队列，
      * 引擎会在下一帧渲染结束时统一安全释放。
      */
-    void recycleTexture(NVGcontext* context, int imageHandle);
+    void recycleTexture(LFRenderer* renderer, LFTextureHandle texture);
 
     /**
      * Get elapsed time since engine initialization (in seconds)
@@ -141,8 +142,8 @@ public:
 
 private:
     struct PendingTextureDeletion {
-        NVGcontext* context = nullptr;
-        int imageHandle = 0;
+        LFRenderer* renderer = nullptr;
+        LFTextureHandle texture = 0;
     };
 
     LFEngine() = default;
@@ -150,7 +151,7 @@ private:
     ~LFEngine() = default;
 
     // 核心数据
-    NVGcontext *m_vg = nullptr;
+    LFRenderer *m_renderer = nullptr;
     LFNode::Ptr m_rootNode = nullptr;
 
     // 视口尺寸

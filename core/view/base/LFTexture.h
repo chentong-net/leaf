@@ -7,18 +7,20 @@
 
 #include "view/base/LFNode.h"
 
+class LFRenderer;
+
 enum class LFTextureFit { Fill, Contain, Cover };
 
 /**
  * 共享纹理组件
- * 1. 组件内部创建 GL 纹理
- * 2. 通过 textureId 暴露给第三方渲染
+ * 1. 通过渲染后端创建原生纹理
+ * 2. 通过 nativeTextureId 暴露给第三方渲染
  * 3. Leaf 在 onDrawContent 中直接消费该纹理进行绘制
  */
 class LFTexture : public LFNode {
 public:
     using Ptr = std::shared_ptr<LFTexture>;
-    using TextureCallback = std::function<void(GLuint textureId, int width, int height, uint64_t generation)>;
+    using TextureCallback = std::function<void(uintptr_t nativeTextureId, int width, int height, uint64_t generation)>;
 
     LFTexture();
     ~LFTexture() override;
@@ -32,9 +34,10 @@ public:
     void setFit(LFTextureFit fit);
     LFTextureFit getFit() const { return m_fit; }
 
-    GLuint getTextureId() const { return m_textureId; }
+    uintptr_t getTextureId() const { return m_nativeTextureId; }
+    uintptr_t getNativeTextureId() const { return m_nativeTextureId; }
     uint64_t getTextureGeneration() const { return m_generation; }
-    bool isTextureReady() const { return m_textureId != 0 && m_nvgImageHandle > 0; }
+    bool isTextureReady() const { return m_texture != 0; }
 
     // 第三方写入纹理后调用，通知引擎刷新
     void notifyFrameAvailable();
@@ -46,11 +49,11 @@ public:
     void setOnTextureWillRelease(TextureCallback callback);
 
 protected:
-    void onDrawContent(NVGcontext* vg) override;
+    void onDrawContent(LFPaint& paint) override;
 
 private:
-    void ensureTexture(NVGcontext* vg);
-    void releaseTexture(NVGcontext* vg);
+    void ensureTexture(LFRenderer* renderer);
+    void releaseTexture(LFRenderer* renderer);
 
     int m_textureWidth = 0;
     int m_textureHeight = 0;
@@ -58,9 +61,9 @@ private:
     int m_allocatedHeight = 0;
     LFTextureFit m_fit = LFTextureFit::Contain;
 
-    GLuint m_textureId = 0;
-    int m_nvgImageHandle = 0;
-    NVGcontext* m_nvgContext = nullptr;
+    uintptr_t m_nativeTextureId = 0;
+    LFTextureHandle m_texture = 0;
+    LFRenderer* m_renderer = nullptr;
     uint64_t m_generation = 0;
 
     bool m_needRecreate = true;

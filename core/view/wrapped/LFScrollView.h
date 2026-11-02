@@ -62,7 +62,7 @@ protected:
     void onAfterCalculateLayout() override;
 
     // 绘制滚动条
-    void onDrawOverlay(NVGcontext* vg) override;
+    void onDrawOverlay(LFPaint& paint) override;
 
 private:
     void initLayout(const LFNode::Ptr& child);

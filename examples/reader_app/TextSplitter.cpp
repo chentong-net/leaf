@@ -22,27 +22,28 @@ struct SplitMetrics {
     int linesPerPage = 1;
 };
 
-const char* resolveFontFamily(NVGcontext* vg, const std::string& fontFamily) {
-    if (!vg) {
-        return nullptr;
+LFFontHandle resolveFont(LFRenderer* renderer, const std::string& fontFamily) {
+    if (!renderer) {
+        return 0;
     }
-    if (nvgFindFont(vg, fontFamily.c_str()) >= 0) {
-        return fontFamily.c_str();
+    LFFontHandle font = renderer->findFont(fontFamily);
+    if (font == 0) {
+        font = renderer->findFont("sans");
     }
-    return nvgFindFont(vg, "sans") >= 0 ? "sans" : nullptr;
+    return font;
 }
 
-bool prepareSplitMetrics(NVGcontext* vg,
+bool prepareSplitMetrics(LFRenderer* renderer,
                          const SplitConfig& config,
                          SplitMetrics& metrics) {
-    if (!vg || !std::isfinite(config.width) || config.width <= 0.0f ||
+    if (!renderer || !std::isfinite(config.width) || config.width <= 0.0f ||
         !std::isfinite(config.height) || config.height <= 0.0f ||
         !std::isfinite(config.fontSize) || config.fontSize <= 0.0f) {
         return false;
     }
 
-    const char* fontFamily = resolveFontFamily(vg, config.fontFamily);
-    if (!fontFamily) {
+    const LFFontHandle font = resolveFont(renderer, config.fontFamily);
+    if (font == 0) {
         return false;
     }
 
@@ -50,13 +51,13 @@ bool prepareSplitMetrics(NVGcontext* vg,
         std::isfinite(config.lineHeight) && config.lineHeight > 0.0f
             ? config.lineHeight
             : 1.0f;
-    float ascender = 0.0f;
-    float naturalLineHeight = 0.0f;
-    nvgFontFace(vg, fontFamily);
-    nvgFontSize(vg, config.fontSize);
-    nvgTextLineHeight(vg, lineHeightScale);
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-    nvgTextMetrics(vg, &ascender, nullptr, &naturalLineHeight);
+    const LFFontMetrics fontMetrics = renderer->measureFontMetrics(
+        font,
+        config.fontSize,
+        lineHeightScale
+    );
+    float ascender = fontMetrics.ascender;
+    float naturalLineHeight = fontMetrics.lineHeight;
     if (!std::isfinite(naturalLineHeight) || naturalLineHeight <= 0.0f) {
         naturalLineHeight = config.fontSize;
     }
@@ -74,33 +75,33 @@ bool prepareSplitMetrics(NVGcontext* vg,
     return true;
 }
 
-LFTextLineMetrics measureLine(NVGcontext* vg, std::string_view text) {
+LFTextLineMetrics measureLine(LFRenderer* renderer,
+                              LFFontHandle font,
+                              float fontSize,
+                              float lineHeight,
+                              std::string_view text) {
     LFTextLineMetrics metrics;
-    if (!vg || text.empty()) {
+    if (!renderer || font == 0 || text.empty()) {
         return metrics;
     }
 
-    float bounds[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    metrics.advance = nvgTextInkBounds(
-        vg,
-        0.0f,
-        0.0f,
-        text.data(),
-        text.data() + text.size(),
-        bounds
-    );
-    metrics.inkMinX = bounds[0];
-    metrics.inkMaxX = bounds[2];
+    const LFTextBounds bounds = renderer->measureTextInkBounds(
+        font, fontSize, lineHeight, text);
+    metrics.advance = bounds.advance;
+    metrics.inkMinX = bounds.minX;
+    metrics.inkMaxX = bounds.maxX;
+    metrics.inkMinY = bounds.minY;
+    metrics.inkMaxY = bounds.maxY;
     return metrics;
 }
 
-LFTextLayout buildLayout(NVGcontext* vg,
+LFTextLayout buildLayout(LFRenderer* renderer,
+                         LFFontHandle font,
                          std::string_view text,
                          const SplitConfig& config,
                          const SplitMetrics& metrics,
                          int maxLines) {
-    const char* fontFamily = resolveFontFamily(vg, config.fontFamily);
-    if (!fontFamily) {
+    if (!renderer || font == 0) {
         return {};
     }
 
@@ -111,11 +112,6 @@ LFTextLayout buildLayout(NVGcontext* vg,
             ? config.lineHeight
             : 1.0f;
 
-    nvgFontFace(vg, fontFamily);
-    nvgFontSize(vg, config.fontSize);
-    nvgTextLineHeight(vg, lineHeightScale);
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-
     LFTextLayoutOptions options;
     options.wrapWidth = width;
     options.maxLines = maxLines;
@@ -125,8 +121,14 @@ LFTextLayout buildLayout(NVGcontext* vg,
     return LFTextLayoutBuilder::build(
         text,
         options,
-        [vg](std::string_view line) {
-            return measureLine(vg, line);
+        [renderer, font, &config, lineHeightScale](std::string_view line) {
+            return measureLine(
+                renderer,
+                font,
+                config.fontSize,
+                lineHeightScale,
+                line
+            );
         }
     );
 }
@@ -177,15 +179,13 @@ std::vector<SplitPage> splitRange(std::string_view text,
                                   size_t baseOffset,
                                   const SplitConfig& config,
                                   int maxPages) {
-    NVGcontext* vg = LFEngine::getInstance().getNVGContext();
-    if (!vg || text.empty()) {
+    LFRenderer* renderer = LFEngine::getInstance().getRenderer();
+    if (!renderer || text.empty()) {
         return {};
     }
 
-    nvgSave(vg);
     SplitMetrics metrics;
-    if (!prepareSplitMetrics(vg, config, metrics)) {
-        nvgRestore(vg);
+    if (!prepareSplitMetrics(renderer, config, metrics)) {
         return {};
     }
 
@@ -195,10 +195,17 @@ std::vector<SplitPage> splitRange(std::string_view text,
     const int maxLines = static_cast<int>(
         std::min<int64_t>(requestedLines, std::numeric_limits<int>::max())
     );
-    const LFTextLayout layout = buildLayout(vg, text, config, metrics, maxLines);
+    const LFFontHandle font = resolveFont(renderer, config.fontFamily);
+    const LFTextLayout layout = buildLayout(
+        renderer,
+        font,
+        text,
+        config,
+        metrics,
+        maxLines
+    );
     const std::vector<SplitPage> pages =
         buildPages(text, baseOffset, layout, metrics, maxPages);
-    nvgRestore(vg);
     return pages;
 }
 

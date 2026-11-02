@@ -8,6 +8,8 @@
 #include "view/base/LFNode.h"
 #include "LFResourceProvider.h"
 
+class LFRenderer;
+
 enum class LFImageFit { Fill, Contain, Cover };
 
 /**
@@ -22,7 +24,7 @@ public:
     void setFit(LFImageFit fit); // 设置填充模式
 
 protected:
-    void onDrawContent(NVGcontext* vg) override;
+    void onDrawContent(LFPaint& paint) override;
 
 private:
     /**
@@ -36,8 +38,8 @@ private:
     LFImageFit m_fit = LFImageFit::Contain;
 
     // 渲染状态
-    int m_imageHandle = 0;
-    NVGcontext* m_renderContext = nullptr;
+    LFTextureHandle m_texture = 0;
+    LFRenderer* m_renderer = nullptr;
     int m_imgWidth = 0;
     int m_imgHeight = 0;
 

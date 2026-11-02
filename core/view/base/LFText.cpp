@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <utility>
 
-NVGcontext* LFText::s_measureContext = nullptr;
+LFRenderer* LFText::s_measureContext = nullptr;
 
 namespace {
 
@@ -29,7 +29,7 @@ constexpr size_t kLayoutCacheCapacity = 128;
 
 struct LayoutCacheKey {
     std::string text;
-    int fontId = -1;
+    LFFontHandle font = 0;
     float fontSize = 0.0f;
     float lineHeight = 0.0f;
     float wrapWidth = 0.0f;
@@ -38,7 +38,7 @@ struct LayoutCacheKey {
 
     bool operator==(const LayoutCacheKey& other) const {
         return text == other.text &&
-               fontId == other.fontId &&
+               font == other.font &&
                fontSize == other.fontSize &&
                lineHeight == other.lineHeight &&
                wrapWidth == other.wrapWidth &&
@@ -54,7 +54,7 @@ void hashCombine(size_t& seed, size_t value) {
 struct LayoutCacheKeyHash {
     size_t operator()(const LayoutCacheKey& key) const {
         size_t seed = std::hash<std::string>{}(key.text);
-        hashCombine(seed, std::hash<int>{}(key.fontId));
+        hashCombine(seed, std::hash<LFFontHandle>{}(key.font));
         hashCombine(seed, std::hash<float>{}(key.fontSize));
         hashCombine(seed, std::hash<float>{}(key.lineHeight));
         hashCombine(seed, std::hash<float>{}(key.wrapWidth));
@@ -222,62 +222,60 @@ LFTextLayoutAlign toLayoutAlign(LFTextHAlign align) {
     }
 }
 
-const char* resolveFontFamily(NVGcontext* vg, const std::string& fontFamily) {
-    if (!vg) {
-        return nullptr;
+LFFontHandle resolveFont(LFRenderer* renderer, const std::string& fontFamily) {
+    if (!renderer) {
+        return 0;
     }
-    if (nvgFindFont(vg, fontFamily.c_str()) >= 0) {
-        return fontFamily.c_str();
+    LFFontHandle font = renderer->findFont(fontFamily);
+    if (font == 0) {
+        font = renderer->findFont("sans");
     }
-    return nvgFindFont(vg, "sans") >= 0 ? "sans" : nullptr;
+    return font;
 }
 
-LFTextLineMetrics measureLine(NVGcontext* vg, std::string_view text) {
+LFTextLineMetrics measureLine(LFRenderer* renderer,
+                              LFFontHandle font,
+                              float fontSize,
+                              float lineHeight,
+                              std::string_view text) {
     LFTextLineMetrics metrics;
-    if (!vg || text.empty()) {
+    if (!renderer || font == 0 || text.empty()) {
         return metrics;
     }
 
-    float bounds[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    metrics.advance = nvgTextInkBounds(
-        vg,
-        0.0f,
-        0.0f,
-        text.data(),
-        text.data() + text.size(),
-        bounds
-    );
-    metrics.inkMinX = bounds[0];
-    metrics.inkMaxX = bounds[2];
-    metrics.inkMinY = bounds[1];
-    metrics.inkMaxY = bounds[3];
+    const LFTextBounds bounds = renderer->measureTextInkBounds(
+        font, fontSize, lineHeight, text);
+    metrics.advance = bounds.advance;
+    metrics.inkMinX = bounds.minX;
+    metrics.inkMaxX = bounds.maxX;
+    metrics.inkMinY = bounds.minY;
+    metrics.inkMaxY = bounds.maxY;
     return metrics;
 }
 
 std::shared_ptr<const LFTextLayout> getTextLayout(
-        NVGcontext* vg,
+        LFRenderer* renderer,
         const std::string& text,
         const std::string& fontFamily,
         float fontSize,
         float lineHeight,
         float wrapWidth,
         int maxLines) {
-    if (!vg || text.empty()) {
+    if (!renderer || text.empty()) {
         return nullptr;
     }
 
-    const char* resolvedFontFamily = resolveFontFamily(vg, fontFamily);
-    if (!resolvedFontFamily) {
+    const LFFontHandle font = resolveFont(renderer, fontFamily);
+    if (font == 0) {
         return nullptr;
     }
 
-    const int fontId = nvgFindFont(vg, resolvedFontFamily);
     const float pixelRatio = std::max(0.01f, LFEngine::getInstance().getPixelRatio());
     const float effectiveWrapWidth = canonicalizeWidth(wrapWidth, pixelRatio);
 
     LayoutCacheKey key;
     key.text = text;
-    key.fontId = fontId;
+    key.font = font;
     key.fontSize = fontSize;
     key.lineHeight = sanitizeLineHeight(lineHeight);
     key.wrapWidth = effectiveWrapWidth;
@@ -289,16 +287,11 @@ std::shared_ptr<const LFTextLayout> getTextLayout(
         return cached;
     }
 
-    nvgSave(vg);
-    nvgFontFace(vg, resolvedFontFamily);
-    nvgFontSize(vg, fontSize);
-    nvgTextLineHeight(vg, key.lineHeight);
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-
-    float ascender = 0.0f;
-    float descender = 0.0f;
-    float naturalLineHeight = 0.0f;
-    nvgTextMetrics(vg, &ascender, &descender, &naturalLineHeight);
+    const LFFontMetrics fontMetrics = renderer->measureFontMetrics(
+        font, fontSize, key.lineHeight);
+    float ascender = fontMetrics.ascender;
+    float descender = fontMetrics.descender;
+    float naturalLineHeight = fontMetrics.lineHeight;
     if (!std::isfinite(naturalLineHeight) || naturalLineHeight <= 0.0f) {
         naturalLineHeight = std::max(1.0f, fontSize);
     }
@@ -320,12 +313,12 @@ std::shared_ptr<const LFTextLayout> getTextLayout(
         LFTextLayoutBuilder::build(
             text,
             options,
-            [vg](std::string_view line) {
-                return measureLine(vg, line);
+            [renderer, font, fontSize, lineHeight = key.lineHeight](
+                    std::string_view line) {
+                return measureLine(renderer, font, fontSize, lineHeight, line);
             }
         )
     );
-    nvgRestore(vg);
 
     cache.put(key, layout);
     return layout;
@@ -338,13 +331,13 @@ LFText::LFText() {
     YGNodeSetBaselineFunc(getYGNode(), LFText::baseline);
 }
 
-void LFText::setMeasureContext(NVGcontext* vg) {
-    if (s_measureContext == vg) {
+void LFText::setMeasureContext(LFRenderer* renderer) {
+    if (s_measureContext == renderer) {
         return;
     }
 
     getTextLayoutCache().clear();
-    s_measureContext = vg;
+    s_measureContext = renderer;
 }
 
 void LFText::setText(const std::string& text) {
@@ -443,8 +436,8 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
 
     auto* baseNode = static_cast<LFNode*>(YGNodeGetContext(node));
     auto* textNode = static_cast<LFText*>(baseNode);
-    NVGcontext* vg = s_measureContext;
-    if (!vg || !textNode || textNode->m_text.empty()) {
+    LFRenderer* renderer = s_measureContext;
+    if (!renderer || !textNode || textNode->m_text.empty()) {
         return {0.0f, 0.0f};
     }
 
@@ -454,7 +447,7 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
     }
 
     const auto layout = getTextLayout(
-        vg,
+        renderer,
         textNode->m_text,
         textNode->fontFamilyForStyle(),
         textNode->m_fontSize,
@@ -517,8 +510,9 @@ float LFText::baseline(YGNodeRef node, float width, float height) {
     return drawY + layout->firstBaseline;
 }
 
-void LFText::onDrawContent(NVGcontext* vg) {
-    if (m_text.empty() || !vg) return;
+void LFText::onDrawContent(LFPaint& paint) {
+    LFRenderer* renderer = LFEngine::getInstance().getRenderer();
+    if (m_text.empty() || !renderer) return;
 
     const TextContentBox content = getTextContentBox(
         getYGNode(),
@@ -530,7 +524,7 @@ void LFText::onDrawContent(NVGcontext* vg) {
     }
 
     const auto layout = getTextLayout(
-        vg,
+        renderer,
         m_text,
         fontFamilyForStyle(),
         m_fontSize,
@@ -556,18 +550,10 @@ void LFText::onDrawContent(NVGcontext* vg) {
             break;
     }
 
-    const std::string fontFamily = fontFamilyForStyle();
-    const char* resolvedFontFamily = resolveFontFamily(vg, fontFamily);
-    if (!resolvedFontFamily) {
+    const LFFontHandle font = resolveFont(renderer, fontFamilyForStyle());
+    if (font == 0) {
         return;
     }
-
-    nvgSave(vg);
-    nvgFontFace(vg, resolvedFontFamily);
-    nvgFontSize(vg, m_fontSize);
-    nvgTextLineHeight(vg, m_lineHeight);
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
-    nvgFillColor(vg, colorToNVG(m_textColor));
 
     const float firstBaseline = drawY + layout->firstBaseline;
     const float pixelRatio = std::max(0.01f, LFEngine::getInstance().getPixelRatio());
@@ -584,27 +570,25 @@ void LFText::onDrawContent(NVGcontext* vg) {
         );
         const float lineY =
             firstBaseline + static_cast<float>(index) * layout->lineAdvance;
-        const char* lineBegin = m_text.data() + line.begin;
-        const char* lineEnd = m_text.data() + line.end;
-
-        if (m_italic) {
-            nvgSave(vg);
-            nvgTranslate(vg, originX, lineY);
-            nvgTransform(vg, 1.0f, 0.0f, -0.18f, 1.0f, 0.0f, 0.0f);
-            nvgText(vg, 0.0f, 0.0f, lineBegin, lineEnd);
-            nvgRestore(vg);
-        } else {
-            nvgText(vg, originX, lineY, lineBegin, lineEnd);
-        }
+        LFTextDraw draw;
+        draw.font = font;
+        draw.text = std::string_view(m_text).substr(line.begin, line.end - line.begin);
+        draw.x = originX;
+        draw.y = lineY;
+        draw.fontSize = m_fontSize;
+        draw.lineHeight = m_lineHeight;
+        draw.color = m_textColor;
+        draw.origin = LFTextOrigin::Baseline;
+        draw.italic = m_italic;
+        paint.drawText(draw);
 
         if (m_underline || (m_hoverUnderline && isHovered())) {
             const float underlineHeight = std::max(1.0f, 1.0f / pixelRatio);
             const float underlineY = lineY + std::max(1.0f, m_fontSize * 0.08f);
-            nvgBeginPath(vg);
-            nvgRect(vg, originX, underlineY, line.advance, underlineHeight);
-            nvgFill(vg);
+            paint.drawRect(
+                {originX, underlineY, line.advance, underlineHeight},
+                m_textColor
+            );
         }
     }
-
-    nvgRestore(vg);
 }

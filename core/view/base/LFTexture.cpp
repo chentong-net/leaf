@@ -5,14 +5,6 @@
 #include "view/base/LFTexture.h"
 #include "LFEngine.h"
 
-extern "C" {
-#if defined(LEAF_USE_GL3)
-int nvglCreateImageFromHandleGL3(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
-#else
-int nvglCreateImageFromHandleGLES3(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
-#endif
-}
-
 namespace {
 
 float clampPositive(float value) {
@@ -24,7 +16,7 @@ float clampPositive(float value) {
 LFTexture::LFTexture() = default;
 
 LFTexture::~LFTexture() {
-    // 析构可能不在渲染线程，使用引擎 GC 队列回收 NanoVG image handle。
+    // 析构可能不在渲染线程，使用引擎 GC 队列回收纹理资源。
     releaseTexture(nullptr);
 }
 
@@ -66,75 +58,55 @@ void LFTexture::setOnTextureWillRelease(TextureCallback callback) {
     m_onTextureWillRelease = callback;
 }
 
-void LFTexture::ensureTexture(NVGcontext* vg) {
-    if (!vg) return;
+void LFTexture::ensureTexture(LFRenderer* renderer) {
+    if (!renderer) return;
 
-    if (m_nvgContext && m_nvgContext != vg) {
-        m_textureId = 0;
-        m_nvgImageHandle = 0;
-        m_nvgContext = nullptr;
+    if (m_renderer && m_renderer != renderer) {
+        m_nativeTextureId = 0;
+        m_texture = 0;
+        m_renderer = nullptr;
         m_allocatedWidth = 0;
         m_allocatedHeight = 0;
         m_needRecreate = true;
     }
 
     if (m_textureWidth <= 0 || m_textureHeight <= 0) {
-        releaseTexture(vg);
+        releaseTexture(renderer);
         return;
     }
 
-    if (!m_needRecreate && m_textureId != 0 && m_nvgImageHandle > 0) return;
+    if (!m_needRecreate && m_texture != 0) return;
 
-    releaseTexture(vg);
+    releaseTexture(renderer);
 
-    GLuint texture = 0;
-    GLint previousTexture = 0;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previousTexture);
-
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_textureWidth, m_textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(previousTexture));
-
+    uintptr_t nativeTextureId = 0;
+    const LFTextureHandle texture = renderer->createTexture(
+        m_textureWidth,
+        m_textureHeight,
+        &nativeTextureId
+    );
     if (texture == 0) {
-        LF_LOGI("LFTexture: failed to create texture");
+        LF_LOGI("LFTexture: failed to create backend texture");
         return;
     }
 
-    int imageHandle = 0;
-#if defined(LEAF_USE_GL3)
-    imageHandle = nvglCreateImageFromHandleGL3(vg, texture, m_textureWidth, m_textureHeight, 0);
-#else
-    imageHandle = nvglCreateImageFromHandleGLES3(vg, texture, m_textureWidth, m_textureHeight, 0);
-#endif
-
-    if (imageHandle <= 0) {
-        LF_LOGI("LFTexture: failed to create NanoVG image from texture");
-        glDeleteTextures(1, &texture);
-        return;
-    }
-
-    m_textureId = texture;
-    m_nvgImageHandle = imageHandle;
-    m_nvgContext = vg;
+    m_nativeTextureId = nativeTextureId;
+    m_texture = texture;
+    m_renderer = renderer;
     m_allocatedWidth = m_textureWidth;
     m_allocatedHeight = m_textureHeight;
     m_generation++;
     m_needRecreate = false;
 
     if (m_onTextureReady) {
-        m_onTextureReady(m_textureId, m_allocatedWidth, m_allocatedHeight, m_generation);
+        m_onTextureReady(m_nativeTextureId, m_allocatedWidth, m_allocatedHeight, m_generation);
     }
 }
 
-void LFTexture::releaseTexture(NVGcontext* vg) {
-    if (m_textureId == 0 && m_nvgImageHandle <= 0) return;
+void LFTexture::releaseTexture(LFRenderer* renderer) {
+    if (m_texture == 0 && m_nativeTextureId == 0) return;
 
-    GLuint oldTextureId = m_textureId;
+    const uintptr_t oldTextureId = m_nativeTextureId;
     int oldWidth = m_allocatedWidth;
     int oldHeight = m_allocatedHeight;
     uint64_t oldGeneration = m_generation;
@@ -143,26 +115,25 @@ void LFTexture::releaseTexture(NVGcontext* vg) {
         m_onTextureWillRelease(oldTextureId, oldWidth, oldHeight, oldGeneration);
     }
 
-    if (m_nvgImageHandle > 0) {
-        if (vg) {
-            nvgDeleteImage(vg, m_nvgImageHandle);
+    if (m_texture > 0) {
+        if (renderer && renderer == m_renderer) {
+            renderer->releaseTexture(m_texture);
         } else {
-            LFEngine::getInstance().recycleTexture(m_nvgContext, m_nvgImageHandle);
+            LFEngine::getInstance().recycleTexture(m_renderer, m_texture);
         }
-    } else if (m_textureId != 0) {
-        glDeleteTextures(1, &m_textureId);
     }
 
-    m_textureId = 0;
-    m_nvgImageHandle = 0;
-    m_nvgContext = nullptr;
+    m_nativeTextureId = 0;
+    m_texture = 0;
+    m_renderer = nullptr;
     m_allocatedWidth = 0;
     m_allocatedHeight = 0;
 }
 
-void LFTexture::onDrawContent(NVGcontext* vg) {
-    ensureTexture(vg);
-    if (m_nvgImageHandle <= 0 || m_textureId == 0) return;
+void LFTexture::onDrawContent(LFPaint& paint) {
+    LFRenderer* renderer = LFEngine::getInstance().getRenderer();
+    ensureTexture(renderer);
+    if (m_texture == 0) return;
     if (m_allocatedWidth <= 0 || m_allocatedHeight <= 0) return;
 
     float paddingL = YGNodeLayoutGetPadding(getYGNode(), YGEdgeLeft);
@@ -219,26 +190,17 @@ void LFTexture::onDrawContent(NVGcontext* vg) {
 
     float finalX = contentX + drawX;
     float finalY = contentY + drawY;
-    NVGpaint paint = nvgImagePattern(vg, finalX, finalY, drawW, drawH, 0.0f, m_nvgImageHandle, 1.0f);
-
     float radius = getRadius();
     float effectiveRadius = radius > 0.0f ? std::max(0.0f, radius - borderL) : 0.0f;
 
-    nvgBeginPath(vg);
+    LFImageDraw imageDraw;
+    imageDraw.texture = m_texture;
+    imageDraw.radius = effectiveRadius;
     if (m_fit == LFTextureFit::Cover) {
-        if (effectiveRadius > 0.0f) {
-            nvgRoundedRect(vg, contentX, contentY, contentW, contentH, effectiveRadius);
-        } else {
-            nvgRect(vg, contentX, contentY, contentW, contentH);
-        }
+        imageDraw.clipRect = {contentX, contentY, contentW, contentH};
     } else {
-        if (effectiveRadius > 0.0f) {
-            nvgRoundedRect(vg, finalX, finalY, drawW, drawH, effectiveRadius);
-        } else {
-            nvgRect(vg, finalX, finalY, drawW, drawH);
-        }
+        imageDraw.clipRect = {finalX, finalY, drawW, drawH};
     }
-
-    nvgFillPaint(vg, paint);
-    nvgFill(vg);
+    imageDraw.imageRect = {finalX, finalY, drawW, drawH};
+    paint.drawImage(imageDraw);
 }

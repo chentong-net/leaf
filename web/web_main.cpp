@@ -2,9 +2,8 @@
 // Created by Chen Tong on 2026/1/22.
 //
 
-#define NANOVG_GLES3_IMPLEMENTATION
-
 #include "LFEngine.h"
+#include "render/nanovg/LFNanoVGRenderer.h"
 #include "text/LFFont.h"
 #include <emscripten.h>
 #include <emscripten/em_js.h>
@@ -614,7 +613,6 @@ void update_canvas_size() {
     // 5. 告诉你的引擎窗口变了
     // 注意：如果是 HiDPI，你可能需要根据你的 LFEngine 逻辑决定是传 cssW 还是 phyW
     // 如果你希望 100px 在 Web 上等于 100 CSS 像素（推荐），就传 cssW
-    // 并在 Render 时应用 nvgScale(vg, dpr, dpr)
     // TODO: 这里为了简单，我们先传 CSS 尺寸，让 NanoVG 自动处理
     LFEngine::getInstance().setWindowSize((float)cssW, (float)cssH, (float)dpr);
 
@@ -651,12 +649,10 @@ int main() {
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context("#canvas", &attr);
     emscripten_webgl_make_context_current(ctx);
 
-    int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES;
-    NVGcontext *vg = nvgCreateGLES3(flags);
+    auto renderer = LFNanoVGRenderer::createOpenGL();
+    if (!renderer) return 0;
 
-    if (!vg) return 0;
-
-    LFEngine::getInstance().init(vg);
+    LFEngine::getInstance().init(*renderer);
     leaf_web_install_text_input_bridge();
     LFEngine::getInstance().setTextInputCursorCallback([](float x, float y, float lineHeight) {
         leaf_web_set_text_input_cursor(x, y, lineHeight);
@@ -665,7 +661,7 @@ int main() {
 
     for (const LFBundledFont& font : kLFBundledFonts) {
         const std::string fontPath = "/assets/fonts/" + std::string(font.fileName);
-        if (nvgCreateFont(vg, font.familyName, fontPath.c_str()) < 0) {
+        if (renderer->createFontFromFile(font.familyName, fontPath) == 0) {
             LF_LOGI("Failed to load bundled Web font: %s", fontPath.c_str());
         }
     }

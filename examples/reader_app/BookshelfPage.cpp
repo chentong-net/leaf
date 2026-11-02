@@ -35,12 +35,12 @@ public:
     }
 
 protected:
-    void onDrawOverlay(NVGcontext* vg) override {
+    void onDrawOverlay(LFPaint& paint) override {
         const float w = getLayoutWidth();
         const float h = getLayoutHeight();
         if (w <= 2.0f || h <= 2.0f) return;
 
-        auto drawDashed = [this, vg](float x1, float y1, float x2, float y2) {
+        auto drawDashed = [this, &paint](float x1, float y1, float x2, float y2) {
             const float dx = x2 - x1;
             const float dy = y2 - y1;
             const float len = std::sqrt(dx * dx + dy * dy);
@@ -50,21 +50,23 @@ protected:
             const float uy = dy / len;
             for (float pos = 0.0f; pos < len; pos += (m_dash + m_gap)) {
                 const float endPos = std::min(pos + m_dash, len);
-                nvgMoveTo(vg, x1 + ux * pos, y1 + uy * pos);
-                nvgLineTo(vg, x1 + ux * endPos, y1 + uy * endPos);
+                paint.drawLine(
+                    x1 + ux * pos,
+                    y1 + uy * pos,
+                    x1 + ux * endPos,
+                    y1 + uy * endPos,
+                    m_color,
+                    m_width,
+                    LFStrokeCap::Butt
+                );
             }
         };
 
-        nvgBeginPath(vg);
         const float half = m_width * 0.5f;
         drawDashed(half, half, w - half, half);
         drawDashed(w - half, half, w - half, h - half);
         drawDashed(w - half, h - half, half, h - half);
         drawDashed(half, h - half, half, half);
-        nvgStrokeColor(vg, LFNode::colorToNVG(m_color));
-        nvgStrokeWidth(vg, m_width);
-        nvgLineCap(vg, NVG_BUTT);
-        nvgStroke(vg);
     }
 
 private:

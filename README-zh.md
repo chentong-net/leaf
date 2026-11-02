@@ -10,7 +10,7 @@
 
 - 设计实现一个跨平台应用开发引擎，实现全平台统一的UI绘制
 - 摒弃原生控件，采用自绘UI策略，保证全平台绘制效果的一致
-- 底层绘制使用NanoVG，在多数平台通过OpenGL/OpenGL ES绘制，在iOS使用MetalNanoVG
+- 组件通过 `LFPaint` 和 `LFRenderer` 使用后端无关的绘制接口；当前默认后端为 NanoVG，在多数平台通过 OpenGL/OpenGL ES 绘制，在 iOS 使用 MetalNanoVG
 - 布局使用Yoga库进行计算，纯数学计算，与图形绘制严格解耦
 
 ### 构建

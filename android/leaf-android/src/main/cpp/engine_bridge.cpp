@@ -1,56 +1,55 @@
-#define NANOVG_GLES3_IMPLEMENTATION
-
 #include "LFEngine.h"
 #include "LFAppLaunch.h"
+#include "render/nanovg/LFNanoVGRenderer.h"
 #include "text/LFFont.h"
+
+namespace {
+
+std::unique_ptr<LFRenderer> g_renderer;
+
+} // namespace
 
 extern "C" {
 
 void leaf_shutdown() {
     LFEngine& engine = LFEngine::getInstance();
-    NVGcontext* vg = engine.getNVGContext();
-    if (!vg) {
+    if (!engine.getRenderer()) {
         return;
     }
 
     engine.shutdown();
-    nvgDeleteGLES3(vg);
+    g_renderer.reset();
 }
 
 void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loader) {
-    if (LFEngine::getInstance().getNVGContext()) {
+    if (LFEngine::getInstance().getRenderer()) {
         leaf_shutdown();
     }
 
-    // 1. 创建 NanoVG 上下文
-    int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES;
-    NVGcontext* vg = nvgCreateGLES3(flags);
-
-    if (!vg) return;
+    g_renderer = LFNanoVGRenderer::createOpenGL();
+    if (!g_renderer) return;
 
     // 2. 初始化引擎核心
-    LFEngine::getInstance().init(vg);
+    LFEngine::getInstance().init(*g_renderer);
 
     for (const LFBundledFont& font : kLFBundledFonts) {
         const std::string path = "fonts/" + std::string(font.fileName);
         std::vector<unsigned char> fontData = loader(path.c_str());
         if (!fontData.empty()) {
-            unsigned char* fontDataCopy =
-                    static_cast<unsigned char*>(malloc(fontData.size()));
-            if (fontDataCopy) {
-                memcpy(fontDataCopy, fontData.data(), fontData.size());
-                nvgCreateFontMem(
-                        vg,
-                        font.familyName,
-                        fontDataCopy,
-                        static_cast<int>(fontData.size()),
-                        1);
-            }
+            g_renderer->createFontFromMemory(
+                font.familyName,
+                fontData.data(),
+                fontData.size(),
+                true
+            );
         }
     }
-    if (nvgFindFont(vg, kLFDefaultFontFamily) < 0) {
+    if (g_renderer->findFont(kLFDefaultFontFamily) == 0) {
         // Some custom ROMs do not expose the bundled font through the asset loader.
-        nvgCreateFont(vg, kLFDefaultFontFamily, "/system/fonts/NotoSansCJK-Regular.ttc");
+        g_renderer->createFontFromFile(
+            kLFDefaultFontFamily,
+            "/system/fonts/NotoSansCJK-Regular.ttc"
+        );
     }
 
     // 3. 配置资源加载器
@@ -89,8 +88,9 @@ void leaf_render() {
     lastFrameTime = frameTime;
     hasFrameTime = true;
 
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (g_renderer) {
+        g_renderer->clear(0xFF000000);
+    }
 
     LFEngine::getInstance().update(dt > 0.0f ? dt : 1.0f / 60.0f);
 

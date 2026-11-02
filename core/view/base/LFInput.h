@@ -38,7 +38,7 @@ public:
     void setOnSubmit(SubmitCallback callback);
 
 protected:
-    void onDrawContent(NVGcontext* vg) override;
+    void onDrawContent(LFPaint& paint) override;
     void onFocusChanged(bool focused) override;
 
 private:

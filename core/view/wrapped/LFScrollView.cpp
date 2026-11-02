@@ -558,7 +558,7 @@ bool LFScrollView::isAncestorOf(const LFScrollView* ancestor, const LFScrollView
     return false;
 }
 
-void LFScrollView::onDrawOverlay(NVGcontext* vg) {
+void LFScrollView::onDrawOverlay(LFPaint& paint) {
     if (!m_scrollBarEnabled) return;
     if (m_scrollbarOpacity <= 0) return;
 
@@ -592,33 +592,28 @@ void LFScrollView::onDrawOverlay(NVGcontext* vg) {
     // 视觉修正：弹簧越界时，滚动条会缩短，这里简单处理让它跟随
     // 如果需要更高级的 iOS 效果(越界缩短)，可以进一步计算
 
-    nvgSave(vg);
-    nvgGlobalAlpha(vg, m_scrollbarOpacity);
+    paint.pushState();
+    paint.setOpacity(m_scrollbarOpacity);
 
-    nvgBeginPath(vg);
+    LFDrawRect barRect;
     if (m_isHorizontal) {
-        nvgRoundedRect(
-                vg,
+        barRect = {
                 barPosition,
                 viewH - barThickness - edgePadding,
                 barLength,
-                barThickness,
-                barThickness / 2.0f
-        );
+                barThickness
+        };
     } else {
-        nvgRoundedRect(
-                vg,
+        barRect = {
                 viewW - barThickness - edgePadding,
                 barPosition,
                 barThickness,
-                barLength,
-                barThickness / 2.0f
-        );
+                barLength
+        };
     }
-    nvgFillColor(vg, nvgRGBA(100, 100, 100, 180)); // 半透明灰
-    nvgFill(vg);
+    paint.drawRoundedRect(barRect, barThickness / 2.0f, 0xB4646464);
 
-    nvgRestore(vg);
+    paint.popState();
 }
 
 void LFScrollView::showScrollbar() {
