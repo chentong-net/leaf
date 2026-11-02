@@ -11,6 +11,14 @@
 
 namespace {
 
+size_t visibleCharacters(const std::string& text) {
+    size_t count = 0;
+    for (unsigned char value : text) {
+        if ((value & 0xC0) != 0x80) ++count;
+    }
+    return count;
+}
+
 void appendBlock(const std::shared_ptr<LFLinear>& parent,
                  const LFNode::Ptr& child,
                  float spacing) {
@@ -64,8 +72,10 @@ void LFMarkdownRenderer::renderBlock(
         case LFMarkdownBlockType::ThematicBreak:
             renderThematicBreak(parent);
             break;
-        case LFMarkdownBlockType::ListItem:
         case LFMarkdownBlockType::Table:
+            renderTable(block, parent);
+            break;
+        case LFMarkdownBlockType::ListItem:
             break;
     }
 }
@@ -242,6 +252,99 @@ void LFMarkdownRenderer::renderThematicBreak(
     divider->setBackgroundColor(m_theme.dividerColor);
     divider->setMargin(YGEdgeVertical, 6.0f);
     appendBlock(parent, divider, m_theme.blockSpacing);
+}
+
+void LFMarkdownRenderer::renderTable(
+        const LFMarkdownBlock& block,
+        const std::shared_ptr<LFLinear>& parent) const {
+    if (block.rows.empty()) return;
+
+    size_t columnCount = block.columnAlignments.size();
+    for (const LFMarkdownTableRow& row : block.rows) {
+        columnCount = std::max(columnCount, row.cells.size());
+    }
+    if (columnCount == 0) return;
+
+    std::vector<size_t> weights(columnCount, 1);
+    for (const LFMarkdownTableRow& row : block.rows) {
+        for (size_t column = 0; column < row.cells.size(); ++column) {
+            weights[column] = std::max(
+                weights[column],
+                std::min<size_t>(
+                    12,
+                    visibleCharacters(flattenInline(row.cells[column].inlines))
+                )
+            );
+        }
+    }
+
+    auto table = LFLinear::createVertical();
+    table->matchParentWidth();
+    table->wrapContentHeight();
+    table->setSpacing(1.0f);
+    table->setPadding(YGEdgeAll, 1.0f);
+    table->setBorderRadius(7.0f);
+    table->setMasksToBounds(true);
+    table->setBackgroundColor(m_theme.tableBorderColor);
+
+    for (size_t rowIndex = 0; rowIndex < block.rows.size(); ++rowIndex) {
+        const LFMarkdownTableRow& tableRow = block.rows[rowIndex];
+        auto row = LFLinear::createHorizontal();
+        row->matchParentWidth();
+        row->wrapContentHeight();
+        row->setSpacing(1.0f);
+        row->setGravity(LFAlignment::Start, LFAlignment::Stretch);
+
+        for (size_t column = 0; column < columnCount; ++column) {
+            auto cell = LFBox::create();
+            cell->setFlexGrow(static_cast<float>(weights[column]));
+            cell->setFlexShrink(1.0f);
+            cell->setFlexBasis(0.0f);
+            cell->setMinHeight(m_theme.tableCellMinHeight);
+            cell->setPadding(YGEdgeAll, m_theme.tableCellPadding);
+            cell->setBackgroundColor(
+                rowIndex == 0
+                    ? m_theme.tableHeaderBackgroundColor
+                    : m_theme.tableBodyBackgroundColor
+            );
+
+            auto text = std::make_shared<LFText>();
+            text->matchParentWidth();
+            text->wrapContentHeight();
+            text->setFontFamily(m_theme.fontFamily);
+            text->setFontWeight(
+                rowIndex == 0 ? LFFontWeight::SemiBold : LFFontWeight::Regular
+            );
+            text->setFontSize(std::max(1.0f, m_theme.bodyFontSize - 1.0f));
+            text->setLineHeight(1.4f);
+            text->setTextColor(
+                rowIndex == 0 ? m_theme.headingColor : m_theme.textColor
+            );
+
+            LFMarkdownTextAlign alignment = LFMarkdownTextAlign::Left;
+            if (column < block.columnAlignments.size()) {
+                alignment = block.columnAlignments[column];
+            }
+            text->setTextHAlign(
+                alignment == LFMarkdownTextAlign::Center
+                    ? LFTextHAlign::Center
+                    : (alignment == LFMarkdownTextAlign::Right
+                        ? LFTextHAlign::Right
+                        : LFTextHAlign::Left)
+            );
+
+            std::string value;
+            if (column < tableRow.cells.size()) {
+                value = flattenInline(tableRow.cells[column].inlines);
+            }
+            text->setText(value.empty() ? " " : value);
+            cell->addChild(text);
+            row->addChild(cell);
+        }
+        table->addChild(row);
+    }
+
+    appendBlock(parent, table, m_theme.blockSpacing);
 }
 
 void LFMarkdownRenderer::renderImageBlock(

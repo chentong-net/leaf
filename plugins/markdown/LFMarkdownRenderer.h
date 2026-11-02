@@ -33,6 +33,8 @@ private:
     void renderCodeBlock(const LFMarkdownBlock& block,
                          const std::shared_ptr<LFLinear>& parent) const;
     void renderThematicBreak(const std::shared_ptr<LFLinear>& parent) const;
+    void renderTable(const LFMarkdownBlock& block,
+                     const std::shared_ptr<LFLinear>& parent) const;
     void renderImageBlock(const LFMarkdownInline& image,
                           const std::shared_ptr<LFLinear>& parent) const;
 
