@@ -117,8 +117,6 @@ HTML 暂不解析，因此 <strong>这段内容会按原始文本显示</strong>
 这是一个很长的不可断开字符串：https://example.com/a/very/long/path/that/should/not/break/inside/flex/layout
 
 ---
-
-测试结束。
 )MARKDOWN";
 
 } // namespace
