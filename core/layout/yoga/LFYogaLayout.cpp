@@ -343,13 +343,26 @@ void LFYogaLayout::removeChild(LFLayout& child) {
 }
 
 void LFYogaLayout::setMeasureFunction(LFMeasureFunction function) {
+    const bool hadMeasureFunction = YGNodeHasMeasureFunc(m_node);
+    if (hadMeasureFunction) {
+        YGNodeMarkDirty(m_node);
+    }
+
     m_measureFunction = std::move(function);
     YGNodeSetMeasureFunc(m_node, m_measureFunction ? measureCallback : nullptr);
+
+    if (YGNodeHasMeasureFunc(m_node)) {
+        YGNodeMarkDirty(m_node);
+    }
 }
 
 void LFYogaLayout::setBaselineFunction(LFBaselineFunction function) {
     m_baselineFunction = std::move(function);
     YGNodeSetBaselineFunc(m_node, m_baselineFunction ? baselineCallback : nullptr);
+
+    if (YGNodeHasMeasureFunc(m_node)) {
+        YGNodeMarkDirty(m_node);
+    }
 }
 
 void LFYogaLayout::markDirty() {
