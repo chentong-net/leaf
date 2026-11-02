@@ -3,6 +3,7 @@ if (NOT TARGET leaf-core)
 endif()
 
 add_library(markdown STATIC
+        LFMarkdownParser.cpp
         LFMarkdownView.cpp
 )
 
