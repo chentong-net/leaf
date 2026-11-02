@@ -58,6 +58,7 @@ struct LFMarkdownTheme {
     float inlineImageHeight = 64.0f;
     float tableCellPadding = 9.0f;
     float tableCellMinHeight = 36.0f;
+    float cjkPunctuationCompression = 0.2f;
 };
 
 class LFMarkdownView : public LFBox {

@@ -8,8 +8,11 @@
 #include <algorithm>
 #include <functional>
 #include <string>
+#include <string_view>
 
 namespace {
+
+constexpr std::string_view kIdeographicComma = "\xE3\x80\x81";
 
 size_t visibleCharacters(const std::string& text) {
     size_t count = 0;
@@ -421,7 +424,9 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
         std::string destination;
     };
 
-    auto appendSegment = [&](const std::string& value, const Style& style) {
+    auto appendSegment = [&](const std::string& value,
+                             const Style& style,
+                             bool compressTrailingSpace) {
         if (value.empty()) return;
         ensureRow();
 
@@ -446,6 +451,12 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
         text->setLineHeight(m_theme.lineHeight);
         text->setTextColor(color);
         text->setText(value);
+        if (compressTrailingSpace) {
+            text->setMargin(
+                YGEdgeRight,
+                -fontSize * m_theme.cjkPunctuationCompression
+            );
+        }
 
         if (style.link) {
             text->setHoverUnderline(true);
@@ -473,14 +484,35 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
         }
     };
 
-    auto appendText = [&](const std::string& value, const Style& style) {
+    auto appendText = [&](const std::string& value,
+                          const Style& style,
+                          bool splitPunctuation) {
         size_t begin = 0;
         while (begin <= value.size()) {
             const size_t end = value.find('\n', begin);
             const size_t length = end == std::string::npos
                 ? value.size() - begin
                 : end - begin;
-            appendSegment(value.substr(begin, length), style);
+            const std::string segment = value.substr(begin, length);
+            if (splitPunctuation) {
+                size_t cursor = 0;
+                while (cursor < segment.size()) {
+                    const size_t comma = segment.find(kIdeographicComma, cursor);
+                    if (comma == std::string::npos) {
+                        appendSegment(segment.substr(cursor), style, false);
+                        break;
+                    }
+                    appendSegment(segment.substr(cursor, comma - cursor), style, false);
+                    appendSegment(
+                        std::string(kIdeographicComma),
+                        style,
+                        true
+                    );
+                    cursor = comma + kIdeographicComma.size();
+                }
+            } else {
+                appendSegment(segment, style, false);
+            }
             if (end == std::string::npos) break;
             row.reset();
             begin = end + 1;
@@ -493,7 +525,7 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
             Style childStyle = style;
             switch (value.type) {
                 case LFMarkdownInlineType::Text:
-                    appendText(value.text, childStyle);
+                    appendText(value.text, childStyle, true);
                     break;
                 case LFMarkdownInlineType::Bold:
                     childStyle.bold = true;
@@ -505,7 +537,7 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
                     break;
                 case LFMarkdownInlineType::Code:
                     childStyle.code = true;
-                    appendText(value.text, childStyle);
+                    appendText(value.text, childStyle, false);
                     break;
                 case LFMarkdownInlineType::Link:
                     childStyle.link = true;
