@@ -484,9 +484,7 @@ EM_BOOL mouse_callback(int eventType, const EmscriptenMouseEvent *e, void *userD
         type = LFTouchEventType::Down;
     }
     else if (eventType == EMSCRIPTEN_EVENT_MOUSEMOVE) {
-        // 只有按住左键移动时才算 Drag/Move
-        if (e->buttons & 1) type = LFTouchEventType::Move;
-        else return EM_FALSE; // 只是 hover，移动端引擎通常忽略
+        type = LFTouchEventType::Move;
     }
     else if (eventType == EMSCRIPTEN_EVENT_MOUSEUP) {
         if (e->button != 0) return EM_FALSE;

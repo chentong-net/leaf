@@ -629,6 +629,10 @@ void LFNode::setOnFocusChange(FocusChangeListener listener) {
     m_onFocusChange = listener;
 }
 
+void LFNode::setOnHoverChange(HoverEventListener listener) {
+    m_onHoverChange = listener;
+}
+
 void LFNode::requestFocus() {
     if (!m_focusable) return;
     LFEventDispatcher::getInstance().setFocusedNode(shared_from_this());
@@ -645,6 +649,16 @@ void LFNode::setFocusState(bool focused) {
         m_onFocusChange(focused);
     }
     onFocusChanged(focused);
+    markDirty();
+}
+
+void LFNode::setHoverState(bool hovered) {
+    if (m_isHovered == hovered) return;
+    m_isHovered = hovered;
+    if (m_onHoverChange) {
+        m_onHoverChange(hovered);
+    }
+    onHoverChanged(hovered);
     markDirty();
 }
 

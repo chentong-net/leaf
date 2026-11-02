@@ -109,9 +109,7 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
 }
 
 void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-        dispatchMouseToEngine(LFTouchEventType::Move, window, xpos, ypos);
-    }
+    dispatchMouseToEngine(LFTouchEventType::Move, window, xpos, ypos);
 }
 
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {

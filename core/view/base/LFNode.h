@@ -46,6 +46,7 @@ public:
     using InterceptEventListener = std::function<bool(const LFTouchEvent&)>;
     using KeyEventListener = std::function<void(LFKeyEvent&)>;
     using FocusChangeListener = std::function<void(bool)>;
+    using HoverEventListener = std::function<void(bool)>;
 
     LFNode();
     virtual ~LFNode();
@@ -168,10 +169,12 @@ public:
     void setOnKeyUp(KeyEventListener listener);
     void setOnCharInput(KeyEventListener listener);
     void setOnFocusChange(FocusChangeListener listener);
+    void setOnHoverChange(HoverEventListener listener);
 
     void setFocusable(bool focusable) { m_focusable = focusable; }
     bool isFocusable() const { return m_focusable; }
     bool hasFocus() const { return m_hasFocus; }
+    bool isHovered() const { return m_isHovered; }
     void requestFocus();
     void clearFocus();
 
@@ -185,6 +188,7 @@ public:
     KeyEventListener getOnKeyDown() const { return m_onKeyDown; }
     KeyEventListener getOnKeyUp() const { return m_onKeyUp; }
     KeyEventListener getOnCharInput() const { return m_onCharInput; }
+    HoverEventListener getOnHoverChange() const { return m_onHoverChange; }
 
     // ==========================================
     // Gesture Recognizers (阶段2：手势识别器)
@@ -231,6 +235,7 @@ protected:
     virtual void onAfterCalculateLayout() {}
 
     virtual void onFocusChanged(bool focused) {}
+    virtual void onHoverChanged(bool hovered) {}
 
     // 子类实现具体内容绘制
     // 内容绘制在背景之上，子视图之下
@@ -243,6 +248,7 @@ protected:
 private:
     friend class LFEventDispatcher;
     void setFocusState(bool focused);
+    void setHoverState(bool hovered);
 
     void prepareLayoutTree(float ownerWidth, float ownerHeight);
     void finalizeLayoutTree();
@@ -275,6 +281,7 @@ private:
     bool m_hitTestEnabled = true;    // Participate in HitTest
     bool m_focusable = false;
     bool m_hasFocus = false;
+    bool m_isHovered = false;
 
     // Event listeners
     TouchEventListener m_onTouchDown;
@@ -287,6 +294,7 @@ private:
     KeyEventListener m_onKeyUp;
     KeyEventListener m_onCharInput;
     FocusChangeListener m_onFocusChange;
+    HoverEventListener m_onHoverChange;
 
     // Gesture recognizers
     std::vector<std::shared_ptr<LFGestureRecognizer>> m_gestureRecognizers;

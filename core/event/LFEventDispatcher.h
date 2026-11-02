@@ -93,10 +93,13 @@ private:
         LFKeyEvent& event
     );
 
+    void updateHoverTarget(const std::shared_ptr<LFNode>& target);
+
     // Touch point state tracking
     std::map<LFTouchID, std::weak_ptr<LFNode>> m_touchTargets;  // Touch point → target node
     std::map<LFTouchID, LFTouchPoint> m_activeTouches;          // Active touch points
     std::weak_ptr<LFNode> m_focusedNode;
+    std::weak_ptr<LFNode> m_hoverTarget;
 };
 
 #endif // LEAF_LFEVENTDISPATCHER_H

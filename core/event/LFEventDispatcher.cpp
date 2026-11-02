@@ -44,6 +44,16 @@ void LFEventDispatcher::dispatchTouchEvent(
     event.changedTouches = changedIDs;
     event.timestamp = touches.empty() ? 0.0 : touches[0].timestamp;
 
+    const bool isHoverMove = type == LFTouchEventType::Move &&
+                             m_touchTargets.empty();
+    if (isHoverMove) {
+        LFHitTestResult hitResult = LFHitTestEngine::hitTest(
+            root, touches[0].x, touches[0].y
+        );
+        updateHoverTarget(hitResult.getTarget());
+        return;
+    }
+
     // 2. Populate per-point lifecycle data from the previous active state.
     for (auto& point : event.touches) {
         auto activeIt = m_activeTouches.find(point.id);
@@ -250,6 +260,7 @@ std::shared_ptr<LFNode> LFEventDispatcher::getFocusedNode() const {
 
 void LFEventDispatcher::reset() {
     clearFocus();
+    updateHoverTarget(nullptr);
     m_touchTargets.clear();
     m_activeTouches.clear();
     LFGestureArenaManager::getInstance().clearAll();
@@ -528,5 +539,18 @@ void LFEventDispatcher::updateNodeGestures(std::shared_ptr<LFNode> node, double 
     const auto& children = node->getChildren();
     for (const auto& child : children) {
         updateNodeGestures(child, currentTime);
+    }
+}
+
+void LFEventDispatcher::updateHoverTarget(const std::shared_ptr<LFNode>& target) {
+    auto previous = m_hoverTarget.lock();
+    if (previous == target) return;
+
+    m_hoverTarget = target;
+    if (previous) {
+        previous->setHoverState(false);
+    }
+    if (target) {
+        target->setHoverState(true);
     }
 }
