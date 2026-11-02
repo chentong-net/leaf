@@ -239,8 +239,6 @@ float LFMarkdownRenderer::spacingAfterBlock(
 
     const bool currentIsParagraph =
         current.type == LFMarkdownBlockType::Paragraph;
-    const bool nextIsParagraph =
-        next->type == LFMarkdownBlockType::Paragraph;
     const bool currentIsList =
         current.type == LFMarkdownBlockType::UnorderedList ||
         current.type == LFMarkdownBlockType::OrderedList;
@@ -248,8 +246,7 @@ float LFMarkdownRenderer::spacingAfterBlock(
         next->type == LFMarkdownBlockType::UnorderedList ||
         next->type == LFMarkdownBlockType::OrderedList;
 
-    if ((currentIsParagraph && nextIsList) ||
-        (currentIsList && nextIsParagraph)) {
+    if (currentIsList || (currentIsParagraph && nextIsList)) {
         return m_theme.listItemSpacing;
     }
     return defaultGap;
