@@ -566,14 +566,6 @@ std::vector<LFMarkdownBlock> parseBlocks(const std::vector<std::string>& lines,
             continue;
         }
 
-        LFMarkdownBlock table;
-        size_t tableEnd = index;
-        if (parseTable(lines, index, end, table, tableEnd)) {
-            blocks.push_back(std::move(table));
-            index = tableEnd;
-            continue;
-        }
-
         if (index + 1 < end) {
             int setextLevel = 0;
             if (parseSetextUnderline(lines[index + 1], setextLevel)) {
@@ -585,6 +577,14 @@ std::vector<LFMarkdownBlock> parseBlocks(const std::vector<std::string>& lines,
                 index += 2;
                 continue;
             }
+        }
+
+        LFMarkdownBlock table;
+        size_t tableEnd = index;
+        if (parseTable(lines, index, end, table, tableEnd)) {
+            blocks.push_back(std::move(table));
+            index = tableEnd;
+            continue;
         }
 
         const size_t paragraphBegin = index;
