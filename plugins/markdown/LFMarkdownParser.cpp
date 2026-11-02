@@ -219,6 +219,127 @@ bool parseSetextUnderline(std::string_view line, int& level) {
     return true;
 }
 
+std::vector<std::string> splitTableCells(std::string_view line) {
+    std::string value = trim(line);
+    if (value.empty()) return {};
+    if (value.front() == '|') value.erase(value.begin());
+
+    std::vector<std::string> cells;
+    std::string current;
+    size_t activeCodeRun = 0;
+    for (size_t index = 0; index < value.size(); ++index) {
+        const char character = value[index];
+        if (character == '\\' && index + 1 < value.size()) {
+            current.push_back(character);
+            current.push_back(value[++index]);
+            continue;
+        }
+        if (character == '`') {
+            size_t run = 1;
+            while (index + run < value.size() && value[index + run] == '`') ++run;
+            if (activeCodeRun == 0) {
+                activeCodeRun = run;
+            } else if (activeCodeRun == run) {
+                activeCodeRun = 0;
+            }
+            current.append(run, '`');
+            index += run - 1;
+            continue;
+        }
+        if (character == '|' && activeCodeRun == 0) {
+            cells.push_back(trim(current));
+            current.clear();
+        } else {
+            current.push_back(character);
+        }
+    }
+    cells.push_back(trim(current));
+
+    if (!cells.empty() && !value.empty() && value.back() == '|') {
+        size_t slashes = 0;
+        for (size_t index = value.size() - 1;
+             index > 0 && value[index - 1] == '\\';
+             --index) {
+            ++slashes;
+        }
+        if (slashes % 2 == 0) cells.pop_back();
+    }
+    return cells;
+}
+
+bool parseTableDelimiter(std::string_view line,
+                         size_t expectedColumns,
+                         std::vector<LFMarkdownTextAlign>& alignments) {
+    const std::vector<std::string> cells = splitTableCells(line);
+    if (cells.empty() || cells.size() != expectedColumns) return false;
+
+    alignments.clear();
+    for (const std::string& cell : cells) {
+        const std::string value = trim(cell);
+        if (value.empty()) return false;
+        const bool left = value.front() == ':';
+        const bool right = value.back() == ':';
+        const size_t begin = left ? 1 : 0;
+        const size_t end = value.size() - (right ? 1 : 0);
+        if (end <= begin + 2) return false;
+        for (size_t index = begin; index < end; ++index) {
+            if (value[index] != '-') return false;
+        }
+        if (left && right) {
+            alignments.push_back(LFMarkdownTextAlign::Center);
+        } else if (right) {
+            alignments.push_back(LFMarkdownTextAlign::Right);
+        } else {
+            alignments.push_back(LFMarkdownTextAlign::Left);
+        }
+    }
+    return true;
+}
+
+bool parseTable(const std::vector<std::string>& lines,
+                size_t index,
+                size_t end,
+                LFMarkdownBlock& table,
+                size_t& nextIndex) {
+    if (index + 1 >= end) return false;
+    const std::vector<std::string> headerCells = splitTableCells(lines[index]);
+    if (headerCells.empty()) return false;
+
+    std::vector<LFMarkdownTextAlign> alignments;
+    if (!parseTableDelimiter(lines[index + 1], headerCells.size(), alignments)) {
+        return false;
+    }
+
+    table = LFMarkdownBlock{};
+    table.type = LFMarkdownBlockType::Table;
+    table.columnAlignments = alignments;
+
+    LFMarkdownTableRow header;
+    for (const std::string& cell : headerCells) {
+        header.cells.push_back({LFMarkdownInlineParser::parse(cell)});
+    }
+    table.rows.push_back(std::move(header));
+
+    size_t cursor = index + 2;
+    while (cursor < end && !isBlank(lines[cursor])) {
+        const std::vector<std::string> rawCells = splitTableCells(lines[cursor]);
+        if (rawCells.size() < 2 && lines[cursor].find('|') == std::string::npos) {
+            break;
+        }
+
+        std::vector<std::string> cells = rawCells;
+        cells.resize(headerCells.size());
+        LFMarkdownTableRow row;
+        for (const std::string& cell : cells) {
+            row.cells.push_back({LFMarkdownInlineParser::parse(cell)});
+        }
+        table.rows.push_back(std::move(row));
+        ++cursor;
+    }
+    nextIndex = cursor;
+    return true;
+}
+
 bool parseFence(std::string_view line, char& marker, size_t& count, std::string& language) {
     const size_t spaces = leadingSpaces(line);
     if (spaces > 3 || spaces >= line.size()) return false;
@@ -443,6 +564,14 @@ std::vector<LFMarkdownBlock> parseBlocks(const std::vector<std::string>& lines,
             continue;
         }
 
+        LFMarkdownBlock table;
+        size_t tableEnd = index;
+        if (parseTable(lines, index, end, table, tableEnd)) {
+            blocks.push_back(std::move(table));
+            index = tableEnd;
+            continue;
+        }
+
         if (index + 1 < end) {
             int setextLevel = 0;
             if (parseSetextUnderline(lines[index + 1], setextLevel)) {
@@ -459,6 +588,11 @@ std::vector<LFMarkdownBlock> parseBlocks(const std::vector<std::string>& lines,
         const size_t paragraphBegin = index;
         ++index;
         while (index < end && !isBlank(lines[index]) && !startsBlock(lines[index])) {
+            LFMarkdownBlock nestedTable;
+            size_t nestedTableEnd = index;
+            if (parseTable(lines, index, end, nestedTable, nestedTableEnd)) {
+                break;
+            }
             int setextLevel = 0;
             if (parseSetextUnderline(lines[index], setextLevel)) break;
             ++index;
