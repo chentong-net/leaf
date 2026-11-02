@@ -383,6 +383,20 @@ void LFText::setFontFamily(const std::string& family) {
     markDirty();
 }
 
+void LFText::setFontWeight(LFFontWeight weight) {
+    if (m_fontWeight == weight) return;
+    m_fontWeight = weight;
+    YGNodeMarkDirty(getYGNode());
+    markDirty();
+}
+
+std::string LFText::fontFamilyForStyle() const {
+    if (m_fontFamily == kLFDefaultFontFamily) {
+        return fontFamilyForWeight(m_fontWeight);
+    }
+    return m_fontFamily;
+}
+
 void LFText::setTextHAlign(LFTextHAlign align) {
     if (m_textHAlign == align) return;
     m_textHAlign = align;
@@ -424,7 +438,7 @@ YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
     const auto layout = getTextLayout(
         vg,
         textNode->m_text,
-        textNode->m_fontFamily,
+        textNode->fontFamilyForStyle(),
         textNode->m_fontSize,
         textNode->m_lineHeight,
         wrapWidth,
@@ -460,7 +474,7 @@ float LFText::baseline(YGNodeRef node, float width, float height) {
     const auto layout = getTextLayout(
         s_measureContext,
         textNode->m_text,
-        textNode->m_fontFamily,
+        textNode->fontFamilyForStyle(),
         textNode->m_fontSize,
         textNode->m_lineHeight,
         content.width,
@@ -500,7 +514,7 @@ void LFText::onDrawContent(NVGcontext* vg) {
     const auto layout = getTextLayout(
         vg,
         m_text,
-        m_fontFamily,
+        fontFamilyForStyle(),
         m_fontSize,
         m_lineHeight,
         content.width,
@@ -524,7 +538,8 @@ void LFText::onDrawContent(NVGcontext* vg) {
             break;
     }
 
-    const char* resolvedFontFamily = resolveFontFamily(vg, m_fontFamily);
+    const std::string fontFamily = fontFamilyForStyle();
+    const char* resolvedFontFamily = resolveFontFamily(vg, fontFamily);
     if (!resolvedFontFamily) {
         return;
     }

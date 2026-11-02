@@ -6,6 +6,7 @@
 #define LEAF_LFTEXT_H
 
 #include "view/base/LFNode.h"
+#include "text/LFFont.h"
 
 /**
 * Center表示按字形着墨边界进行视觉居中
@@ -27,6 +28,8 @@ public:
     void setTextColor(uint32_t color);
     void setLineHeight(float lineHeight);
     void setFontFamily(const std::string& family);
+    void setFontWeight(LFFontWeight weight);
+    LFFontWeight getFontWeight() const { return m_fontWeight; }
     void setTextHAlign(LFTextHAlign align);
     void setTextVAlign(LFTextVAlign align);
     void setMaxLines(int maxLines);
@@ -50,12 +53,14 @@ private:
     static YGSize measure(YGNodeRef node, float width, YGMeasureMode widthMode,
                           float height, YGMeasureMode heightMode);
     static float baseline(YGNodeRef node, float width, float height);
+    std::string fontFamilyForStyle() const;
     // 成员变量
     std::string m_text;
     float m_fontSize = 16.0f;
     uint32_t m_textColor = 0xFF000000;
     float m_lineHeight = 1.2f;
-    std::string m_fontFamily = "sans";
+    std::string m_fontFamily = kLFDefaultFontFamily;
+    LFFontWeight m_fontWeight = LFFontWeight::Regular;
     LFTextHAlign m_textHAlign = LFTextHAlign::Left;
     LFTextVAlign m_textVAlign = LFTextVAlign::Top;
     int m_maxLines = 0;

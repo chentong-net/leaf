@@ -207,6 +207,11 @@ void LFButton::setFontSize(float size) {
     m_textNode->setFontSize(size);
 }
 
+void LFButton::setFontWeight(LFFontWeight weight) {
+    ensureTextNode();
+    m_textNode->setFontWeight(weight);
+}
+
 // ==========================================
 // 核心状态机与动画
 // ==========================================

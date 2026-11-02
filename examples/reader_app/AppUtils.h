@@ -17,7 +17,9 @@ namespace AppUtils {
         t->setTextColor(color);
         t->setTextHAlign(LFTextHAlign::Center);
         t->setTextVAlign(LFTextVAlign::Center);
-        // TODO: 后续支持 setFontFamily(bold)，可以在这里添加逻辑
+        if (bold) {
+            t->setFontWeight(LFFontWeight::Bold);
+        }
         return t;
     }
 

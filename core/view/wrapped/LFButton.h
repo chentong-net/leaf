@@ -71,6 +71,7 @@ public:
     void setText(const std::string& text);
     void setTextColor(uint32_t color);
     void setFontSize(float size);
+    void setFontWeight(LFFontWeight weight);
 
     // 获取内部的 Text 节点以便进行更细致的样式调整
     std::shared_ptr<LFText> getTextNode() const { return m_textNode; }
