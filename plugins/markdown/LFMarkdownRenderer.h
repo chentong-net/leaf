@@ -18,23 +18,28 @@ public:
 
 private:
     void renderBlock(const LFMarkdownBlock& block,
-                     const std::shared_ptr<LFLinear>& parent) const;
+                     const std::shared_ptr<LFLinear>& parent,
+                     float blockGap) const;
     void renderParagraph(const LFMarkdownBlock& block,
                          const std::shared_ptr<LFLinear>& parent,
                          float bottomSpacing) const;
     void renderHeading(const LFMarkdownBlock& block,
                        const std::shared_ptr<LFLinear>& parent) const;
     void renderQuote(const LFMarkdownBlock& block,
-                     const std::shared_ptr<LFLinear>& parent) const;
+                     const std::shared_ptr<LFLinear>& parent,
+                     float blockGap) const;
     void renderList(const LFMarkdownBlock& block,
                     const std::shared_ptr<LFLinear>& parent,
                     float bottomSpacing,
                     bool nested) const;
     void renderCodeBlock(const LFMarkdownBlock& block,
-                         const std::shared_ptr<LFLinear>& parent) const;
-    void renderThematicBreak(const std::shared_ptr<LFLinear>& parent) const;
+                         const std::shared_ptr<LFLinear>& parent,
+                         float blockGap) const;
+    void renderThematicBreak(const std::shared_ptr<LFLinear>& parent,
+                             float blockGap) const;
     void renderTable(const LFMarkdownBlock& block,
-                     const std::shared_ptr<LFLinear>& parent) const;
+                     const std::shared_ptr<LFLinear>& parent,
+                     float blockGap) const;
     void renderImageBlock(const LFMarkdownInline& image,
                           const std::shared_ptr<LFLinear>& parent) const;
 

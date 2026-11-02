@@ -44,36 +44,37 @@ std::shared_ptr<LFLinear> LFMarkdownRenderer::render(
     root->setPadding(YGEdgeAll, m_theme.contentPadding);
 
     for (const LFMarkdownBlock& block : document.blocks) {
-        renderBlock(block, root);
+        renderBlock(block, root, m_theme.blockSpacing);
     }
     return root;
 }
 
 void LFMarkdownRenderer::renderBlock(
         const LFMarkdownBlock& block,
-        const std::shared_ptr<LFLinear>& parent) const {
+        const std::shared_ptr<LFLinear>& parent,
+        float blockGap) const {
     switch (block.type) {
         case LFMarkdownBlockType::Paragraph:
-            renderParagraph(block, parent, m_theme.blockSpacing);
+            renderParagraph(block, parent, blockGap);
             break;
         case LFMarkdownBlockType::Heading:
             renderHeading(block, parent);
             break;
         case LFMarkdownBlockType::Quote:
-            renderQuote(block, parent);
+            renderQuote(block, parent, blockGap);
             break;
         case LFMarkdownBlockType::UnorderedList:
         case LFMarkdownBlockType::OrderedList:
-            renderList(block, parent, m_theme.listBlockSpacing, false);
+            renderList(block, parent, blockGap, false);
             break;
         case LFMarkdownBlockType::CodeBlock:
-            renderCodeBlock(block, parent);
+            renderCodeBlock(block, parent, blockGap);
             break;
         case LFMarkdownBlockType::ThematicBreak:
-            renderThematicBreak(parent);
+            renderThematicBreak(parent, blockGap);
             break;
         case LFMarkdownBlockType::Table:
-            renderTable(block, parent);
+            renderTable(block, parent, blockGap);
             break;
         case LFMarkdownBlockType::ListItem:
             break;
@@ -128,7 +129,8 @@ void LFMarkdownRenderer::renderHeading(
 
 void LFMarkdownRenderer::renderQuote(
         const LFMarkdownBlock& block,
-        const std::shared_ptr<LFLinear>& parent) const {
+        const std::shared_ptr<LFLinear>& parent,
+        float blockGap) const {
     auto row = LFLinear::createHorizontal();
     row->matchParentWidth();
     row->wrapContentHeight();
@@ -144,14 +146,17 @@ void LFMarkdownRenderer::renderQuote(
     content->setFlexGrow(1.0f);
     content->setFlexShrink(1.0f);
     content->wrapContentHeight();
-    content->setPadding(YGEdgeAll, m_theme.quotePadding);
+    content->setPadding(YGEdgeLeft, m_theme.quoteHorizontalPadding);
+    content->setPadding(YGEdgeRight, m_theme.quoteHorizontalPadding);
+    content->setPadding(YGEdgeTop, m_theme.quoteVerticalPadding);
+    content->setPadding(YGEdgeBottom, m_theme.quoteVerticalPadding);
     content->setBackgroundColor(m_theme.quoteBackgroundColor);
     for (const LFMarkdownBlock& child : block.children) {
-        renderBlock(child, content);
+        renderBlock(child, content, m_theme.quoteBlockSpacing);
     }
     row->addChild(content);
 
-    appendBlock(parent, row, m_theme.blockSpacing);
+    appendBlock(parent, row, blockGap);
 }
 
 void LFMarkdownRenderer::renderList(
@@ -162,24 +167,16 @@ void LFMarkdownRenderer::renderList(
     auto list = LFLinear::createVertical();
     list->matchParentWidth();
     list->wrapContentHeight();
-    list->setSpacing(m_theme.listItemSpacing);
-    if (!nested && !parent->getChildren().empty()) {
-        list->setMargin(YGEdgeTop, m_theme.listBlockSpacing);
+    if (nested && !parent->getChildren().empty()) {
+        list->setMargin(YGEdgeTop, m_theme.nestedListSpacing);
     }
 
     for (size_t index = 0; index < block.children.size(); ++index) {
         const LFMarkdownBlock& item = block.children[index];
-        const bool simpleItem =
-            item.children.size() == 1 &&
-            item.children.front().type == LFMarkdownBlockType::Paragraph;
-
         auto row = LFLinear::createHorizontal();
         row->matchParentWidth();
         row->wrapContentHeight();
-        row->setGravity(
-            LFAlignment::Start,
-            simpleItem ? LFAlignment::Center : LFAlignment::Start
-        );
+        row->setGravity(LFAlignment::Start, LFAlignment::Baseline);
         row->setSpacing(m_theme.listMarkerGap);
 
         auto marker = std::make_shared<LFText>();
@@ -197,7 +194,6 @@ void LFMarkdownRenderer::renderList(
         } else {
             marker->setTextHAlign(LFTextHAlign::Center);
             marker->setText("\u2022");
-            marker->setTranslate(0.0f, m_theme.bodyFontSize * 0.13f);
         }
         row->addChild(marker);
 
@@ -210,12 +206,15 @@ void LFMarkdownRenderer::renderList(
                 renderParagraph(child, content, 0.0f);
             } else if (child.type == LFMarkdownBlockType::UnorderedList ||
                        child.type == LFMarkdownBlockType::OrderedList) {
-                renderList(child, content, m_theme.listItemSpacing, true);
+                renderList(child, content, 0.0f, true);
             } else {
-                renderBlock(child, content);
+                renderBlock(child, content, m_theme.listItemSpacing);
             }
         }
         row->addChild(content);
+        if (index + 1 < block.children.size()) {
+            row->setMargin(YGEdgeBottom, m_theme.listItemSpacing);
+        }
         list->addChild(row);
     }
 
@@ -224,7 +223,8 @@ void LFMarkdownRenderer::renderList(
 
 void LFMarkdownRenderer::renderCodeBlock(
         const LFMarkdownBlock& block,
-        const std::shared_ptr<LFLinear>& parent) const {
+        const std::shared_ptr<LFLinear>& parent,
+        float blockGap) const {
     auto box = LFBox::create();
     box->matchParentWidth();
     box->wrapContentHeight();
@@ -241,22 +241,24 @@ void LFMarkdownRenderer::renderCodeBlock(
     code->setTextColor(m_theme.codeTextColor);
     code->setText(block.literal);
     box->addChild(code);
-    appendBlock(parent, box, m_theme.blockSpacing);
+    appendBlock(parent, box, blockGap);
 }
 
 void LFMarkdownRenderer::renderThematicBreak(
-        const std::shared_ptr<LFLinear>& parent) const {
+        const std::shared_ptr<LFLinear>& parent,
+        float blockGap) const {
     auto divider = LFBox::create();
     divider->matchParentWidth();
     divider->setHeight(1.0f);
     divider->setBackgroundColor(m_theme.dividerColor);
     divider->setMargin(YGEdgeVertical, 6.0f);
-    appendBlock(parent, divider, m_theme.blockSpacing);
+    appendBlock(parent, divider, blockGap);
 }
 
 void LFMarkdownRenderer::renderTable(
         const LFMarkdownBlock& block,
-        const std::shared_ptr<LFLinear>& parent) const {
+        const std::shared_ptr<LFLinear>& parent,
+        float blockGap) const {
     if (block.rows.empty()) return;
 
     size_t columnCount = block.columnAlignments.size();
@@ -344,7 +346,7 @@ void LFMarkdownRenderer::renderTable(
         table->addChild(row);
     }
 
-    appendBlock(parent, table, m_theme.blockSpacing);
+    appendBlock(parent, table, blockGap);
 }
 
 void LFMarkdownRenderer::renderImageBlock(
