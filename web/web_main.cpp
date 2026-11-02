@@ -683,7 +683,7 @@ int main() {
                 emscripten_fetch_attr_init(&attributes);
                 std::strcpy(attributes.requestMethod, "GET");
                 attributes.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
-                attributes.timeoutMsecs = 30000;
+                attributes.timeoutMSecs = 30000;
 
                 auto state = std::make_unique<WebAssetFetchState>();
                 state->callback = std::move(callback);
