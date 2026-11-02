@@ -373,15 +373,17 @@ std::string joinParagraph(const std::vector<std::string>& lines,
                           size_t end) {
     std::string result;
     for (size_t index = begin; index < end; ++index) {
-        std::string current = trimRight(lines[index]);
+        std::string current = lines[index];
         const bool hardBreak =
             (current.size() >= 2 &&
              current[current.size() - 1] == ' ' &&
              current[current.size() - 2] == ' ') ||
             (!current.empty() && current.back() == '\\');
         if (hardBreak) {
-            while (!current.empty() && current.back() == ' ') current.pop_back();
+            current = trimRight(current);
             if (!current.empty() && current.back() == '\\') current.pop_back();
+        } else {
+            current = trimRight(current);
         }
         if (!result.empty() && result.back() != '\n') result.push_back(' ');
         result += current;
