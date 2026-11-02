@@ -546,11 +546,9 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
                 case LFMarkdownInlineType::Image: {
                     ensureRow();
                     auto image = std::make_shared<LFImage>();
-                    image->setWidth(m_theme.inlineImageWidth);
-                    image->setHeight(m_theme.inlineImageHeight);
+                    image->setMaxWidth(m_theme.inlineImageWidth);
+                    image->setMaxHeight(m_theme.inlineImageHeight);
                     image->setFit(LFImageFit::Contain);
-                    image->setBorderRadius(6.0f);
-                    image->setBackgroundColor(m_theme.inlineCodeBackgroundColor);
                     image->setSrc(value.destination);
                     row->addChild(image);
                     break;

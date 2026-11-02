@@ -81,6 +81,12 @@ void LFImage::startLoading() {
                     );
                     self->m_imgWidth = width;
                     self->m_imgHeight = height;
+                    if (width > 0 && height > 0) {
+                        YGNodeStyleSetAspectRatio(
+                            self->getYGNode(),
+                            static_cast<float>(width) / static_cast<float>(height)
+                        );
+                    }
 
                     YGNodeMarkDirty(self->getYGNode());
                     self->markDirty();
