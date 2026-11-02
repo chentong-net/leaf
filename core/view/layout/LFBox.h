@@ -68,10 +68,10 @@ private:
 
     void applyLayoutMeta(const LFNode::Ptr& child, const ChildLayoutMeta& meta);
     ChildLayoutMeta getLayoutMetaForChild(const LFNode::Ptr& child) const;
-    float resolveChildMeasureSize(YGNodeRef node, YGValue value, float ownerSize) const;
-    float resolveMargin(YGNodeRef node, YGEdge edge, float ownerSize) const;
-    float resolvePadding(YGEdge edge, float ownerSize) const;
-    float resolveBorder(YGEdge edge) const;
+    float resolveChildMeasureSize(const LFLayoutValue& value, float ownerSize) const;
+    float resolveMargin(const LFNode::Ptr& node, LFLayoutEdge edge, float ownerSize) const;
+    float resolvePadding(LFLayoutEdge edge, float ownerSize) const;
+    float resolveBorder(LFLayoutEdge edge) const;
     bool isWrapContentWidth() const;
     bool isWrapContentHeight() const;
 

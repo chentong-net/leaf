@@ -6,6 +6,7 @@
 #define LEAF_LFNODE_H
 
 #include "LFDef.h"
+#include "layout/LFLayout.h"
 #include "render/LFPaint.h"
 #include <functional>
 
@@ -77,27 +78,28 @@ public:
     void wrapContentHeight();
 
     // Flexbox 核心
-    void setFlexDirection(YGFlexDirection direction);
-    void setJustifyContent(YGJustify justify);
-    void setAlignItems(YGAlign align);
-    void setAlignSelf(YGAlign align);
-    void setAlignContent(YGAlign align);
-    void setFlexWrap(YGWrap wrap);
+    void setFlexDirection(LFFlexDirection direction);
+    void setJustifyContent(LFJustify justify);
+    void setAlignItems(LFAlign align);
+    void setAlignSelf(LFAlign align);
+    void setAlignContent(LFAlign align);
+    void setFlexWrap(LFWrap wrap);
     void setFlexGrow(float grow);
     void setFlexShrink(float shrink);
     void setFlexBasis(float basis);
 
-    void setPadding(YGEdge edge, float padding);
-    void setMargin(YGEdge edge, float margin);
+    void setPadding(LFLayoutEdge edge, float padding);
+    void setMargin(LFLayoutEdge edge, float margin);
+    void setGap(LFGutter gutter, float gap);
 
     // 定位
-    void setPositionType(YGPositionType type);
-    void setPosition(YGEdge edge, float value);
-    void setPositionPercent(YGEdge edge, float percent);
+    void setPositionType(LFPositionType type);
+    void setPosition(LFLayoutEdge edge, float value);
+    void setPositionPercent(LFLayoutEdge edge, float percent);
 
     // 显示/隐藏
-    void setDisplay(YGDisplay display);
-    void setDirection(YGDirection direction);
+    void setDisplay(LFDisplay display);
+    void setDirection(LFDirection direction);
 
     // 样式属性
     void setBackgroundColor(uint32_t color);
@@ -106,6 +108,7 @@ public:
 
     // 边框
     void setBorder(float width, uint32_t color);
+    void setLayoutBorderWidth(LFLayoutEdge edge, float width);
     void setBorderRadius(float radius);
 
     // 阴影
@@ -126,13 +129,14 @@ public:
     void calculateLayout(float ownerWidth, float ownerHeight); // 布局
     void render(LFPaint& paint); // 渲染
 
-    // 供子类使用
-    YGNodeRef getYGNode() const { return m_ygNode; }
+    const LFLayoutStyle& getLayoutStyle() const { return m_layoutStyle; }
+
     // 获取布局结果
-    float getLayoutX() const { return YGNodeLayoutGetLeft(m_ygNode); }
-    float getLayoutY() const { return YGNodeLayoutGetTop(m_ygNode); }
-    float getLayoutWidth() const { return YGNodeLayoutGetWidth(m_ygNode); }
-    float getLayoutHeight() const { return YGNodeLayoutGetHeight(m_ygNode); }
+    const LFLayoutFrame& getLayoutFrame() const { return m_layout->getFrame(); }
+    float getLayoutX() const { return getLayoutFrame().x; }
+    float getLayoutY() const { return getLayoutFrame().y; }
+    float getLayoutWidth() const { return getLayoutFrame().width; }
+    float getLayoutHeight() const { return getLayoutFrame().height; }
     float getRadius();
     float getTranslateX() const { return m_transform.translateX; }
     float getTranslateY() const { return m_transform.translateY; }
@@ -244,6 +248,10 @@ protected:
     // 绘制在子视图和边框之上
     virtual void onDrawOverlay(LFPaint& paint) {}
 
+    void setLayoutMeasureFunction(LFMeasureFunction function);
+    void setLayoutBaselineFunction(LFBaselineFunction function);
+    void invalidateLayout();
+
 private:
     friend class LFEventDispatcher;
     void setFocusState(bool focused);
@@ -251,6 +259,8 @@ private:
 
     void prepareLayoutTree(float ownerWidth, float ownerHeight);
     void finalizeLayoutTree();
+    void updateLayoutFrameTree();
+    void applyLayoutStyle();
 
     // 内部绘制实现
     void drawShadow(LFPaint& paint, float w, float h);
@@ -258,7 +268,8 @@ private:
     void drawBorder(LFPaint& paint, float w, float h);
 
     // Core Data
-    YGNodeRef m_ygNode;
+    LFLayoutStyle m_layoutStyle;
+    std::unique_ptr<LFLayout> m_layout;
     LFNode* m_parent = nullptr;
     std::vector<Ptr> m_children;
     bool m_isDirty = true;

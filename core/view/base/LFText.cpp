@@ -128,7 +128,7 @@ float sanitizeLineHeight(float lineHeight) {
 }
 
 float sanitizeEdge(float value) {
-    if (!std::isfinite(value) || YGFloatIsUndefined(value)) {
+    if (!std::isfinite(value)) {
         return 0.0f;
     }
     return std::max(0.0f, value);
@@ -141,31 +141,18 @@ struct TextContentBox {
     float height = 0.0f;
 };
 
-TextContentBox getTextContentBox(YGNodeRef node, float layoutWidth, float layoutHeight) {
-    const float paddingLeft = sanitizeEdge(
-        YGNodeLayoutGetPadding(node, YGEdgeLeft)
-    );
-    const float paddingTop = sanitizeEdge(
-        YGNodeLayoutGetPadding(node, YGEdgeTop)
-    );
-    const float paddingRight = sanitizeEdge(
-        YGNodeLayoutGetPadding(node, YGEdgeRight)
-    );
-    const float paddingBottom = sanitizeEdge(
-        YGNodeLayoutGetPadding(node, YGEdgeBottom)
-    );
-    const float borderLeft = sanitizeEdge(
-        YGNodeLayoutGetBorder(node, YGEdgeLeft)
-    );
-    const float borderTop = sanitizeEdge(
-        YGNodeLayoutGetBorder(node, YGEdgeTop)
-    );
-    const float borderRight = sanitizeEdge(
-        YGNodeLayoutGetBorder(node, YGEdgeRight)
-    );
-    const float borderBottom = sanitizeEdge(
-        YGNodeLayoutGetBorder(node, YGEdgeBottom)
-    );
+TextContentBox getTextContentBox(const LFEdgeInsets& padding,
+                                 const LFEdgeInsets& border,
+                                 float layoutWidth,
+                                 float layoutHeight) {
+    const float paddingLeft = sanitizeEdge(padding.left);
+    const float paddingTop = sanitizeEdge(padding.top);
+    const float paddingRight = sanitizeEdge(padding.right);
+    const float paddingBottom = sanitizeEdge(padding.bottom);
+    const float borderLeft = sanitizeEdge(border.left);
+    const float borderTop = sanitizeEdge(border.top);
+    const float borderRight = sanitizeEdge(border.right);
+    const float borderBottom = sanitizeEdge(border.bottom);
 
     TextContentBox content;
     content.x = paddingLeft + borderLeft;
@@ -327,8 +314,16 @@ std::shared_ptr<const LFTextLayout> getTextLayout(
 } // namespace
 
 LFText::LFText() {
-    YGNodeSetMeasureFunc(getYGNode(), LFText::measure);
-    YGNodeSetBaselineFunc(getYGNode(), LFText::baseline);
+    setLayoutMeasureFunction(
+        [this](const LFMeasureInput& input) {
+            return measureLayout(input);
+        }
+    );
+    setLayoutBaselineFunction(
+        [this](const LFBaselineInput& input) {
+            return baselineLayout(input);
+        }
+    );
 }
 
 void LFText::setMeasureContext(LFRenderer* renderer) {
@@ -343,16 +338,14 @@ void LFText::setMeasureContext(LFRenderer* renderer) {
 void LFText::setText(const std::string& text) {
     if (m_text == text) return;
     m_text = text;
-    YGNodeMarkDirty(getYGNode());
-    markDirty();
+    invalidateLayout();
 }
 
 void LFText::setFontSize(float size) {
     const float safeSize = std::max(1.0f, size);
     if (m_fontSize == safeSize) return;
     m_fontSize = safeSize;
-    YGNodeMarkDirty(getYGNode());
-    markDirty();
+    invalidateLayout();
 }
 
 void LFText::setTextColor(uint32_t color) {
@@ -365,22 +358,19 @@ void LFText::setLineHeight(float lineHeight) {
     const float safeLineHeight = sanitizeLineHeight(lineHeight);
     if (m_lineHeight == safeLineHeight) return;
     m_lineHeight = safeLineHeight;
-    YGNodeMarkDirty(getYGNode());
-    markDirty();
+    invalidateLayout();
 }
 
 void LFText::setFontFamily(const std::string& family) {
     if (m_fontFamily == family) return;
     m_fontFamily = family;
-    YGNodeMarkDirty(getYGNode());
-    markDirty();
+    invalidateLayout();
 }
 
 void LFText::setFontWeight(LFFontWeight weight) {
     if (m_fontWeight == weight) return;
     m_fontWeight = weight;
-    YGNodeMarkDirty(getYGNode());
-    markDirty();
+    invalidateLayout();
 }
 
 std::string LFText::fontFamilyForStyle() const {
@@ -407,8 +397,7 @@ void LFText::setMaxLines(int maxLines) {
     if (m_hasMaxLinesConfigured && m_maxLines == safeMaxLines) return;
     m_maxLines = safeMaxLines;
     m_hasMaxLinesConfigured = true;
-    YGNodeMarkDirty(getYGNode());
-    markDirty();
+    invalidateLayout();
 }
 
 void LFText::setItalic(bool italic) {
@@ -429,74 +418,72 @@ void LFText::setHoverUnderline(bool enabled) {
     markDirty();
 }
 
-YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
-                       float height, YGMeasureMode heightMode) {
-    (void)height;
-    (void)heightMode;
-
-    auto* baseNode = static_cast<LFNode*>(YGNodeGetContext(node));
-    auto* textNode = static_cast<LFText*>(baseNode);
+LFSize LFText::measureLayout(const LFMeasureInput& input) const {
     LFRenderer* renderer = s_measureContext;
-    if (!renderer || !textNode || textNode->m_text.empty()) {
-        return {0.0f, 0.0f};
+    if (!renderer || m_text.empty()) {
+        return {};
     }
 
     float wrapWidth = std::numeric_limits<float>::infinity();
-    if (widthMode == YGMeasureModeExactly || widthMode == YGMeasureModeAtMost) {
-        wrapWidth = std::max(0.0f, width);
+    if (input.width.mode == LFMeasureMode::Exactly ||
+        input.width.mode == LFMeasureMode::AtMost) {
+        wrapWidth = std::max(0.0f, input.width.size);
     }
 
     const auto layout = getTextLayout(
         renderer,
-        textNode->m_text,
-        textNode->fontFamilyForStyle(),
-        textNode->m_fontSize,
-        textNode->m_lineHeight,
+        m_text,
+        fontFamilyForStyle(),
+        m_fontSize,
+        m_lineHeight,
         wrapWidth,
-        textNode->m_maxLines
+        m_maxLines
     );
     if (!layout) {
-        return {0.0f, 0.0f};
+        return {};
     }
 
     const float pixelRatio = std::max(0.01f, LFEngine::getInstance().getPixelRatio());
-    YGSize result{layout->width, layout->height};
-    if (widthMode == YGMeasureModeExactly) {
-        result.width = width;
+    LFSize result{layout->width, layout->height};
+    if (input.width.mode == LFMeasureMode::Exactly) {
+        result.width = input.width.size;
     } else {
         const float naturalWidth = reserveOneDevicePixel(layout->width, pixelRatio);
-        result.width = widthMode == YGMeasureModeAtMost
-                           ? std::min(width, naturalWidth)
+        result.width = input.width.mode == LFMeasureMode::AtMost
+                           ? std::min(input.width.size, naturalWidth)
                            : naturalWidth;
     }
     result.height = ceilToDevicePixel(layout->height, pixelRatio);
     return result;
 }
 
-float LFText::baseline(YGNodeRef node, float width, float height) {
-    auto* baseNode = static_cast<LFNode*>(YGNodeGetContext(node));
-    auto* textNode = static_cast<LFText*>(baseNode);
-    if (!textNode || textNode->m_text.empty()) {
-        return std::max(0.0f, height);
+float LFText::baselineLayout(const LFBaselineInput& input) const {
+    if (m_text.empty()) {
+        return std::max(0.0f, input.height);
     }
 
-    const TextContentBox content = getTextContentBox(node, width, height);
+    const TextContentBox content = getTextContentBox(
+        input.padding,
+        input.border,
+        input.width,
+        input.height
+    );
 
     const auto layout = getTextLayout(
         s_measureContext,
-        textNode->m_text,
-        textNode->fontFamilyForStyle(),
-        textNode->m_fontSize,
-        textNode->m_lineHeight,
+        m_text,
+        fontFamilyForStyle(),
+        m_fontSize,
+        m_lineHeight,
         content.width,
-        textNode->m_maxLines
+        m_maxLines
     );
     if (!layout || layout->empty()) {
-        return std::max(0.0f, height);
+        return std::max(0.0f, input.height);
     }
 
     float drawY = content.y;
-    switch (textNode->m_textVAlign) {
+    switch (m_textVAlign) {
         case LFTextVAlign::Center:
             drawY += (content.height - layout->height) * 0.5f;
             break;
@@ -514,8 +501,10 @@ void LFText::onDrawContent(LFPaint& paint) {
     LFRenderer* renderer = LFEngine::getInstance().getRenderer();
     if (m_text.empty() || !renderer) return;
 
+    const LFLayoutFrame& frame = getLayoutFrame();
     const TextContentBox content = getTextContentBox(
-        getYGNode(),
+        frame.padding,
+        frame.border,
         getLayoutWidth(),
         getLayoutHeight()
     );

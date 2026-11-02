@@ -38,6 +38,8 @@ set(LEAF_CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFNavigator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFPage.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/base/LFOverlay.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/layout/LFLayoutFactory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/layout/yoga/LFYogaLayout.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/layout/LFLinear.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/layout/LFBox.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/view/layout/LFGrid.cpp
@@ -92,11 +94,11 @@ set_target_properties(leaf-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(leaf-core
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${YOGA_DIR}
 )
 
 target_include_directories(leaf-core
         PRIVATE
+        ${YOGA_DIR}
         ${NANOVG_DIR}
 )
 

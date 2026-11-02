@@ -55,7 +55,7 @@ void LFDropdown::initLayout() {
     m_panelContainer->setBorder(1.0f, m_borderColor);
     m_panelContainer->setBorderRadius(m_cornerRadius);
     m_panelContainer->setMasksToBounds(true);
-    m_panelContainer->setDisplay(YGDisplayNone);
+    m_panelContainer->setDisplay(LFDisplay::None);
 
     m_scrollView = LFScrollView::createVertical();
     m_scrollView->matchParentWidth();
@@ -320,9 +320,9 @@ void LFDropdown::updateExpandedState() {
     ensureInlinePanelAttached();
     if (m_expanded && !m_options.empty()) {
         m_panelContainer->setHeight(resolvePanelHeight());
-        m_panelContainer->setDisplay(YGDisplayFlex);
+        m_panelContainer->setDisplay(LFDisplay::Flex);
     } else {
-        m_panelContainer->setDisplay(YGDisplayNone);
+        m_panelContainer->setDisplay(LFDisplay::None);
     }
     updateTriggerText();
 }
@@ -362,11 +362,11 @@ void LFDropdown::ensureInlinePanelAttached() {
 
     if (m_panelContainer->getParent() != this) {
         m_panelContainer->removeFromParent();
-        m_panelContainer->setPositionType(YGPositionTypeRelative);
-        m_panelContainer->setPosition(YGEdgeLeft, YGUndefined);
-        m_panelContainer->setPosition(YGEdgeTop, YGUndefined);
-        m_panelContainer->setPosition(YGEdgeRight, YGUndefined);
-        m_panelContainer->setPosition(YGEdgeBottom, YGUndefined);
+    m_panelContainer->setPositionType(LFPositionType::Relative);
+    m_panelContainer->setPosition(LFLayoutEdge::Left, NAN);
+    m_panelContainer->setPosition(LFLayoutEdge::Top, NAN);
+    m_panelContainer->setPosition(LFLayoutEdge::Right, NAN);
+    m_panelContainer->setPosition(LFLayoutEdge::Bottom, NAN);
         m_panelContainer->setTranslate(0.0f, 0.0f);
         m_panelContainer->setTranslatePercent(0.0f, 0.0f);
         m_panelContainer->matchParentWidth();
@@ -415,7 +415,7 @@ void LFDropdown::showPopupPanel() {
         m_panelContainer->setHeight(height);
     }
 
-    m_panelContainer->setDisplay(YGDisplayFlex);
+    m_panelContainer->setDisplay(LFDisplay::Flex);
     m_popupOverlay->show(m_panelContainer, LFBoxAlign::TopLeft, x, y);
 }
 
@@ -429,13 +429,13 @@ void LFDropdown::hidePopupPanel() {
     }
 
     if (m_panelContainer) {
-        m_panelContainer->setDisplay(YGDisplayNone);
+    m_panelContainer->setDisplay(LFDisplay::None);
     }
 }
 
 void LFDropdown::handlePopupDismissed() {
     if (m_panelContainer) {
-        m_panelContainer->setDisplay(YGDisplayNone);
+    m_panelContainer->setDisplay(LFDisplay::None);
     }
 
     if (m_popupOverlay && m_popupOverlay->getParent()) {

@@ -4,6 +4,9 @@
 
 #include "view/base/LFNode.h"
 #include "event/LFEventDispatcher.h"
+#include "layout/LFLayoutFactory.h"
+
+#include <utility>
 
 // 简化 setter 编写，只有值变了才 markDirty
 #define SET_STYLE_VAL(prop, value) \
@@ -11,22 +14,30 @@
     prop = value; \
     markDirty();
 
-#define SET_YOGA_VAL(func, ...) \
-    func(m_ygNode, __VA_ARGS__); \
-    markDirty();
-
 namespace {
 
 constexpr float kPi = 3.14159265358979323846f;
 
-float resolveOwnerAxis(const YGValue& axis, float ownerSize) {
-    if (axis.unit == YGUnitPoint) {
+LFLayoutValue pointValue(float value) {
+    return std::isfinite(value)
+               ? LFLayoutValue{value, LFLayoutUnit::Point}
+               : LFLayoutValue{};
+}
+
+LFLayoutValue percentValue(float value) {
+    return std::isfinite(value)
+               ? LFLayoutValue{value, LFLayoutUnit::Percent}
+               : LFLayoutValue{};
+}
+
+float resolveOwnerAxis(const LFLayoutValue& axis, float ownerSize) {
+    if (axis.unit == LFLayoutUnit::Point) {
         return axis.value;
     }
-    if (axis.unit == YGUnitPercent && !YGFloatIsUndefined(ownerSize)) {
+    if (axis.unit == LFLayoutUnit::Percent && std::isfinite(ownerSize)) {
         return ownerSize * axis.value / 100.0f;
     }
-    return YGUndefined;
+    return std::numeric_limits<float>::quiet_NaN();
 }
 
 bool pointInRoundedRect(float x, float y, float width, float height, float radius) {
@@ -61,19 +72,12 @@ bool pointInRoundedRect(float x, float y, float width, float height, float radiu
 
 }
 
-LFNode::LFNode() {
-    m_ygNode = YGNodeNew();
-    YGNodeSetContext(m_ygNode, this);
-    // 默认行为配置
-    YGNodeStyleSetFlexDirection(m_ygNode, YGFlexDirectionColumn); // 默认垂直
-    YGNodeStyleSetPositionType(m_ygNode, YGPositionTypeRelative);
+LFNode::LFNode()
+    : m_layout(LFLayoutFactory::create()) {
+    m_layout->setStyle(m_layoutStyle);
 }
 
-LFNode::~LFNode() {
-    if (m_ygNode) {
-        YGNodeFree(m_ygNode);
-    }
-}
+LFNode::~LFNode() = default;
 
 // ==========================================
 // 树管理实现
@@ -92,7 +96,7 @@ void LFNode::addChild(const Ptr& child) {
     }
     child->m_parent = this;
     m_children.push_back(child);
-    YGNodeInsertChild(m_ygNode, child->m_ygNode, YGNodeGetChildCount(m_ygNode));
+    m_layout->insertChild(*child->m_layout, m_children.size() - 1);
     markDirty();
 }
 
@@ -108,18 +112,20 @@ void LFNode::insertChild(const Ptr& child, uint32_t index) {
     if (child->getParent()) {
         child->removeFromParent();
     }
-    if (index > m_children.size()) index = m_children.size();
+    if (static_cast<size_t>(index) > m_children.size()) {
+        index = static_cast<uint32_t>(m_children.size());
+    }
 
     child->m_parent = this;
     m_children.insert(m_children.begin() + index, child);
-    YGNodeInsertChild(m_ygNode, child->m_ygNode, index);
+    m_layout->insertChild(*child->m_layout, index);
     markDirty();
 }
 
 void LFNode::removeChild(const Ptr& child) {
     auto it = std::find(m_children.begin(), m_children.end(), child);
     if (it != m_children.end()) {
-        YGNodeRemoveChild(m_ygNode, child->m_ygNode);
+        m_layout->removeChild(*child->m_layout);
         child->m_parent = nullptr;
         m_children.erase(it);
         markDirty();
@@ -135,38 +141,74 @@ void LFNode::removeFromParent() {
 }
 
 // ==========================================
-// 布局属性实现 (Yoga Proxy)
+// 布局属性实现
 // ==========================================
 void LFNode::setWidth(float width) {
-    if (width < 0) {
-        YGNodeStyleSetWidthAuto(m_ygNode);
-        markDirty();
-    } else {
-        SET_YOGA_VAL(YGNodeStyleSetWidth, width)
-    }
+    const LFLayoutValue value = !std::isfinite(width)
+                                    ? LFLayoutValue{}
+                                    : width < 0.0f
+                                    ? LFLayoutValue{0.0f, LFLayoutUnit::Auto}
+                                    : LFLayoutValue{width, LFLayoutUnit::Point};
+    if (m_layoutStyle.width == value) return;
+    m_layoutStyle.width = value;
+    applyLayoutStyle();
 }
 void LFNode::setHeight(float height) {
-    if (height < 0) {
-        YGNodeStyleSetHeightAuto(m_ygNode);
-        markDirty();
-    } else {
-        SET_YOGA_VAL(YGNodeStyleSetHeight, height)
-    }
+    const LFLayoutValue value = !std::isfinite(height)
+                                    ? LFLayoutValue{}
+                                    : height < 0.0f
+                                    ? LFLayoutValue{0.0f, LFLayoutUnit::Auto}
+                                    : LFLayoutValue{height, LFLayoutUnit::Point};
+    if (m_layoutStyle.height == value) return;
+    m_layoutStyle.height = value;
+    applyLayoutStyle();
 }
 void LFNode::setWidthPercent(float percent) {
-    YGNodeStyleSetWidthPercent(m_ygNode, percent);
-    markDirty();
+    const LFLayoutValue value = percentValue(percent);
+    if (m_layoutStyle.width == value) return;
+    m_layoutStyle.width = value;
+    applyLayoutStyle();
 }
 
 void LFNode::setHeightPercent(float percent) {
-    YGNodeStyleSetHeightPercent(m_ygNode, percent);
-    markDirty();
+    const LFLayoutValue value = percentValue(percent);
+    if (m_layoutStyle.height == value) return;
+    m_layoutStyle.height = value;
+    applyLayoutStyle();
 }
-void LFNode::setMinWidth(float minWidth) { SET_YOGA_VAL(YGNodeStyleSetMinWidth, minWidth); }
-void LFNode::setMaxWidth(float maxWidth) { SET_YOGA_VAL(YGNodeStyleSetMaxWidth, maxWidth); }
-void LFNode::setMinHeight(float minHeight) { SET_YOGA_VAL(YGNodeStyleSetMinHeight, minHeight); }
-void LFNode::setMaxHeight(float maxHeight) { SET_YOGA_VAL(YGNodeStyleSetMaxHeight, maxHeight); }
-void LFNode::setAspectRatio(float aspectRatio) { SET_YOGA_VAL(YGNodeStyleSetAspectRatio, aspectRatio); }
+void LFNode::setMinWidth(float minWidth) {
+    const LFLayoutValue value = pointValue(minWidth);
+    if (m_layoutStyle.minWidth == value) return;
+    m_layoutStyle.minWidth = value;
+    applyLayoutStyle();
+}
+void LFNode::setMaxWidth(float maxWidth) {
+    const LFLayoutValue value = pointValue(maxWidth);
+    if (m_layoutStyle.maxWidth == value) return;
+    m_layoutStyle.maxWidth = value;
+    applyLayoutStyle();
+}
+void LFNode::setMinHeight(float minHeight) {
+    const LFLayoutValue value = pointValue(minHeight);
+    if (m_layoutStyle.minHeight == value) return;
+    m_layoutStyle.minHeight = value;
+    applyLayoutStyle();
+}
+void LFNode::setMaxHeight(float maxHeight) {
+    const LFLayoutValue value = pointValue(maxHeight);
+    if (m_layoutStyle.maxHeight == value) return;
+    m_layoutStyle.maxHeight = value;
+    applyLayoutStyle();
+}
+void LFNode::setAspectRatio(float aspectRatio) {
+    const float value = std::isfinite(aspectRatio)
+                            ? aspectRatio
+                            : std::numeric_limits<float>::quiet_NaN();
+    if ((std::isnan(m_layoutStyle.aspectRatio) && std::isnan(value)) ||
+        m_layoutStyle.aspectRatio == value) return;
+    m_layoutStyle.aspectRatio = value;
+    applyLayoutStyle();
+}
 
 void LFNode::matchParentWidth() {
     setWidthPercent(100.0f);
@@ -177,36 +219,129 @@ void LFNode::matchParentHeight() {
 }
 
 void LFNode::wrapContentWidth() {
-    YGNodeStyleSetWidthAuto(m_ygNode);
-    markDirty();
+    const LFLayoutValue value{0.0f, LFLayoutUnit::Auto};
+    if (m_layoutStyle.width == value) return;
+    m_layoutStyle.width = value;
+    applyLayoutStyle();
 }
 
 void LFNode::wrapContentHeight() {
-    YGNodeStyleSetHeightAuto(m_ygNode);
-    markDirty();
+    const LFLayoutValue value{0.0f, LFLayoutUnit::Auto};
+    if (m_layoutStyle.height == value) return;
+    m_layoutStyle.height = value;
+    applyLayoutStyle();
 }
 
-void LFNode::setFlexDirection(YGFlexDirection direction) { SET_YOGA_VAL(YGNodeStyleSetFlexDirection, direction); }
-void LFNode::setJustifyContent(YGJustify justify) { SET_YOGA_VAL(YGNodeStyleSetJustifyContent, justify); }
-void LFNode::setAlignItems(YGAlign align) { SET_YOGA_VAL(YGNodeStyleSetAlignItems, align); }
-void LFNode::setAlignSelf(YGAlign align) { SET_YOGA_VAL(YGNodeStyleSetAlignSelf, align); }
-void LFNode::setAlignContent(YGAlign align) { SET_YOGA_VAL(YGNodeStyleSetAlignContent, align); }
-void LFNode::setFlexWrap(YGWrap wrap) { SET_YOGA_VAL(YGNodeStyleSetFlexWrap, wrap); }
-void LFNode::setFlexGrow(float grow) { SET_YOGA_VAL(YGNodeStyleSetFlexGrow, grow); }
-void LFNode::setFlexShrink(float shrink) { SET_YOGA_VAL(YGNodeStyleSetFlexShrink, shrink); }
-void LFNode::setFlexBasis(float basis) { SET_YOGA_VAL(YGNodeStyleSetFlexBasis, basis); }
-
-void LFNode::setPadding(YGEdge edge, float padding) { SET_YOGA_VAL(YGNodeStyleSetPadding, edge, padding); }
-void LFNode::setMargin(YGEdge edge, float margin) { SET_YOGA_VAL(YGNodeStyleSetMargin, edge, margin); }
-
-void LFNode::setPositionType(YGPositionType type) { SET_YOGA_VAL(YGNodeStyleSetPositionType, type); }
-void LFNode::setPosition(YGEdge edge, float value) { SET_YOGA_VAL(YGNodeStyleSetPosition, edge, value); }
-void LFNode::setPositionPercent(YGEdge edge, float percent) {
-    YGNodeStyleSetPositionPercent(m_ygNode, edge, percent);
-    markDirty();
+void LFNode::setFlexDirection(LFFlexDirection direction) {
+    if (m_layoutStyle.flexDirection == direction) return;
+    m_layoutStyle.flexDirection = direction;
+    applyLayoutStyle();
 }
-void LFNode::setDisplay(YGDisplay display) { SET_YOGA_VAL(YGNodeStyleSetDisplay, display); }
-void LFNode::setDirection(YGDirection direction) { SET_YOGA_VAL(YGNodeStyleSetDirection, direction); }
+void LFNode::setJustifyContent(LFJustify justify) {
+    if (m_layoutStyle.justifyContent == justify) return;
+    m_layoutStyle.justifyContent = justify;
+    applyLayoutStyle();
+}
+void LFNode::setAlignItems(LFAlign align) {
+    if (m_layoutStyle.alignItems == align) return;
+    m_layoutStyle.alignItems = align;
+    applyLayoutStyle();
+}
+void LFNode::setAlignSelf(LFAlign align) {
+    if (m_layoutStyle.alignSelf == align) return;
+    m_layoutStyle.alignSelf = align;
+    applyLayoutStyle();
+}
+void LFNode::setAlignContent(LFAlign align) {
+    if (m_layoutStyle.alignContent == align) return;
+    m_layoutStyle.alignContent = align;
+    applyLayoutStyle();
+}
+void LFNode::setFlexWrap(LFWrap wrap) {
+    if (m_layoutStyle.flexWrap == wrap) return;
+    m_layoutStyle.flexWrap = wrap;
+    applyLayoutStyle();
+}
+void LFNode::setFlexGrow(float grow) {
+    const float value = std::isfinite(grow) ? grow : 0.0f;
+    if (m_layoutStyle.flexGrow == value) return;
+    m_layoutStyle.flexGrow = value;
+    applyLayoutStyle();
+}
+void LFNode::setFlexShrink(float shrink) {
+    const float value = std::isfinite(shrink) ? shrink : 0.0f;
+    if (m_layoutStyle.flexShrink == value) return;
+    m_layoutStyle.flexShrink = value;
+    applyLayoutStyle();
+}
+void LFNode::setFlexBasis(float basis) {
+    const LFLayoutValue value = std::isfinite(basis)
+                                    ? LFLayoutValue{basis, LFLayoutUnit::Point}
+                                    : LFLayoutValue{0.0f, LFLayoutUnit::Auto};
+    if (m_layoutStyle.flexBasis == value) return;
+    m_layoutStyle.flexBasis = value;
+    applyLayoutStyle();
+}
+
+void LFNode::setPadding(LFLayoutEdge edge, float padding) {
+    const LFLayoutValue value = pointValue(padding);
+    auto& target = m_layoutStyle.padding[static_cast<size_t>(edge)];
+    if (target == value) return;
+    target = value;
+    applyLayoutStyle();
+}
+
+void LFNode::setMargin(LFLayoutEdge edge, float margin) {
+    const LFLayoutValue value = pointValue(margin);
+    auto& target = m_layoutStyle.margin[static_cast<size_t>(edge)];
+    if (target == value) return;
+    target = value;
+    applyLayoutStyle();
+}
+
+void LFNode::setGap(LFGutter gutter, float gap) {
+    const float value = std::isfinite(gap)
+                            ? gap
+                            : std::numeric_limits<float>::quiet_NaN();
+    auto& target = m_layoutStyle.gap[static_cast<size_t>(gutter)];
+    if ((std::isnan(target) && std::isnan(value)) || target == value) return;
+    target = value;
+    applyLayoutStyle();
+}
+
+void LFNode::setPositionType(LFPositionType type) {
+    if (m_layoutStyle.positionType == type) return;
+    m_layoutStyle.positionType = type;
+    applyLayoutStyle();
+}
+
+void LFNode::setPosition(LFLayoutEdge edge, float value) {
+    const LFLayoutValue layoutValue = pointValue(value);
+    auto& target = m_layoutStyle.position[static_cast<size_t>(edge)];
+    if (target == layoutValue) return;
+    target = layoutValue;
+    applyLayoutStyle();
+}
+
+void LFNode::setPositionPercent(LFLayoutEdge edge, float percent) {
+    const LFLayoutValue value = percentValue(percent);
+    auto& target = m_layoutStyle.position[static_cast<size_t>(edge)];
+    if (target == value) return;
+    target = value;
+    applyLayoutStyle();
+}
+
+void LFNode::setDisplay(LFDisplay display) {
+    if (m_layoutStyle.display == display) return;
+    m_layoutStyle.display = display;
+    applyLayoutStyle();
+}
+
+void LFNode::setDirection(LFDirection direction) {
+    if (m_layoutStyle.direction == direction) return;
+    m_layoutStyle.direction = direction;
+    applyLayoutStyle();
+}
 
 // ==========================================
 // 样式属性实现
@@ -228,12 +363,22 @@ void LFNode::setBorder(float width, uint32_t color) {
 
     m_borderWidth = std::max(0.0f, width);
     m_borderColor = color;
+    m_layoutStyle.border[static_cast<size_t>(LFLayoutEdge::All)] = {
+        m_borderWidth,
+        LFLayoutUnit::Point
+    };
+    applyLayoutStyle();
+}
 
-    // 同步告诉 Yoga 边框宽度
-    // 这样 Yoga 在计算 content box 时会自动扣除边框厚度，符合标准盒模型
-    YGNodeStyleSetBorder(m_ygNode, YGEdgeAll, m_borderWidth);
-
-    markDirty();
+void LFNode::setLayoutBorderWidth(LFLayoutEdge edge, float width) {
+    const LFLayoutValue value{
+        std::isfinite(width) ? std::max(0.0f, width) : 0.0f,
+        LFLayoutUnit::Point
+    };
+    auto& target = m_layoutStyle.border[static_cast<size_t>(edge)];
+    if (target == value) return;
+    target = value;
+    applyLayoutStyle();
 }
 
 void LFNode::setShadow(float offsetX, float offsetY, float blur, float spread, uint32_t color) {
@@ -277,17 +422,41 @@ void LFNode::setTranslatePercent(float xPercent, float yPercent) {
 // ==========================================
 void LFNode::markDirty() {
     m_isDirty = true;
-    // 只有非 Root 节点才需要向上传递 Dirty
-    // 实际上 Yoga 内部会自动标记父节点，这里主要为了自身的重绘逻辑
+    // 布局或视觉变化需要让祖先节点参与当前帧的重绘。
     if (m_parent) m_parent->markDirty();
+}
+
+void LFNode::invalidateLayout() {
+    if (m_layout) {
+        m_layout->markDirty();
+    }
+    markDirty();
+}
+
+void LFNode::applyLayoutStyle() {
+    if (m_layout) {
+        m_layout->setStyle(m_layoutStyle);
+    }
+    markDirty();
+}
+
+void LFNode::setLayoutMeasureFunction(LFMeasureFunction function) {
+    if (m_layout) {
+        m_layout->setMeasureFunction(std::move(function));
+    }
+}
+
+void LFNode::setLayoutBaselineFunction(LFBaselineFunction function) {
+    if (m_layout) {
+        m_layout->setBaselineFunction(std::move(function));
+    }
 }
 
 void LFNode::calculateLayout(float ownerWidth, float ownerHeight) {
     prepareLayoutTree(ownerWidth, ownerHeight);
 
-    // 布局
-    // 注意：每次 update 都会调用，Yoga 内部有缓存机制优化
-    YGNodeCalculateLayout(m_ygNode, ownerWidth, ownerHeight, YGDirectionLTR);
+    m_layout->calculate({ownerWidth, ownerHeight});
+    updateLayoutFrameTree();
 
     finalizeLayoutTree();
     m_isDirty = false;
@@ -299,15 +468,13 @@ void LFNode::prepareLayoutTree(float ownerWidth, float ownerHeight) {
     float childOwnerWidth = ownerWidth;
     float childOwnerHeight = ownerHeight;
 
-    YGValue selfWidth = YGNodeStyleGetWidth(m_ygNode);
-    YGValue selfHeight = YGNodeStyleGetHeight(m_ygNode);
-    float resolvedSelfWidth = resolveOwnerAxis(selfWidth, ownerWidth);
-    float resolvedSelfHeight = resolveOwnerAxis(selfHeight, ownerHeight);
+    const float resolvedSelfWidth = resolveOwnerAxis(m_layoutStyle.width, ownerWidth);
+    const float resolvedSelfHeight = resolveOwnerAxis(m_layoutStyle.height, ownerHeight);
 
-    if (!YGFloatIsUndefined(resolvedSelfWidth)) {
+    if (std::isfinite(resolvedSelfWidth)) {
         childOwnerWidth = resolvedSelfWidth;
     }
-    if (!YGFloatIsUndefined(resolvedSelfHeight)) {
+    if (std::isfinite(resolvedSelfHeight)) {
         childOwnerHeight = resolvedSelfHeight;
     }
 
@@ -324,12 +491,20 @@ void LFNode::finalizeLayoutTree() {
     }
 }
 
+void LFNode::updateLayoutFrameTree() {
+    m_layout->updateFrame();
+
+    for (auto& child : m_children) {
+        child->updateLayoutFrameTree();
+    }
+}
+
 /**
  * 核心渲染流程 (Template Method)
  */
 void LFNode::render(LFPaint& paint) {
     // 0. 基础过滤：如果隐藏或透明度为0，直接跳过
-    // 注意：YGDisplayNone 的节点 Yoga 布局宽高会是 0，也会在这里被过滤
+    // Display::None 的节点宽高为 0，也会在这里被过滤
     if (!m_visible || m_opacity <= 0.0f) return;
 
     float w = getLayoutWidth();

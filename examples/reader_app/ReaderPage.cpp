@@ -50,9 +50,9 @@ public:
         contentText->setTextVAlign(LFTextVAlign::Top);
         contentText->matchParentWidth();
         contentText->matchParentHeight();
-        contentText->setPadding(YGEdgeTop, ADAPTER_PADDING_TOP);
-        contentText->setPadding(YGEdgeBottom, ADAPTER_PADDING_BOTTOM);
-        contentText->setPadding(YGEdgeHorizontal, ADAPTER_PADDING_X);
+        contentText->setPadding(LFLayoutEdge::Top, ADAPTER_PADDING_TOP);
+        contentText->setPadding(LFLayoutEdge::Bottom, ADAPTER_PADDING_BOTTOM);
+        contentText->setPadding(LFLayoutEdge::Horizontal, ADAPTER_PADDING_X);
 
         auto footerText = std::make_shared<LFText>();
         footerText->setFontSize(11.0f);
@@ -349,7 +349,7 @@ void ReaderPage::setupTopBar(const std::string& title) {
     m_topBar->setHeight(TOP_BAR_HEIGHT);
     m_topBar->setBackgroundColor(0xFFFFFFFF);
     m_topBar->setGravity(LFAlignment::Start, LFAlignment::Center);
-    m_topBar->setPadding(YGEdgeHorizontal, 10.0f);
+    m_topBar->setPadding(LFLayoutEdge::Horizontal, 10.0f);
     m_topBar->setShadow(0, 2, 8, 0, 0x1A000000);
 
     std::weak_ptr<ReaderPage> weakSelf = std::static_pointer_cast<ReaderPage>(shared_from_this());

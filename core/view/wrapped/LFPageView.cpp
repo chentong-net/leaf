@@ -116,7 +116,7 @@ void LFPageView::refreshData() {
             node = LFBox::create();
         }
         // 强制绝对定位
-        node->setPositionType(YGPositionTypeAbsolute);
+        node->setPositionType(LFPositionType::Absolute);
         node->matchParentWidth();
         node->matchParentHeight();
 

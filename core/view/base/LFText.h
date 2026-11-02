@@ -41,7 +41,7 @@ public:
 
     /**
      * 设置全局测量上下文
-     * 用于在 Yoga 布局阶段获取渲染后端进行测量
+     * 用于在布局测量阶段获取渲染后端
      */
     static void setMeasureContext(LFRenderer* renderer);
 
@@ -54,10 +54,8 @@ protected:
     void onDrawContent(LFPaint& paint) override;
 
 private:
-    // Yoga 测量回调函数
-    static YGSize measure(YGNodeRef node, float width, YGMeasureMode widthMode,
-                          float height, YGMeasureMode heightMode);
-    static float baseline(YGNodeRef node, float width, float height);
+    LFSize measureLayout(const LFMeasureInput& input) const;
+    float baselineLayout(const LFBaselineInput& input) const;
     std::string fontFamilyForStyle() const;
     // 成员变量
     std::string m_text;

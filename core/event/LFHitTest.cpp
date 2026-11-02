@@ -45,7 +45,7 @@ bool LFHitTestEngine::hitTestRecursive(
     float localX = x;
     float localY = y;
 
-    // Subtract layout offset (Yoga calculation result)
+    // 减去父布局坐标系中的节点偏移。
     localX -= node->getLayoutX();
     localY -= node->getLayoutY();
 

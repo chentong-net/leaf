@@ -14,8 +14,8 @@ LFOverlay::Ptr LFOverlay::create() {
 }
 
 LFOverlay::LFOverlay() {
-    setPositionType(YGPositionTypeAbsolute);
-    setPosition(YGEdgeAll, 0.0f);
+    setPositionType(LFPositionType::Absolute);
+    setPosition(LFLayoutEdge::All, 0.0f);
     matchParentWidth();
     matchParentHeight();
     setTouchEnabled(false);

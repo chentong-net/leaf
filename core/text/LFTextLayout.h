@@ -64,7 +64,7 @@ struct LFTextLine {
 };
 
 /**
-* Yoga测量和NanoVG绘制共同使用的文本布局
+* 布局测量和渲染绘制共同使用的文本布局
 */
 struct LFTextLayout {
     std::vector<LFTextLine> lines;

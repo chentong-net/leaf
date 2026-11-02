@@ -3,62 +3,63 @@
 LFLinear::LFLinear() {
     // 初始化默认状态：垂直、起点对齐、拉伸
     setOrientation(LFOrientation::Vertical);
-    updateYogaLayout();
+    updateFlexLayout();
 }
 
 void LFLinear::setOrientation(LFOrientation orientation) {
     if (m_orientation == orientation) return;
     m_orientation = orientation;
-    updateYogaLayout();
+    updateFlexLayout();
 }
 
 void LFLinear::setGravity(LFAlignment main, LFAlignment cross) {
     if (m_mainAlign == main && m_crossAlign == cross) return;
     m_mainAlign = main;
     m_crossAlign = cross;
-    updateYogaLayout();
+    updateFlexLayout();
 }
 
 void LFLinear::setDistribution(LFDistribution distribution) {
     if (m_distribution == distribution) return;
     m_distribution = distribution;
-    updateYogaLayout();
+    updateFlexLayout();
 }
 
 void LFLinear::setSpacing(float spacing) {
-    // 语义化的间距设置，直接映射到 Yoga Gap
-    YGNodeStyleSetGap(getYGNode(), YGGutterAll, spacing);
-    markDirty();
+    setGap(LFGutter::All, spacing);
 }
 
 void LFLinear::setRowSpacing(float spacing) {
-    YGNodeStyleSetGap(getYGNode(), YGGutterRow, spacing);
-    markDirty();
+    setGap(LFGutter::Row, spacing);
 }
 
 void LFLinear::setReverse(bool reverse) {
     if (m_isReverse == reverse) return;
     m_isReverse = reverse;
-    updateYogaLayout();
+    updateFlexLayout();
 }
 
-void LFLinear::updateYogaLayout() {
+void LFLinear::updateFlexLayout() {
     // 1. 翻译 FlexDirection (考虑 Orientation 和 Reverse)
     if (m_orientation == LFOrientation::Vertical) {
-        setFlexDirection(m_isReverse ? YGFlexDirectionColumnReverse : YGFlexDirectionColumn);
+        setFlexDirection(m_isReverse
+                             ? LFFlexDirection::ColumnReverse
+                             : LFFlexDirection::Column);
     } else {
-        setFlexDirection(m_isReverse ? YGFlexDirectionRowReverse : YGFlexDirectionRow);
+        setFlexDirection(m_isReverse
+                             ? LFFlexDirection::RowReverse
+                             : LFFlexDirection::Row);
     }
 
     // 2. 翻译 Main Axis Alignment (JustifyContent)
-    YGJustify justify = YGJustifyFlexStart;
+    LFJustify justify = LFJustify::FlexStart;
 
     // 优先级：Distribution (分布) > Gravity (重力/对齐)
     if (m_distribution != LFDistribution::Pack) {
         switch (m_distribution) {
-            case LFDistribution::SpaceBetween: justify = YGJustifySpaceBetween; break;
-            case LFDistribution::SpaceAround:  justify = YGJustifySpaceAround; break;
-            case LFDistribution::SpaceEvenly:  justify = YGJustifySpaceEvenly; break;
+            case LFDistribution::SpaceBetween: justify = LFJustify::SpaceBetween; break;
+            case LFDistribution::SpaceAround:  justify = LFJustify::SpaceAround; break;
+            case LFDistribution::SpaceEvenly:  justify = LFJustify::SpaceEvenly; break;
             default: break;
         }
     } else {
@@ -66,27 +67,27 @@ void LFLinear::updateYogaLayout() {
         // 注意：Reverse 模式下，Start/End 的视觉方向需要反转语义，以符合人类直觉
         switch (m_mainAlign) {
             case LFAlignment::Start:
-                justify = m_isReverse ? YGJustifyFlexEnd : YGJustifyFlexStart;
+                justify = m_isReverse ? LFJustify::FlexEnd : LFJustify::FlexStart;
                 break;
             case LFAlignment::Center:
-                justify = YGJustifyCenter;
+                justify = LFJustify::Center;
                 break;
             case LFAlignment::End:
-                justify = m_isReverse ? YGJustifyFlexStart : YGJustifyFlexEnd;
+                justify = m_isReverse ? LFJustify::FlexStart : LFJustify::FlexEnd;
                 break;
-            default: justify = YGJustifyFlexStart; break;
+            default: justify = LFJustify::FlexStart; break;
         }
     }
     setJustifyContent(justify);
 
     // 3. 翻译 Cross Axis Alignment (AlignItems)
-    YGAlign align = YGAlignStretch;
+    LFAlign align = LFAlign::Stretch;
     switch (m_crossAlign) {
-        case LFAlignment::Start:    align = YGAlignFlexStart; break;
-        case LFAlignment::Center:   align = YGAlignCenter; break;
-        case LFAlignment::End:      align = YGAlignFlexEnd; break;
-        case LFAlignment::Stretch:  align = YGAlignStretch; break;
-        case LFAlignment::Baseline: align = YGAlignBaseline; break;
+        case LFAlignment::Start:    align = LFAlign::FlexStart; break;
+        case LFAlignment::Center:   align = LFAlign::Center; break;
+        case LFAlignment::End:      align = LFAlign::FlexEnd; break;
+        case LFAlignment::Stretch:  align = LFAlign::Stretch; break;
+        case LFAlignment::Baseline: align = LFAlign::Baseline; break;
     }
     setAlignItems(align);
 }

@@ -42,7 +42,7 @@ LFLinear::Ptr makeSectionCard(const std::string& titleText, const std::string& d
     auto card = LFLinear::createVertical();
     card->matchParentWidth();
     card->wrapContentHeight();
-    card->setPadding(YGEdgeAll, 18.0f);
+    card->setPadding(LFLayoutEdge::All, 18.0f);
     card->setSpacing(14.0f);
     card->setBackgroundColor(0xFFFFFFFF);
     card->setBorderRadius(18.0f);
@@ -66,7 +66,7 @@ LFLinear::Ptr makeTextPreviewBox(const std::string& labelText,
     auto box = LFLinear::createVertical();
     box->matchParentWidth();
     box->wrapContentHeight();
-    box->setPadding(YGEdgeAll, 14.0f);
+    box->setPadding(LFLayoutEdge::All, 14.0f);
     box->setSpacing(8.0f);
     box->setBackgroundColor(0xFFF8FAFD);
     box->setBorderRadius(14.0f);
@@ -92,7 +92,7 @@ LFLinear::Ptr makeRow() {
     row->matchParentWidth();
     row->wrapContentHeight();
     row->setSpacing(10.0f);
-    row->setAlignItems(YGAlignCenter);
+    row->setAlignItems(LFAlign::Center);
     return row;
 }
 
@@ -113,7 +113,7 @@ LFLinear::Ptr makeOverlayCard(const std::string& text) {
     auto card = LFLinear::createVertical();
     card->setWidth(100.0f);
     card->wrapContentHeight();
-    card->setPadding(YGEdgeAll, 12.0f);
+    card->setPadding(LFLayoutEdge::All, 12.0f);
     card->setBackgroundColor(0xFFFFFFFF);
     card->setBorderRadius(12.0f);
     card->setBorder(1.0f, 0xFFE3E8F0);
@@ -336,7 +336,7 @@ LFLinear::Ptr buildFunctionDemoPage() {
     page->matchParentWidth();
     page->wrapContentHeight();
     page->setBackgroundColor(0xFFF5F7FB);
-    page->setPadding(YGEdgeAll, 24.0f);
+    page->setPadding(LFLayoutEdge::All, 24.0f);
     page->setSpacing(18.0f);
 
     auto title = makeText("Leaf Component Lab", 26.0f, 0xFF142033);
@@ -461,7 +461,7 @@ LFLinear::Ptr buildFunctionDemoPage() {
     );
 
     auto inlinePairRow = makeRow();
-    inlinePairRow->setAlignItems(YGAlignFlexStart);
+    inlinePairRow->setAlignItems(LFAlign::FlexStart);
 
     auto leftColumn = LFLinear::createVertical();
     leftColumn->setFlexGrow(1.0f);
@@ -713,7 +713,7 @@ LFLinear::Ptr buildFunctionDemoPage() {
     auto runtimeTextBox = LFLinear::createVertical();
     runtimeTextBox->matchParentWidth();
     runtimeTextBox->wrapContentHeight();
-    runtimeTextBox->setPadding(YGEdgeAll, 14.0f);
+    runtimeTextBox->setPadding(LFLayoutEdge::All, 14.0f);
     runtimeTextBox->setBackgroundColor(0xFFF8FAFD);
     runtimeTextBox->setBorderRadius(14.0f);
     runtimeTextBox->setBorder(1.0f, 0xFFDDE6F0);

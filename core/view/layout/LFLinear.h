@@ -32,8 +32,8 @@ public:
     static std::shared_ptr<LFLinear> createHorizontal();
 
 private:
-    // 核心逻辑：根据语义状态更新 Yoga 属性
-    void updateYogaLayout();
+    // 根据语义状态更新底层 Flexbox 属性
+    void updateFlexLayout();
 
     LFOrientation m_orientation = LFOrientation::Vertical;
     LFAlignment m_mainAlign = LFAlignment::Start;

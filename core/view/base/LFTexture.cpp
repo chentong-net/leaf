@@ -136,23 +136,19 @@ void LFTexture::onDrawContent(LFPaint& paint) {
     if (m_texture == 0) return;
     if (m_allocatedWidth <= 0 || m_allocatedHeight <= 0) return;
 
-    float paddingL = YGNodeLayoutGetPadding(getYGNode(), YGEdgeLeft);
-    float paddingT = YGNodeLayoutGetPadding(getYGNode(), YGEdgeTop);
-    float borderL = YGNodeLayoutGetBorder(getYGNode(), YGEdgeLeft);
-    float borderT = YGNodeLayoutGetBorder(getYGNode(), YGEdgeTop);
-
-    float contentX = paddingL + borderL;
-    float contentY = paddingT + borderT;
+    const LFLayoutFrame& frame = getLayoutFrame();
+    float contentX = frame.padding.left + frame.border.left;
+    float contentY = frame.padding.top + frame.border.top;
 
     float layoutW = getLayoutWidth();
     float layoutH = getLayoutHeight();
 
     float contentW = layoutW - contentX
-                     - YGNodeLayoutGetPadding(getYGNode(), YGEdgeRight)
-                     - YGNodeLayoutGetBorder(getYGNode(), YGEdgeRight);
+                     - frame.padding.right
+                     - frame.border.right;
     float contentH = layoutH - contentY
-                     - YGNodeLayoutGetPadding(getYGNode(), YGEdgeBottom)
-                     - YGNodeLayoutGetBorder(getYGNode(), YGEdgeBottom);
+                     - frame.padding.bottom
+                     - frame.border.bottom;
 
     contentW = clampPositive(contentW);
     contentH = clampPositive(contentH);
@@ -191,7 +187,9 @@ void LFTexture::onDrawContent(LFPaint& paint) {
     float finalX = contentX + drawX;
     float finalY = contentY + drawY;
     float radius = getRadius();
-    float effectiveRadius = radius > 0.0f ? std::max(0.0f, radius - borderL) : 0.0f;
+    float effectiveRadius = radius > 0.0f
+                                ? std::max(0.0f, radius - frame.border.left)
+                                : 0.0f;
 
     LFImageDraw imageDraw;
     imageDraw.texture = m_texture;

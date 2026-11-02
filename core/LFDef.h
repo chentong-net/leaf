@@ -39,7 +39,6 @@
 #define LF_LOGI(...) ((void)OH_LOG_Print(LOG_APP, LOG_INFO, 0x0000, "Leaf", __VA_ARGS__))
 #endif
 
-#include "Yoga.h"
 #include <string>
 #include <vector>
 #include <unordered_map>

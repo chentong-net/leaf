@@ -5,71 +5,33 @@
 #include "view/layout/LFBox.h"
 
 #include <cmath>
+#include <limits>
 
 namespace {
 
-bool isWrapContentStyle(const YGValue& value) {
-    return value.unit == YGUnitAuto;
+bool isWrapContentStyle(const LFLayoutValue& value) {
+    return value.unit == LFLayoutUnit::Auto;
 }
 
-bool isValueDefined(const YGValue& value) {
-    return value.unit != YGUnitUndefined;
+bool isValueDefined(const LFLayoutValue& value) {
+    return LFLayoutValueIsDefined(value);
 }
 
-float resolveValue(const YGValue& value, float ownerSize) {
-    if (value.unit == YGUnitPoint) {
-        return value.value;
-    }
-    if (value.unit == YGUnitPercent && !YGFloatIsUndefined(ownerSize)) {
-        return ownerSize * value.value / 100.0f;
-    }
-    return 0.0f;
+float resolveValue(const LFLayoutValue& value, float ownerSize) {
+    return LFLayoutResolveValue(value, ownerSize);
 }
 
-YGValue resolveEdgeValue(YGNodeRef node, YGEdge edge, YGValue (*getter)(YGNodeConstRef, YGEdge)) {
-    YGValue value = getter(node, edge);
-    if (value.unit != YGUnitUndefined) {
-        return value;
-    }
-
-    if (edge == YGEdgeLeft || edge == YGEdgeRight) {
-        value = getter(node, YGEdgeHorizontal);
-        if (value.unit != YGUnitUndefined) {
-            return value;
-        }
-    } else if (edge == YGEdgeTop || edge == YGEdgeBottom) {
-        value = getter(node, YGEdgeVertical);
-        if (value.unit != YGUnitUndefined) {
-            return value;
-        }
-    }
-
-    return getter(node, YGEdgeAll);
+LFLayoutValue resolveEdgeValue(
+        const std::array<LFLayoutValue, kLFLayoutEdgeCount>& values,
+        LFLayoutEdge edge) {
+    return LFLayoutResolveEdgeValue(values, edge);
 }
 
-float resolveBorderValue(YGNodeRef node, YGEdge edge) {
-    float value = YGNodeStyleGetBorder(node, edge);
-    if (!YGFloatIsUndefined(value)) {
-        return value;
-    }
-
-    if (edge == YGEdgeLeft || edge == YGEdgeRight) {
-        value = YGNodeStyleGetBorder(node, YGEdgeHorizontal);
-        if (!YGFloatIsUndefined(value)) {
-            return value;
-        }
-    } else if (edge == YGEdgeTop || edge == YGEdgeBottom) {
-        value = YGNodeStyleGetBorder(node, YGEdgeVertical);
-        if (!YGFloatIsUndefined(value)) {
-            return value;
-        }
-    }
-
-    value = YGNodeStyleGetBorder(node, YGEdgeAll);
-    if (!YGFloatIsUndefined(value)) {
-        return value;
-    }
-    return 0.0f;
+float resolveBorderValue(
+        const std::array<LFLayoutValue, kLFLayoutEdgeCount>& values,
+        LFLayoutEdge edge) {
+    const LFLayoutValue value = resolveEdgeValue(values, edge);
+    return value.unit == LFLayoutUnit::Undefined ? 0.0f : value.value;
 }
 
 bool almostEqual(float a, float b) {
@@ -179,59 +141,60 @@ void LFBox::addChild(const LFNode::Ptr& child, LFBoxAlign align, float offsetX, 
 void LFBox::applyLayoutMeta(const LFNode::Ptr& child, const ChildLayoutMeta& meta) {
     if (!child) return;
 
-    child->setPositionType(YGPositionTypeAbsolute);
+    child->setPositionType(LFPositionType::Absolute);
 
-    child->setPosition(YGEdgeLeft, YGUndefined);
-    child->setPosition(YGEdgeTop, YGUndefined);
-    child->setPosition(YGEdgeRight, YGUndefined);
-    child->setPosition(YGEdgeBottom, YGUndefined);
+    const float undefined = std::numeric_limits<float>::quiet_NaN();
+    child->setPosition(LFLayoutEdge::Left, undefined);
+    child->setPosition(LFLayoutEdge::Top, undefined);
+    child->setPosition(LFLayoutEdge::Right, undefined);
+    child->setPosition(LFLayoutEdge::Bottom, undefined);
 
     child->setTranslate(0.0f, 0.0f);
     child->setTranslatePercent(0.0f, 0.0f);
 
     switch (meta.align) {
         case LFBoxAlign::TopLeft:
-            child->setPosition(YGEdgeLeft, meta.marginStart);
-            child->setPosition(YGEdgeTop, meta.marginTop);
+            child->setPosition(LFLayoutEdge::Left, meta.marginStart);
+            child->setPosition(LFLayoutEdge::Top, meta.marginTop);
             break;
         case LFBoxAlign::TopRight:
-            child->setPosition(YGEdgeRight, meta.marginEnd);
-            child->setPosition(YGEdgeTop, meta.marginTop);
+            child->setPosition(LFLayoutEdge::Right, meta.marginEnd);
+            child->setPosition(LFLayoutEdge::Top, meta.marginTop);
             break;
         case LFBoxAlign::BottomLeft:
-            child->setPosition(YGEdgeLeft, meta.marginStart);
-            child->setPosition(YGEdgeBottom, meta.marginBottom);
+            child->setPosition(LFLayoutEdge::Left, meta.marginStart);
+            child->setPosition(LFLayoutEdge::Bottom, meta.marginBottom);
             break;
         case LFBoxAlign::BottomRight:
-            child->setPosition(YGEdgeRight, meta.marginEnd);
-            child->setPosition(YGEdgeBottom, meta.marginBottom);
+            child->setPosition(LFLayoutEdge::Right, meta.marginEnd);
+            child->setPosition(LFLayoutEdge::Bottom, meta.marginBottom);
             break;
         case LFBoxAlign::MatchParent:
-            child->setPosition(YGEdgeAll, 0.0f);
+            child->setPosition(LFLayoutEdge::All, 0.0f);
             break;
         case LFBoxAlign::Center:
-            child->setPositionPercent(YGEdgeLeft, 50.0f);
-            child->setPositionPercent(YGEdgeTop, 50.0f);
+            child->setPositionPercent(LFLayoutEdge::Left, 50.0f);
+            child->setPositionPercent(LFLayoutEdge::Top, 50.0f);
             child->setTranslatePercent(-50.0f, -50.0f);
             break;
         case LFBoxAlign::TopCenter:
-            child->setPositionPercent(YGEdgeLeft, 50.0f);
-            child->setPosition(YGEdgeTop, 0.0f);
+            child->setPositionPercent(LFLayoutEdge::Left, 50.0f);
+            child->setPosition(LFLayoutEdge::Top, 0.0f);
             child->setTranslatePercent(-50.0f, 0.0f);
             break;
         case LFBoxAlign::BottomCenter:
-            child->setPositionPercent(YGEdgeLeft, 50.0f);
-            child->setPosition(YGEdgeBottom, 0.0f);
+            child->setPositionPercent(LFLayoutEdge::Left, 50.0f);
+            child->setPosition(LFLayoutEdge::Bottom, 0.0f);
             child->setTranslatePercent(-50.0f, 0.0f);
             break;
         case LFBoxAlign::CenterLeft:
-            child->setPosition(YGEdgeLeft, 0.0f);
-            child->setPositionPercent(YGEdgeTop, 50.0f);
+            child->setPosition(LFLayoutEdge::Left, 0.0f);
+            child->setPositionPercent(LFLayoutEdge::Top, 50.0f);
             child->setTranslatePercent(0.0f, -50.0f);
             break;
         case LFBoxAlign::CenterRight:
-            child->setPosition(YGEdgeRight, 0.0f);
-            child->setPositionPercent(YGEdgeTop, 50.0f);
+            child->setPosition(LFLayoutEdge::Right, 0.0f);
+            child->setPositionPercent(LFLayoutEdge::Top, 50.0f);
             child->setTranslatePercent(0.0f, -50.0f);
             break;
     }
@@ -248,34 +211,43 @@ LFBox::ChildLayoutMeta LFBox::getLayoutMetaForChild(const LFNode::Ptr& child) co
     return {};
 }
 
-float LFBox::resolveChildMeasureSize(YGNodeRef node, YGValue value, float ownerSize) const {
-    if (value.unit == YGUnitPoint) {
+float LFBox::resolveChildMeasureSize(const LFLayoutValue& value, float ownerSize) const {
+    if (value.unit == LFLayoutUnit::Point) {
         return value.value;
     }
-    if (value.unit == YGUnitPercent && !YGFloatIsUndefined(ownerSize)) {
+    if (value.unit == LFLayoutUnit::Percent && std::isfinite(ownerSize)) {
         return ownerSize * value.value / 100.0f;
     }
-    return YGUndefined;
+    return std::numeric_limits<float>::quiet_NaN();
 }
 
-float LFBox::resolveMargin(YGNodeRef node, YGEdge edge, float ownerSize) const {
-    return resolveValue(resolveEdgeValue(node, edge, YGNodeStyleGetMargin), ownerSize);
+float LFBox::resolveMargin(const LFNode::Ptr& node,
+                           LFLayoutEdge edge,
+                           float ownerSize) const {
+    if (!node) return 0.0f;
+    return resolveValue(
+        resolveEdgeValue(node->getLayoutStyle().margin, edge),
+        ownerSize
+    );
 }
 
-float LFBox::resolvePadding(YGEdge edge, float ownerSize) const {
-    return resolveValue(resolveEdgeValue(getYGNode(), edge, YGNodeStyleGetPadding), ownerSize);
+float LFBox::resolvePadding(LFLayoutEdge edge, float ownerSize) const {
+    return resolveValue(
+        resolveEdgeValue(getLayoutStyle().padding, edge),
+        ownerSize
+    );
 }
 
-float LFBox::resolveBorder(YGEdge edge) const {
-    return resolveBorderValue(getYGNode(), edge);
+float LFBox::resolveBorder(LFLayoutEdge edge) const {
+    return resolveBorderValue(getLayoutStyle().border, edge);
 }
 
 bool LFBox::isWrapContentWidth() const {
-    return m_wrapContentWidthRequested && isWrapContentStyle(YGNodeStyleGetWidth(getYGNode()));
+    return m_wrapContentWidthRequested && isWrapContentStyle(getLayoutStyle().width);
 }
 
 bool LFBox::isWrapContentHeight() const {
-    return m_wrapContentHeightRequested && isWrapContentStyle(YGNodeStyleGetHeight(getYGNode()));
+    return m_wrapContentHeightRequested && isWrapContentStyle(getLayoutStyle().height);
 }
 
 void LFBox::onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {
@@ -303,21 +275,21 @@ void LFBox::onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {
         return;
     }
 
-    float borderLeft = resolveBorder(YGEdgeLeft);
-    float borderTop = resolveBorder(YGEdgeTop);
-    float borderRight = resolveBorder(YGEdgeRight);
-    float borderBottom = resolveBorder(YGEdgeBottom);
-    float paddingLeft = resolvePadding(YGEdgeLeft, ownerWidth);
-    float paddingTop = resolvePadding(YGEdgeTop, ownerHeight);
-    float paddingRight = resolvePadding(YGEdgeRight, ownerWidth);
-    float paddingBottom = resolvePadding(YGEdgeBottom, ownerHeight);
+    float borderLeft = resolveBorder(LFLayoutEdge::Left);
+    float borderTop = resolveBorder(LFLayoutEdge::Top);
+    float borderRight = resolveBorder(LFLayoutEdge::Right);
+    float borderBottom = resolveBorder(LFLayoutEdge::Bottom);
+    float paddingLeft = resolvePadding(LFLayoutEdge::Left, ownerWidth);
+    float paddingTop = resolvePadding(LFLayoutEdge::Top, ownerHeight);
+    float paddingRight = resolvePadding(LFLayoutEdge::Right, ownerWidth);
+    float paddingBottom = resolvePadding(LFLayoutEdge::Bottom, ownerHeight);
 
     float contentOwnerWidth = ownerWidth;
     float contentOwnerHeight = ownerHeight;
-    if (!YGFloatIsUndefined(contentOwnerWidth)) {
+    if (std::isfinite(contentOwnerWidth)) {
         contentOwnerWidth = std::max(0.0f, contentOwnerWidth - borderLeft - borderRight - paddingLeft - paddingRight);
     }
-    if (!YGFloatIsUndefined(contentOwnerHeight)) {
+    if (std::isfinite(contentOwnerHeight)) {
         contentOwnerHeight = std::max(0.0f, contentOwnerHeight - borderTop - borderBottom - paddingTop - paddingBottom);
     }
 
@@ -327,44 +299,58 @@ void LFBox::onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {
     for (const auto& child : getChildren()) {
         if (!child) continue;
 
-        YGNodeRef childNode = child->getYGNode();
-        if (YGNodeStyleGetDisplay(childNode) == YGDisplayNone) {
+        if (child->getLayoutStyle().display == LFDisplay::None) {
             continue;
         }
 
         ChildLayoutMeta meta = getLayoutMetaForChild(child);
-        YGValue childWidthStyle = YGNodeStyleGetWidth(childNode);
-        YGValue childHeightStyle = YGNodeStyleGetHeight(childNode);
+        const LFLayoutStyle& childStyle = child->getLayoutStyle();
+        const LFLayoutValue& childWidthStyle = childStyle.width;
+        const LFLayoutValue& childHeightStyle = childStyle.height;
 
-        bool hasLeft = isValueDefined(YGNodeStyleGetPosition(childNode, YGEdgeLeft));
-        bool hasRight = isValueDefined(YGNodeStyleGetPosition(childNode, YGEdgeRight));
-        bool hasTop = isValueDefined(YGNodeStyleGetPosition(childNode, YGEdgeTop));
-        bool hasBottom = isValueDefined(YGNodeStyleGetPosition(childNode, YGEdgeBottom));
-        bool widthPercent100 = childWidthStyle.unit == YGUnitPercent && almostEqual(childWidthStyle.value, 100.0f);
-        bool heightPercent100 = childHeightStyle.unit == YGUnitPercent && almostEqual(childHeightStyle.value, 100.0f);
+        bool hasLeft = isValueDefined(childStyle.position[
+            static_cast<size_t>(LFLayoutEdge::Left)]);
+        bool hasRight = isValueDefined(childStyle.position[
+            static_cast<size_t>(LFLayoutEdge::Right)]);
+        bool hasTop = isValueDefined(childStyle.position[
+            static_cast<size_t>(LFLayoutEdge::Top)]);
+        bool hasBottom = isValueDefined(childStyle.position[
+            static_cast<size_t>(LFLayoutEdge::Bottom)]);
+        bool widthPercent100 = childWidthStyle.unit == LFLayoutUnit::Percent &&
+                               almostEqual(childWidthStyle.value, 100.0f);
+        bool heightPercent100 = childHeightStyle.unit == LFLayoutUnit::Percent &&
+                                almostEqual(childHeightStyle.value, 100.0f);
         bool matchParentWidth = meta.align == LFBoxAlign::MatchParent || widthPercent100 || (hasLeft && hasRight);
         bool matchParentHeight = meta.align == LFBoxAlign::MatchParent || heightPercent100 || (hasTop && hasBottom);
 
-        float childOwnerWidth = resolveChildMeasureSize(childNode, childWidthStyle, contentOwnerWidth);
-        float childOwnerHeight = resolveChildMeasureSize(childNode, childHeightStyle, contentOwnerHeight);
+        float childOwnerWidth = resolveChildMeasureSize(childWidthStyle, contentOwnerWidth);
+        float childOwnerHeight = resolveChildMeasureSize(childHeightStyle, contentOwnerHeight);
 
         // 关键策略：wrap轴上auto子节点应按自然尺寸测量，不应强制吃满父尺寸
-        if (YGFloatIsUndefined(childOwnerWidth)) {
-            childOwnerWidth = (wrapWidth && !matchParentWidth) ? YGUndefined : contentOwnerWidth;
+        if (!std::isfinite(childOwnerWidth)) {
+            childOwnerWidth = (wrapWidth && !matchParentWidth)
+                                  ? std::numeric_limits<float>::quiet_NaN()
+                                  : contentOwnerWidth;
         }
-        if (YGFloatIsUndefined(childOwnerHeight)) {
-            childOwnerHeight = (wrapHeight && !matchParentHeight) ? YGUndefined : contentOwnerHeight;
+        if (!std::isfinite(childOwnerHeight)) {
+            childOwnerHeight = (wrapHeight && !matchParentHeight)
+                                   ? std::numeric_limits<float>::quiet_NaN()
+                                   : contentOwnerHeight;
         }
 
-        YGNodeCalculateLayout(childNode, childOwnerWidth, childOwnerHeight, YGDirectionLTR);
+        child->calculateLayout(childOwnerWidth, childOwnerHeight);
 
-        float childWidth = YGNodeLayoutGetWidth(childNode);
-        float childHeight = YGNodeLayoutGetHeight(childNode);
+        float childWidth = child->getLayoutWidth();
+        float childHeight = child->getLayoutHeight();
 
-        float marginStart = meta.marginStart + resolveMargin(childNode, YGEdgeLeft, contentOwnerWidth);
-        float marginTop = meta.marginTop + resolveMargin(childNode, YGEdgeTop, contentOwnerHeight);
-        float marginEnd = meta.marginEnd + resolveMargin(childNode, YGEdgeRight, contentOwnerWidth);
-        float marginBottom = meta.marginBottom + resolveMargin(childNode, YGEdgeBottom, contentOwnerHeight);
+        float marginStart = meta.marginStart +
+                            resolveMargin(child, LFLayoutEdge::Left, contentOwnerWidth);
+        float marginTop = meta.marginTop +
+                          resolveMargin(child, LFLayoutEdge::Top, contentOwnerHeight);
+        float marginEnd = meta.marginEnd +
+                          resolveMargin(child, LFLayoutEdge::Right, contentOwnerWidth);
+        float marginBottom = meta.marginBottom +
+                             resolveMargin(child, LFLayoutEdge::Bottom, contentOwnerHeight);
 
         if (!wrapWidth || !matchParentWidth) {
             measuredChildrenWidth = std::max(measuredChildrenWidth, childWidth + marginStart + marginEnd);
@@ -378,22 +364,22 @@ void LFBox::onBeforeCalculateLayout(float ownerWidth, float ownerHeight) {
     float measuredHeight = measuredChildrenHeight + paddingTop + paddingBottom + borderTop + borderBottom;
 
     if (wrapWidth) {
-        YGNodeStyleSetWidth(getYGNode(), measuredWidth);
+        LFNode::setWidth(measuredWidth);
         m_restoreAutoWidth = true;
     }
     if (wrapHeight) {
-        YGNodeStyleSetHeight(getYGNode(), measuredHeight);
+        LFNode::setHeight(measuredHeight);
         m_restoreAutoHeight = true;
     }
 }
 
 void LFBox::onAfterCalculateLayout() {
     if (m_restoreAutoWidth) {
-        YGNodeStyleSetWidthAuto(getYGNode());
+        LFNode::wrapContentWidth();
         m_restoreAutoWidth = false;
     }
     if (m_restoreAutoHeight) {
-        YGNodeStyleSetHeightAuto(getYGNode());
+        LFNode::wrapContentHeight();
         m_restoreAutoHeight = false;
     }
 }

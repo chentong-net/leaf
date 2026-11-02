@@ -17,7 +17,7 @@ LFGrid::LFGrid() {
     setOrientation(LFOrientation::Horizontal);
 
     // 2. 开启自动换行 (关键)
-    setFlexWrap(YGWrapWrap);
+    setFlexWrap(LFWrap::Wrap);
 
     // 3. 默认主轴对齐方式：起点对齐
     setGravity(LFAlignment::Start, LFAlignment::Start);
@@ -47,7 +47,7 @@ void LFGrid::addChild(const LFNode::Ptr& child) {
     // 举例：如果 spacing 是 10，那么每个 cell 四周都有 5 的 padding。
     // 相邻两个 cell 中间就是 10。边缘处会有 5 的留白。
     float halfSpacing = m_spacing / 2.0f;
-    cell->setPadding(YGEdgeAll, halfSpacing);
+    cell->setPadding(LFLayoutEdge::All, halfSpacing);
 
     // 5. 将用户的 child 放入 cell
     // 用户的 child 应该撑满 cell 的内容区 (减去 padding 后的区域)
@@ -112,7 +112,7 @@ void LFGrid::refreshCells() {
         cell->setWidthPercent(widthPercent);
 
         // 2. 更新间距 (Padding)
-        cell->setPadding(YGEdgeAll, halfSpacing);
+        cell->setPadding(LFLayoutEdge::All, halfSpacing);
     }
 
     // 标记脏，触发重绘布局

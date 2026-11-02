@@ -36,7 +36,7 @@ void appendBlock(const std::shared_ptr<LFLinear>& parent,
                  const LFNode::Ptr& child,
                  float spacing) {
     if (!parent || !child) return;
-    child->setMargin(YGEdgeBottom, spacing);
+    child->setMargin(LFLayoutEdge::Bottom, spacing);
     parent->addChild(child);
 }
 
@@ -54,7 +54,7 @@ std::shared_ptr<LFLinear> LFMarkdownRenderer::render(
     auto root = LFLinear::createVertical();
     root->matchParentWidth();
     root->wrapContentHeight();
-    root->setPadding(YGEdgeAll, m_theme.contentPadding);
+    root->setPadding(LFLayoutEdge::All, m_theme.contentPadding);
 
     renderBlocks(document.blocks, root, m_theme.blockSpacing);
     return root;
@@ -172,10 +172,10 @@ void LFMarkdownRenderer::renderQuote(
     content->setFlexGrow(1.0f);
     content->setFlexShrink(1.0f);
     content->wrapContentHeight();
-    content->setPadding(YGEdgeLeft, m_theme.quoteHorizontalPadding);
-    content->setPadding(YGEdgeRight, m_theme.quoteHorizontalPadding);
-    content->setPadding(YGEdgeTop, m_theme.quoteVerticalPadding);
-    content->setPadding(YGEdgeBottom, m_theme.quoteVerticalPadding);
+    content->setPadding(LFLayoutEdge::Left, m_theme.quoteHorizontalPadding);
+    content->setPadding(LFLayoutEdge::Right, m_theme.quoteHorizontalPadding);
+    content->setPadding(LFLayoutEdge::Top, m_theme.quoteVerticalPadding);
+    content->setPadding(LFLayoutEdge::Bottom, m_theme.quoteVerticalPadding);
     content->setBackgroundColor(m_theme.quoteBackgroundColor);
     renderBlocks(block.children, content, m_theme.quoteBlockSpacing);
     row->addChild(content);
@@ -224,7 +224,7 @@ void LFMarkdownRenderer::renderList(
         renderBlocks(item.children, content, m_theme.listItemSpacing);
         row->addChild(content);
         if (index + 1 < block.children.size()) {
-            row->setMargin(YGEdgeBottom, m_theme.listItemSpacing);
+            row->setMargin(LFLayoutEdge::Bottom, m_theme.listItemSpacing);
         }
         list->addChild(row);
     }
@@ -260,7 +260,7 @@ void LFMarkdownRenderer::renderCodeBlock(
     auto box = LFBox::create();
     box->matchParentWidth();
     box->wrapContentHeight();
-    box->setPadding(YGEdgeAll, 12.0f);
+    box->setPadding(LFLayoutEdge::All, 12.0f);
     box->setBorderRadius(8.0f);
     box->setBackgroundColor(m_theme.codeBlockBackgroundColor);
 
@@ -283,7 +283,7 @@ void LFMarkdownRenderer::renderThematicBreak(
     divider->matchParentWidth();
     divider->setHeight(1.0f);
     divider->setBackgroundColor(m_theme.dividerColor);
-    divider->setMargin(YGEdgeVertical, 6.0f);
+    divider->setMargin(LFLayoutEdge::Vertical, 6.0f);
     appendBlock(parent, divider, blockGap);
 }
 
@@ -335,7 +335,7 @@ void LFMarkdownRenderer::renderTable(
             cell->setFlexShrink(1.0f);
             cell->setFlexBasis(0.0f);
             cell->setMinHeight(m_theme.tableCellMinHeight);
-            cell->setPadding(YGEdgeAll, m_theme.tableCellPadding);
+            cell->setPadding(LFLayoutEdge::All, m_theme.tableCellPadding);
             cell->setBackgroundColor(
                 rowIndex == 0
                     ? m_theme.tableHeaderBackgroundColor
@@ -385,7 +385,7 @@ void LFMarkdownRenderer::renderImageBlock(
         const LFMarkdownInline& imageValue,
         const std::shared_ptr<LFLinear>& parent) const {
     auto image = std::make_shared<LFImage>();
-    image->setAlignSelf(YGAlignFlexStart);
+    image->setAlignSelf(LFAlign::FlexStart);
     image->setMaxWidth(m_theme.imageMaxWidth);
     image->setMaxHeight(m_theme.imageMaxHeight);
     image->setFit(LFImageFit::Contain);
@@ -414,7 +414,7 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
         row = LFLinear::createHorizontal();
         row->matchParentWidth();
         row->wrapContentHeight();
-        row->setFlexWrap(YGWrapWrap);
+        row->setFlexWrap(LFWrap::Wrap);
         row->setRowSpacing(
             std::max(
                 0.0f,
@@ -469,7 +469,7 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
         text->setText(value);
         if (compressTrailingSpace) {
             text->setMargin(
-                YGEdgeRight,
+                LFLayoutEdge::Right,
                 -fontSize * m_theme.cjkPunctuationCompression
             );
         }
@@ -488,9 +488,9 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
             auto codeBox = LFBox::create();
             codeBox->setFlexShrink(1.0f);
             codeBox->wrapContentHeight();
-            codeBox->setPadding(YGEdgeHorizontal, 3.0f);
-            codeBox->setPadding(YGEdgeVertical, 1.0f);
-            codeBox->setMargin(YGEdgeHorizontal, 2.0f);
+            codeBox->setPadding(LFLayoutEdge::Horizontal, 3.0f);
+            codeBox->setPadding(LFLayoutEdge::Vertical, 1.0f);
+            codeBox->setMargin(LFLayoutEdge::Horizontal, 2.0f);
             codeBox->setBorderRadius(4.0f);
             codeBox->setBackgroundColor(m_theme.inlineCodeBackgroundColor);
             codeBox->addChild(text);

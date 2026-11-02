@@ -34,8 +34,8 @@ LFButton::LFButton() {
     setClickEffect(LFClickEffect::Scale);
 
     // 默认布局属性：居中
-    setJustifyContent(YGJustifyCenter);
-    setAlignItems(YGAlignCenter);
+    setJustifyContent(LFJustify::Center);
+    setAlignItems(LFAlign::Center);
 
     // 开启触摸
     setTouchEnabled(true);

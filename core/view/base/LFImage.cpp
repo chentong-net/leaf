@@ -7,8 +7,14 @@
 #include "plugin/LFPlugin.h"
 #include "stb_image.h"
 
+#include <limits>
+
 LFImage::LFImage() {
-    YGNodeSetMeasureFunc(getYGNode(), measure);
+    setLayoutMeasureFunction(
+        [this](const LFMeasureInput& input) {
+            return measureLayout(input);
+        }
+    );
 }
 
 LFImage::~LFImage() {
@@ -36,9 +42,8 @@ void LFImage::setSrc(const std::string& src) {
         // 清空时，尺寸确实应该归零
         m_imgWidth = 0;
         m_imgHeight = 0;
-        YGNodeStyleSetAspectRatio(getYGNode(), NAN); // 清除比例
-        YGNodeMarkDirty(getYGNode());
-        markDirty();
+        setAspectRatio(std::numeric_limits<float>::quiet_NaN());
+        invalidateLayout();
     } else {
         startLoading();
     }
@@ -82,44 +87,37 @@ void LFImage::startLoading() {
                     self->m_imgWidth = width;
                     self->m_imgHeight = height;
                     if (width > 0 && height > 0) {
-                        YGNodeStyleSetAspectRatio(
-                            self->getYGNode(),
-                            static_cast<float>(width) / static_cast<float>(height)
-                        );
+                        self->setAspectRatio(
+                            static_cast<float>(width) / static_cast<float>(height));
                     }
 
-                    YGNodeMarkDirty(self->getYGNode());
-                    self->markDirty();
+                    self->invalidateLayout();
                 }
         );
     });
 }
 
-YGSize LFImage::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
-                        float height, YGMeasureMode heightMode) {
-    auto* baseNode = static_cast<LFNode*>(YGNodeGetContext(node));
-    auto* imgNode = static_cast<LFImage*>(baseNode);
-
-    if (imgNode->m_imgWidth == 0 || imgNode->m_imgHeight == 0) {
-        return {0, 0};
+LFSize LFImage::measureLayout(const LFMeasureInput& input) const {
+    if (m_imgWidth == 0 || m_imgHeight == 0) {
+        return {};
     }
 
-    float intrinsicW = (float)imgNode->m_imgWidth;
-    float intrinsicH = (float)imgNode->m_imgHeight;
-    YGSize result = {0, 0};
+    float intrinsicW = (float)m_imgWidth;
+    float intrinsicH = (float)m_imgHeight;
+    LFSize result;
 
-    if (widthMode == YGMeasureModeExactly) {
-        result.width = width;
-    } else if (widthMode == YGMeasureModeAtMost) {
-        result.width = std::min(width, intrinsicW);
+    if (input.width.mode == LFMeasureMode::Exactly) {
+        result.width = input.width.size;
+    } else if (input.width.mode == LFMeasureMode::AtMost) {
+        result.width = std::min(input.width.size, intrinsicW);
     } else {
         result.width = intrinsicW;
     }
 
-    if (heightMode == YGMeasureModeExactly) {
-        result.height = height;
-    } else if (heightMode == YGMeasureModeAtMost) {
-        result.height = std::min(height, intrinsicH);
+    if (input.height.mode == LFMeasureMode::Exactly) {
+        result.height = input.height.size;
+    } else if (input.height.mode == LFMeasureMode::AtMost) {
+        result.height = std::min(input.height.size, intrinsicH);
     } else {
         result.height = intrinsicH;
     }
@@ -167,19 +165,15 @@ void LFImage::onDrawContent(LFPaint& paint) {
     if (m_texture == 0) return;
 
     // 2. 计算 Content Box
-    float paddingL = YGNodeLayoutGetPadding(getYGNode(), YGEdgeLeft);
-    float paddingT = YGNodeLayoutGetPadding(getYGNode(), YGEdgeTop);
-    float borderL = YGNodeLayoutGetBorder(getYGNode(), YGEdgeLeft);
-    float borderT = YGNodeLayoutGetBorder(getYGNode(), YGEdgeTop);
-
-    float contentX = paddingL + borderL;
-    float contentY = paddingT + borderT;
+    const LFLayoutFrame& frame = getLayoutFrame();
+    float contentX = frame.padding.left + frame.border.left;
+    float contentY = frame.padding.top + frame.border.top;
 
     float layoutW = getLayoutWidth();
     float layoutH = getLayoutHeight();
 
-    float contentW = layoutW - contentX - YGNodeLayoutGetPadding(getYGNode(), YGEdgeRight) - YGNodeLayoutGetBorder(getYGNode(), YGEdgeRight);
-    float contentH = layoutH - contentY - YGNodeLayoutGetPadding(getYGNode(), YGEdgeBottom) - YGNodeLayoutGetBorder(getYGNode(), YGEdgeBottom);
+    float contentW = layoutW - contentX - frame.padding.right - frame.border.right;
+    float contentH = layoutH - contentY - frame.padding.bottom - frame.border.bottom;
 
     if (contentW <= 0 || contentH <= 0) return;
 
@@ -221,7 +215,7 @@ void LFImage::onDrawContent(LFPaint& paint) {
     // 这里取左边框宽度做近似计算
     float effectiveRadius = 0.0f;
     if (radius > 0) {
-        effectiveRadius = std::max(0.0f, radius - borderL);
+        effectiveRadius = std::max(0.0f, radius - frame.border.left);
     }
     LFDrawRect clipRect;
     if (m_fit == LFImageFit::Cover) {

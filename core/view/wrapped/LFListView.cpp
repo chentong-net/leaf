@@ -298,11 +298,11 @@ void LFListView::updateVisibleRange(int first, int last, bool forceRebind) {
         }
 
         // 复用节点可能遗留旧布局参数，进入列表前做统一归一
-        node->setPositionType(YGPositionTypeRelative);
-        node->setPosition(YGEdgeLeft, YGUndefined);
-        node->setPosition(YGEdgeTop, YGUndefined);
-        node->setPosition(YGEdgeRight, YGUndefined);
-        node->setPosition(YGEdgeBottom, YGUndefined);
+        node->setPositionType(LFPositionType::Relative);
+        node->setPosition(LFLayoutEdge::Left, NAN);
+        node->setPosition(LFLayoutEdge::Top, NAN);
+        node->setPosition(LFLayoutEdge::Right, NAN);
+        node->setPosition(LFLayoutEdge::Bottom, NAN);
         node->setTranslate(0.0f, 0.0f);
         node->setTranslatePercent(0.0f, 0.0f);
         node->matchParentWidth();

@@ -117,10 +117,10 @@ void BookshelfPage::initUI() {
     navbar->matchParentWidth();
     navbar->setHeight(56);
     navbar->setBackgroundColor(0xFFFFFFFF);
-    navbar->setPadding(YGEdgeHorizontal, 16);
+    navbar->setPadding(LFLayoutEdge::Horizontal, 16);
     navbar->setGravity(LFAlignment::Start, LFAlignment::Center);
     navbar->setBorder(1.0f, 0xFFE0E0E0);
-    YGNodeStyleSetBorder(navbar->getYGNode(), YGEdgeBottom, 0);
+    navbar->setLayoutBorderWidth(LFLayoutEdge::Bottom, 0.0f);
 
     auto title = AppUtils::createLabel("我的书架", 18, 0xFF000000);
     title->setTextHAlign(LFTextHAlign::Left);
@@ -130,7 +130,7 @@ void BookshelfPage::initUI() {
     m_statusText = AppUtils::createLabel("准备中...", 12, 0xFF999999);
     m_statusText->matchParentWidth();
     m_statusText->setHeight(22);
-    m_statusText->setPadding(YGEdgeHorizontal, 16);
+    m_statusText->setPadding(LFLayoutEdge::Horizontal, 16);
     m_statusText->setTextHAlign(LFTextHAlign::Left);
     addChild(m_statusText);
 
@@ -143,7 +143,7 @@ void BookshelfPage::initUI() {
 
     m_grid = LFGrid::create(1, kBookshelfGridSpacing);
     m_grid->matchParentWidth();
-    m_grid->setPadding(YGEdgeAll, kBookshelfGridPadding);
+    m_grid->setPadding(LFLayoutEdge::All, kBookshelfGridPadding);
     scrollView->addChild(m_grid);
     addChild(scrollView);
 }
@@ -202,7 +202,7 @@ void BookshelfPage::addImportEntry() {
     itemLayout->wrapContentHeight();
     itemLayout->setGravity(LFAlignment::Center, LFAlignment::Center);
     itemLayout->setSpacing(12.0f);
-    itemLayout->setAlignSelf(YGAlignCenter);
+    itemLayout->setAlignSelf(LFAlign::Center);
 
     auto cover = DashedBorderBox::create();
     cover->matchParentWidth();
@@ -241,7 +241,7 @@ void BookshelfPage::addBookEntry(const BookRecord& book, int index) {
     itemLayout->wrapContentHeight();
     itemLayout->setGravity(LFAlignment::Center, LFAlignment::Center);
     itemLayout->setSpacing(12.0f);
-    itemLayout->setAlignSelf(YGAlignCenter);
+    itemLayout->setAlignSelf(LFAlign::Center);
 
     auto cover = LFBox::create();
     cover->matchParentWidth();
@@ -254,7 +254,7 @@ void BookshelfPage::addBookEntry(const BookRecord& book, int index) {
     coverText->matchParentWidth();
     coverText->setTextHAlign(LFTextHAlign::Center);
     coverText->setTextVAlign(LFTextVAlign::Center);
-    coverText->setPadding(YGEdgeHorizontal, 8.0f);
+    coverText->setPadding(LFLayoutEdge::Horizontal, 8.0f);
     coverText->setLineHeight(1.2f);
     cover->addChild(coverText, LFBoxAlign::Center);
 

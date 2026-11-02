@@ -31,7 +31,7 @@ LFCheckbox::Ptr LFCheckbox::create(const std::string& text, bool checked) {
 
 LFCheckbox::LFCheckbox() {
     setOrientation(LFOrientation::Horizontal);
-    setAlignItems(YGAlignCenter);
+    setAlignItems(LFAlign::Center);
     setSpacing(m_labelSpacing);
     wrapContentWidth();
     wrapContentHeight();
@@ -211,7 +211,7 @@ void LFCheckbox::updateVisualState() {
     }
 
     if (m_checkmarkContainer) {
-        m_checkmarkContainer->setDisplay(m_checked ? YGDisplayFlex : YGDisplayNone);
+        m_checkmarkContainer->setDisplay(m_checked ? LFDisplay::Flex : LFDisplay::None);
     }
     if (m_checkmarkShortStroke) {
         m_checkmarkShortStroke->setBackgroundColor(m_checkmarkColor);
@@ -224,7 +224,7 @@ void LFCheckbox::updateVisualState() {
         m_label->setText(m_text);
         m_label->setFontSize(m_fontSize);
         m_label->setTextColor(m_checked ? m_checkedTextColor : m_uncheckedTextColor);
-        m_label->setDisplay(m_text.empty() ? YGDisplayNone : YGDisplayFlex);
+        m_label->setDisplay(m_text.empty() ? LFDisplay::None : LFDisplay::Flex);
     }
 }
 

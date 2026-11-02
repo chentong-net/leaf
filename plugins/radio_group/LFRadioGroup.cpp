@@ -85,9 +85,9 @@ void LFRadioGroup::setOptionDirection(LFOrientation orientation) {
     m_optionDirection = orientation;
     LFLinear::setOrientation(orientation);
     setFlexWrap(orientation == LFOrientation::Horizontal
-                ? YGWrapWrap
-                : YGWrapNoWrap);
-    setAlignContent(YGAlignFlexStart);
+                ? LFWrap::Wrap
+                : LFWrap::NoWrap);
+    setAlignContent(LFAlign::FlexStart);
     updateVisualState();
 }
 
@@ -217,10 +217,10 @@ void LFRadioGroup::rebuildOptions() {
         view.row->wrapContentHeight();
         view.row->setGravity(LFAlignment::Center, LFAlignment::Center);
         view.row->setSpacing(m_itemSpacing);
-        view.row->setPadding(YGEdgeLeft, 4.0f);
-        view.row->setPadding(YGEdgeRight, 8.0f);
-        view.row->setPadding(YGEdgeTop, 6.0f);
-        view.row->setPadding(YGEdgeBottom, 6.0f);
+        view.row->setPadding(LFLayoutEdge::Left, 4.0f);
+        view.row->setPadding(LFLayoutEdge::Right, 8.0f);
+        view.row->setPadding(LFLayoutEdge::Top, 6.0f);
+        view.row->setPadding(LFLayoutEdge::Bottom, 6.0f);
         view.row->setBorderRadius(10.0f);
         view.row->setTouchEnabled(true);
 
@@ -278,7 +278,7 @@ void LFRadioGroup::updateVisualState() {
 
         if (view.dot) {
             view.dot->setBackgroundColor(m_checkedBorderColor);
-            view.dot->setDisplay(selected ? YGDisplayFlex : YGDisplayNone);
+            view.dot->setDisplay(selected ? LFDisplay::Flex : LFDisplay::None);
         }
 
         if (view.label) {

@@ -150,7 +150,7 @@ void LFEngine::render() {
     m_renderer->beginFrame(m_windowWidth, m_windowHeight, m_pixelRatio);
 
     // 布局
-    // Yoga内部有缓存机制，如果根节点没有markDirty，calculateLayout几乎无消耗
+    // 布局后端内部会缓存结果，未发生布局变化时重复计算的开销较低。
     // 所以每帧调用是安全的，确保布局始终正确
     m_rootNode->calculateLayout(m_windowWidth, m_windowHeight);
 

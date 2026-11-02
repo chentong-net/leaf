@@ -68,13 +68,13 @@ void LFTab::initLayout() {
     m_bottomBar->setBackgroundColor(0xFFFFFFFF); // 白底
     // 顶部分割线
     m_bottomBar->setBorder(0.5f, 0xFFE0E0E0);
-    YGNodeStyleSetBorder(m_bottomBar->getYGNode(), YGEdgeBottom, 0);
-    YGNodeStyleSetBorder(m_bottomBar->getYGNode(), YGEdgeLeft, 0);
-    YGNodeStyleSetBorder(m_bottomBar->getYGNode(), YGEdgeRight, 0);
+    m_bottomBar->setLayoutBorderWidth(LFLayoutEdge::Bottom, 0.0f);
+    m_bottomBar->setLayoutBorderWidth(LFLayoutEdge::Left, 0.0f);
+    m_bottomBar->setLayoutBorderWidth(LFLayoutEdge::Right, 0.0f);
 
     // 按钮均分
     m_bottomBar->setDistribution(LFDistribution::SpaceAround);
-    m_bottomBar->setAlignItems(YGAlignCenter);
+    m_bottomBar->setAlignItems(LFAlign::Center);
 
     addChild(m_bottomBar);
 }
@@ -98,8 +98,8 @@ void LFTab::addTab(const std::string& title,
     page->matchParentWidth();
     page->matchParentHeight();
     // 使用绝对定位重叠在一起，通过 setVisible 切换
-    page->setPositionType(YGPositionTypeAbsolute);
-    page->setPosition(YGEdgeAll, 0);
+    page->setPositionType(LFPositionType::Absolute);
+    page->setPosition(LFLayoutEdge::All, 0);
     page->setVisible(false); // 默认隐藏
 
     // 添加到 ContentArea

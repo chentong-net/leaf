@@ -82,7 +82,7 @@ void ProfilePage::showLoadError(const std::string& message) {
     auto text = createLabel(message, FS_BODY, COL_TEXT_SUB);
     text->matchParentWidth();
     text->wrapContentHeight();
-    text->setPadding(YGEdgeAll, PAGE_PADDING);
+    text->setPadding(LFLayoutEdge::All, PAGE_PADDING);
     addChild(text);
 }
 
@@ -101,9 +101,9 @@ void ProfilePage::initUI() {
     auto content = LFLinear::createVertical();
     content->matchParentWidth();
     content->wrapContentHeight();
-    content->setPadding(YGEdgeAll, PAGE_PADDING); // 全局内边距
+    content->setPadding(LFLayoutEdge::All, PAGE_PADDING); // 全局内边距
     // 增加底部留白，防止内容贴底
-    content->setPadding(YGEdgeBottom, 20.0f);
+    content->setPadding(LFLayoutEdge::Bottom, 20.0f);
 
     // ==========================================
     // 组装各板块
@@ -151,7 +151,7 @@ void ProfilePage::initUI() {
             item.at("logoSrc").asString()
         ));
     }
-    eduContainer->setMargin(YGEdgeBottom, 16);
+    eduContainer->setMargin(LFLayoutEdge::Bottom, 16);
     content->addChild(eduContainer);
 
     // F. 项目经历
@@ -194,14 +194,14 @@ std::shared_ptr<LFNode> ProfilePage::createHeaderSection() {
     auto card = LFLinear::createVertical();
     card->matchParentWidth();
     card->setHeight(200);
-    card->setMargin(YGEdgeBottom, 16);
+    card->setMargin(LFLayoutEdge::Bottom, 16);
     card->setGravity(LFAlignment::Center, LFAlignment::Center);
 
     auto column = LFLinear::createVertical();
     column->setSpacing(10);
     column->matchParentWidth();
     column->matchParentHeight();
-    column->setAlignItems(YGAlignCenter); // 垂直居中
+    column->setAlignItems(LFAlign::Center); // 垂直居中
     column->setGravity(LFAlignment::Center, LFAlignment::Center);
 
     // 头像
@@ -217,12 +217,12 @@ std::shared_ptr<LFNode> ProfilePage::createHeaderSection() {
 
     auto name = createLabel(data->at("name").asString(), 26, COL_TEXT_MAIN, true);
     name->setTextHAlign(LFTextHAlign::Center);
-    name->setMargin(YGEdgeTop, 20);
+    name->setMargin(LFLayoutEdge::Top, 20);
     column->addChild(name);
 
     auto role = createLabel(data->at("role").asString(), 15, COL_TEXT_SUB);
     role->setTextHAlign(LFTextHAlign::Center);
-    role->setMargin(YGEdgeTop, 5);
+    role->setMargin(LFLayoutEdge::Top, 5);
     column->addChild(role);
 
     auto contact = std::make_shared<LFText>();
@@ -243,19 +243,19 @@ std::shared_ptr<LFNode> ProfilePage::createStatsBar() {
     auto container = LFLinear::createHorizontal();
     container->matchParentWidth();
     container->setDistribution(LFDistribution::SpaceAround); // 平均分布
-    container->setPadding(YGEdgeVertical, 10);
-    container->setMargin(YGEdgeBottom, 10);
+    container->setPadding(LFLayoutEdge::Vertical, 10);
+    container->setMargin(LFLayoutEdge::Bottom, 10);
 
     // 辅助：创建单个统计项
     auto makeStat = [](const std::string& val, const std::string& label) {
         auto col = LFLinear::createVertical();
-        col->setAlignItems(YGAlignCenter);
+        col->setAlignItems(LFAlign::Center);
 
         auto v = createLabel(val, 18, COL_TEXT_MAIN, true);
         col->addChild(v);
 
         auto l = createLabel(label, 12, COL_TEXT_SUB);
-        l->setMargin(YGEdgeTop, 4);
+        l->setMargin(LFLayoutEdge::Top, 4);
         col->addChild(l);
         return col;
     };
@@ -274,15 +274,15 @@ std::shared_ptr<LFNode> ProfilePage::createSectionTitle(const std::string& title
     // 左侧加一个小竖条装饰，增加设计感
     auto wrapper = LFLinear::createHorizontal();
     wrapper->setGravity(LFAlignment::Start, LFAlignment::Center);
-    wrapper->setMargin(YGEdgeTop, 15);
-    wrapper->setMargin(YGEdgeBottom, 12);
+    wrapper->setMargin(LFLayoutEdge::Top, 15);
+    wrapper->setMargin(LFLayoutEdge::Bottom, 12);
 
     auto bar = LFBox::create();
     bar->setWidth(4);
     bar->setHeight(16);
     bar->setBackgroundColor(COL_PRIMARY);
     bar->setBorderRadius(2);
-    bar->setMargin(YGEdgeRight, 8);
+    bar->setMargin(LFLayoutEdge::Right, 8);
 
     wrapper->addChild(bar);
     wrapper->addChild(text);
@@ -296,15 +296,15 @@ std::shared_ptr<LFNode> ProfilePage::createSkillCloud() {
     // card->setBackgroundColor(0x80FFFFFF);
     // card->setBorderRadius(CARD_RADIUS);
     // card->setShadow(0, 2, 8, 0, 0x0D000000); // 极淡阴影
-    card->setPadding(YGEdgeHorizontal, 16);
-    card->setPadding(YGEdgeBottom, 16);
+    card->setPadding(LFLayoutEdge::Horizontal, 16);
+    card->setPadding(LFLayoutEdge::Bottom, 16);
 
     auto flow = LFLinear::createHorizontal();
     flow->matchParentWidth();
     flow->wrapContentHeight();
     flow->setSpacing(10);
     flow->setGravity(LFAlignment::Start, LFAlignment::Center);
-    flow->setFlexWrap(YGWrapWrap); // 关键：自动换行
+    flow->setFlexWrap(LFWrap::Wrap); // 关键：自动换行
 
     struct Skill {
         std::string name;
@@ -355,7 +355,7 @@ std::shared_ptr<LFNode> ProfilePage::createWorkExperienceItem(
     row->setHeight(80);
     row->setSpacing(10);
     row->setGravity(LFAlignment::Start, LFAlignment::Center);
-    row->setPadding(YGEdgeHorizontal, 16);
+    row->setPadding(LFLayoutEdge::Horizontal, 16);
     row->setBackgroundColor(COL_CARD_BG);
     row->setBorderRadius(CARD_RADIUS);
     row->setShadow(0, 4, 12, 0, COL_SHADOW);
@@ -381,7 +381,7 @@ std::shared_ptr<LFNode> ProfilePage::createWorkExperienceItem(
     auto roleRow = LFLinear::createHorizontal();
     roleRow->setDistribution(LFDistribution::SpaceBetween);
     roleRow->matchParentWidth();
-    roleRow->setMargin(YGEdgeTop, 12);
+    roleRow->setMargin(LFLayoutEdge::Top, 12);
 
     auto roleText = createLabel(role, 12, COL_TEXT_SUB);
     roleText->setTextHAlign(LFTextHAlign::Left);
@@ -393,8 +393,8 @@ std::shared_ptr<LFNode> ProfilePage::createWorkExperienceItem(
     roleRow->addChild(timeText);
     content->addChild(roleRow);
 
-    row->setPadding(YGEdgeVertical, 16);
-    row->setMargin(YGEdgeBottom, 16);
+    row->setPadding(LFLayoutEdge::Vertical, 16);
+    row->setMargin(LFLayoutEdge::Bottom, 16);
 
     row->addChild(content);
     return row;
@@ -418,7 +418,7 @@ std::shared_ptr<LFNode> ProfilePage::createEducationCard(
     row->setFlexShrink(1.0f);
     row->setBackgroundColor(COL_CARD_BG);
     row->setBorderRadius(CARD_RADIUS);
-    row->setPadding(YGEdgeAll, 16);
+    row->setPadding(LFLayoutEdge::All, 16);
     row->setShadow(0, 4, 12, 0, COL_SHADOW);
 
     auto logo = std::make_shared<LFImage>();
@@ -430,7 +430,7 @@ std::shared_ptr<LFNode> ProfilePage::createEducationCard(
     row->addChild(logo);
 
     auto info = LFLinear::createVertical();
-    info->setMargin(YGEdgeLeft, 12);
+    info->setMargin(LFLayoutEdge::Left, 12);
     info->setFlexGrow(1.0f);
     info->setFlexShrink(1.0f);
 
@@ -452,7 +452,7 @@ std::shared_ptr<LFNode> ProfilePage::createEducationCard(
     info->addChild(universityRow);
 
     auto degreeRow = LFLinear::createHorizontal();
-    degreeRow->setMargin(YGEdgeTop, 12);
+    degreeRow->setMargin(LFLayoutEdge::Top, 12);
     degreeRow->setDistribution(LFDistribution::SpaceBetween);
     degreeRow->setFlexGrow(1.0f);
     degreeRow->setFlexShrink(1.0f);
@@ -492,8 +492,8 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
     card->setBackgroundColor(COL_CARD_BG);
     card->setBorderRadius(CARD_RADIUS);
     card->setShadow(0, 3, 10, 0, 0x14000000); // 稍微深一点的阴影体现层级
-    card->setPadding(YGEdgeAll, 16);
-    card->setMargin(YGEdgeBottom, 15);
+    card->setPadding(LFLayoutEdge::All, 16);
+    card->setMargin(LFLayoutEdge::Bottom, 15);
 
     // 内部布局
     auto layout = LFLinear::createVertical();
@@ -520,20 +520,20 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
 
     auto tagTxt = createLabel(tags, 12, COL_PRIMARY);
     tagTxt->setTextHAlign(LFTextHAlign::Left);
-    tagTxt->setMargin(YGEdgeTop, 12);
+    tagTxt->setMargin(LFLayoutEdge::Top, 12);
     layout->addChild(tagTxt);
 
     auto sumTxt = createLabel(info, 14, 0xFF555555);
     sumTxt->setTextHAlign(LFTextHAlign::Left);
     sumTxt->setLineHeight(1.4f);
-    sumTxt->setMargin(YGEdgeTop, 10);
+    sumTxt->setMargin(LFLayoutEdge::Top, 10);
     layout->addChild(sumTxt);
 
     if (!noteText.empty()) {
         auto note = createLabel(noteText, 13, 0xFF555555);
         note->setTextHAlign(LFTextHAlign::Left);
         note->setTextColor(0xFFFF0000);
-        note->setMargin(YGEdgeTop, 16);
+        note->setMargin(LFLayoutEdge::Top, 16);
         layout->addChild(note);
     }
 
@@ -564,25 +564,25 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
         respContent->setBackgroundColor(0xFFF7F8FA); // 浅灰背景，与白卡区分
         respContent->matchParentWidth();
         respContent->wrapContentHeight();
-        respContent->setPadding(YGEdgeAll, 16); // 内部留白
+        respContent->setPadding(LFLayoutEdge::All, 16); // 内部留白
 
         if (!resp.empty()) {
             // 职责标题
             auto rTitle = createLabel(respLabel, 13, COL_TEXT_MAIN, true);
             rTitle->setTextHAlign(LFTextHAlign::Left);
-            rTitle->setMargin(YGEdgeBottom, 10);
+            rTitle->setMargin(LFLayoutEdge::Bottom, 10);
             respContent->addChild(rTitle);
 
             // 职责列表
             for (const auto& itemStr : resp) {
                 auto row = LFLinear::createHorizontal();
                 row->matchParentWidth();
-                row->setMargin(YGEdgeBottom, 6);
+                row->setMargin(LFLayoutEdge::Bottom, 6);
                 row->setGravity(LFAlignment::Start, LFAlignment::Baseline);
 
                 // 圆点
                 auto dot = createLabel("•", 14, COL_PRIMARY);
-                dot->setMargin(YGEdgeRight, 8);
+                dot->setMargin(LFLayoutEdge::Right, 8);
 
                 // 文字
                 auto text = createLabel(itemStr, 13, 0xFF666666);
@@ -604,8 +604,8 @@ std::shared_ptr<LFNode> ProfilePage::createProjectCard(
             urlRow->wrapContentHeight();
             // 如果上面有列表，给个顶部间距；如果只是链接，就不需要间距
             float topMargin = resp.empty() ? 0.0f : 10.0f;
-            urlRow->setMargin(YGEdgeTop, topMargin);
-            urlRow->setAlignItems(YGAlignFlexStart);
+            urlRow->setMargin(LFLayoutEdge::Top, topMargin);
+            urlRow->setAlignItems(LFAlign::FlexStart);
 
             // 标签
             auto label = createLabel(urlLabel, 13, COL_TEXT_MAIN);
@@ -711,7 +711,7 @@ std::shared_ptr<LFNode> buildICP(std::string icpText) {
     auto row = LFLinear::createHorizontal();
     row->matchParentWidth();
     row->wrapContentHeight();
-    row->setMargin(YGEdgeTop, 20);
+    row->setMargin(LFLayoutEdge::Top, 20);
     row->setGravity(LFAlignment::Center, LFAlignment::Center);
     auto icp = createLabel(icpText, 14, 0xFF999999);
     icp->setTextHAlign(LFTextHAlign::Center);

@@ -31,8 +31,7 @@ private:
      * 内部加载逻辑
      */
     void startLoading();
-    static YGSize measure(YGNodeRef node, float width, YGMeasureMode widthMode,
-                          float height, YGMeasureMode heightMode);
+    LFSize measureLayout(const LFMeasureInput& input) const;
 
     std::string m_src;
     LFImageFit m_fit = LFImageFit::Contain;

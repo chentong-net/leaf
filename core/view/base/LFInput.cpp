@@ -25,8 +25,8 @@ LFInput::LFInput() {
 
     setWidth(220.0f);
     setHeight(40.0f);
-    setPadding(YGEdgeHorizontal, 12.0f);
-    setPadding(YGEdgeVertical, 8.0f);
+    setPadding(LFLayoutEdge::Horizontal, 12.0f);
+    setPadding(LFLayoutEdge::Vertical, 8.0f);
     setBackgroundColor(0xFFFFFFFF);
     setBorder(1.0f, 0xFFDDDDDD);
     setBorderRadius(8.0f);
@@ -386,19 +386,11 @@ void LFInput::onDrawContent(LFPaint& paint) {
     float layoutW = getLayoutWidth();
     float layoutH = getLayoutHeight();
 
-    float paddingL = YGNodeLayoutGetPadding(getYGNode(), YGEdgeLeft);
-    float paddingT = YGNodeLayoutGetPadding(getYGNode(), YGEdgeTop);
-    float paddingR = YGNodeLayoutGetPadding(getYGNode(), YGEdgeRight);
-    float paddingB = YGNodeLayoutGetPadding(getYGNode(), YGEdgeBottom);
-    float borderL = YGNodeLayoutGetBorder(getYGNode(), YGEdgeLeft);
-    float borderT = YGNodeLayoutGetBorder(getYGNode(), YGEdgeTop);
-    float borderR = YGNodeLayoutGetBorder(getYGNode(), YGEdgeRight);
-    float borderB = YGNodeLayoutGetBorder(getYGNode(), YGEdgeBottom);
-
-    float contentX = paddingL + borderL;
-    float contentY = paddingT + borderT;
-    float contentW = layoutW - contentX - paddingR - borderR;
-    float contentH = layoutH - contentY - paddingB - borderB;
+    const LFLayoutFrame& frame = getLayoutFrame();
+    float contentX = frame.padding.left + frame.border.left;
+    float contentY = frame.padding.top + frame.border.top;
+    float contentW = layoutW - contentX - frame.padding.right - frame.border.right;
+    float contentH = layoutH - contentY - frame.padding.bottom - frame.border.bottom;
     if (contentW <= 0 || contentH <= 0) return;
 
     std::string displayText = getDisplayText();
