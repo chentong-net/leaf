@@ -23,6 +23,8 @@ public:
     void setGravity(LFAlignment main, LFAlignment cross);
     void setDistribution(LFDistribution distribution);
     void setSpacing(float spacing);
+    // 设置横向排列换行后各行之间的间距。
+    void setRowSpacing(float spacing);
     void setReverse(bool reverse); // 反转布局
 
     // 工厂方法

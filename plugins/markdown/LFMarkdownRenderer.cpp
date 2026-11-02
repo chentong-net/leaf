@@ -13,6 +13,7 @@
 namespace {
 
 constexpr std::string_view kIdeographicComma = "\xE3\x80\x81";
+constexpr float kNominalLineHeight = 1.2f;
 
 bool endsWithIdeographicComma(const std::string& text) {
     return text.size() >= kIdeographicComma.size() &&
@@ -414,6 +415,12 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
         row->matchParentWidth();
         row->wrapContentHeight();
         row->setFlexWrap(YGWrapWrap);
+        row->setRowSpacing(
+            std::max(
+                0.0f,
+                fontSize * (m_theme.lineHeight - kNominalLineHeight)
+            )
+        );
         row->setGravity(
             align == LFMarkdownTextAlign::Center
                 ? LFAlignment::Center

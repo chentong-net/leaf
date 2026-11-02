@@ -31,6 +31,11 @@ void LFLinear::setSpacing(float spacing) {
     markDirty();
 }
 
+void LFLinear::setRowSpacing(float spacing) {
+    YGNodeStyleSetGap(getYGNode(), YGGutterRow, spacing);
+    markDirty();
+}
+
 void LFLinear::setReverse(bool reverse) {
     if (m_isReverse == reverse) return;
     m_isReverse = reverse;
