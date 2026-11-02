@@ -120,6 +120,22 @@ std::unique_ptr<LFRenderer> LFNanoVGRenderer::createMetal(void* nativeLayer) {
 void LFNanoVGRenderer::beginFrame(float width, float height, float pixelRatio) {
     NVGcontext* context = toContext(m_context);
     if (!context) return;
+
+#ifndef LEAF_USE_METAL
+    if (std::isfinite(width) && std::isfinite(height) &&
+        std::isfinite(pixelRatio) && pixelRatio > 0.0f) {
+        const int framebufferWidth = std::max(
+            1,
+            static_cast<int>(std::lround(width * pixelRatio))
+        );
+        const int framebufferHeight = std::max(
+            1,
+            static_cast<int>(std::lround(height * pixelRatio))
+        );
+        glViewport(0, 0, framebufferWidth, framebufferHeight);
+    }
+#endif
+
     nvgBeginFrame(context, width, height, pixelRatio);
 }
 
