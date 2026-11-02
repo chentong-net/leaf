@@ -11,7 +11,7 @@ English | [中文](README-zh.md)
 - Build a cross-platform app engine with unified UI rendering across all platforms.
 - Avoid native controls and use fully custom-drawn UI to ensure consistent visual output.
 - Components render through the backend-neutral `LFPaint` and `LFRenderer` interfaces. The default backend is NanoVG, using OpenGL/OpenGL ES on most platforms and MetalNanoVG on iOS.
-- Use Yoga for layout calculation, keeping pure layout math strictly decoupled from rendering.
+- Calculate layout through the backend-neutral `LFLayout` interface. The default `LFYogaLayout` backend uses Yoga and keeps layout separate from rendering.
 
 ### Build
 
