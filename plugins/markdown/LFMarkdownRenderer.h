@@ -17,6 +17,9 @@ public:
     std::shared_ptr<LFLinear> render(const LFMarkdownDocument& document) const;
 
 private:
+    void renderBlocks(const std::vector<LFMarkdownBlock>& blocks,
+                      const std::shared_ptr<LFLinear>& parent,
+                      float defaultGap) const;
     void renderBlock(const LFMarkdownBlock& block,
                      const std::shared_ptr<LFLinear>& parent,
                      float blockGap) const;
@@ -30,8 +33,7 @@ private:
                      float blockGap) const;
     void renderList(const LFMarkdownBlock& block,
                     const std::shared_ptr<LFLinear>& parent,
-                    float bottomSpacing,
-                    bool nested) const;
+                    float bottomSpacing) const;
     void renderCodeBlock(const LFMarkdownBlock& block,
                          const std::shared_ptr<LFLinear>& parent,
                          float blockGap) const;
@@ -48,6 +50,10 @@ private:
         float fontSize,
         uint32_t textColor,
         LFMarkdownTextAlign align = LFMarkdownTextAlign::Left) const;
+
+    float spacingAfterBlock(const LFMarkdownBlock& current,
+                            const LFMarkdownBlock* next,
+                            float defaultGap) const;
 
     std::string flattenInline(const std::vector<LFMarkdownInline>& inlines) const;
 

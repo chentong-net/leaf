@@ -43,10 +43,23 @@ std::shared_ptr<LFLinear> LFMarkdownRenderer::render(
     root->wrapContentHeight();
     root->setPadding(YGEdgeAll, m_theme.contentPadding);
 
-    for (const LFMarkdownBlock& block : document.blocks) {
-        renderBlock(block, root, m_theme.blockSpacing);
-    }
+    renderBlocks(document.blocks, root, m_theme.blockSpacing);
     return root;
+}
+
+void LFMarkdownRenderer::renderBlocks(
+        const std::vector<LFMarkdownBlock>& blocks,
+        const std::shared_ptr<LFLinear>& parent,
+        float defaultGap) const {
+    for (size_t index = 0; index < blocks.size(); ++index) {
+        const LFMarkdownBlock* next =
+            index + 1 < blocks.size() ? &blocks[index + 1] : nullptr;
+        renderBlock(
+            blocks[index],
+            parent,
+            spacingAfterBlock(blocks[index], next, defaultGap)
+        );
+    }
 }
 
 void LFMarkdownRenderer::renderBlock(
@@ -65,7 +78,7 @@ void LFMarkdownRenderer::renderBlock(
             break;
         case LFMarkdownBlockType::UnorderedList:
         case LFMarkdownBlockType::OrderedList:
-            renderList(block, parent, blockGap, false);
+            renderList(block, parent, blockGap);
             break;
         case LFMarkdownBlockType::CodeBlock:
             renderCodeBlock(block, parent, blockGap);
@@ -151,9 +164,7 @@ void LFMarkdownRenderer::renderQuote(
     content->setPadding(YGEdgeTop, m_theme.quoteVerticalPadding);
     content->setPadding(YGEdgeBottom, m_theme.quoteVerticalPadding);
     content->setBackgroundColor(m_theme.quoteBackgroundColor);
-    for (const LFMarkdownBlock& child : block.children) {
-        renderBlock(child, content, m_theme.quoteBlockSpacing);
-    }
+    renderBlocks(block.children, content, m_theme.quoteBlockSpacing);
     row->addChild(content);
 
     appendBlock(parent, row, blockGap);
@@ -162,14 +173,10 @@ void LFMarkdownRenderer::renderQuote(
 void LFMarkdownRenderer::renderList(
         const LFMarkdownBlock& block,
         const std::shared_ptr<LFLinear>& parent,
-        float bottomSpacing,
-        bool nested) const {
+        float bottomSpacing) const {
     auto list = LFLinear::createVertical();
     list->matchParentWidth();
     list->wrapContentHeight();
-    if (nested && !parent->getChildren().empty()) {
-        list->setMargin(YGEdgeTop, m_theme.nestedListSpacing);
-    }
 
     for (size_t index = 0; index < block.children.size(); ++index) {
         const LFMarkdownBlock& item = block.children[index];
@@ -201,16 +208,7 @@ void LFMarkdownRenderer::renderList(
         content->setFlexGrow(1.0f);
         content->setFlexShrink(1.0f);
         content->wrapContentHeight();
-        for (const LFMarkdownBlock& child : item.children) {
-            if (child.type == LFMarkdownBlockType::Paragraph) {
-                renderParagraph(child, content, 0.0f);
-            } else if (child.type == LFMarkdownBlockType::UnorderedList ||
-                       child.type == LFMarkdownBlockType::OrderedList) {
-                renderList(child, content, 0.0f, true);
-            } else {
-                renderBlock(child, content, m_theme.listItemSpacing);
-            }
-        }
+        renderBlocks(item.children, content, m_theme.listItemSpacing);
         row->addChild(content);
         if (index + 1 < block.children.size()) {
             row->setMargin(YGEdgeBottom, m_theme.listItemSpacing);
@@ -219,6 +217,30 @@ void LFMarkdownRenderer::renderList(
     }
 
     appendBlock(parent, list, bottomSpacing);
+}
+
+float LFMarkdownRenderer::spacingAfterBlock(
+        const LFMarkdownBlock& current,
+        const LFMarkdownBlock* next,
+        float defaultGap) const {
+    if (!next) return 0.0f;
+
+    const bool currentIsParagraph =
+        current.type == LFMarkdownBlockType::Paragraph;
+    const bool nextIsParagraph =
+        next->type == LFMarkdownBlockType::Paragraph;
+    const bool currentIsList =
+        current.type == LFMarkdownBlockType::UnorderedList ||
+        current.type == LFMarkdownBlockType::OrderedList;
+    const bool nextIsList =
+        next->type == LFMarkdownBlockType::UnorderedList ||
+        next->type == LFMarkdownBlockType::OrderedList;
+
+    if ((currentIsParagraph && nextIsList) ||
+        (currentIsList && nextIsParagraph)) {
+        return m_theme.listItemSpacing;
+    }
+    return defaultGap;
 }
 
 void LFMarkdownRenderer::renderCodeBlock(
@@ -386,7 +408,7 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
                 : (align == LFMarkdownTextAlign::Right
                     ? LFAlignment::End
                     : LFAlignment::Start),
-            LFAlignment::Center
+            LFAlignment::Baseline
         );
         flow->addChild(row);
     };

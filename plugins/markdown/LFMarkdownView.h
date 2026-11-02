@@ -48,7 +48,6 @@ struct LFMarkdownTheme {
     float listMarkerWidth = 18.0f;
     float listMarkerGap = 6.0f;
     float listItemSpacing = 10.0f;
-    float nestedListSpacing = 10.0f;
     float quoteBarWidth = 4.0f;
     float quoteHorizontalPadding = 12.0f;
     float quoteVerticalPadding = 6.0f;
