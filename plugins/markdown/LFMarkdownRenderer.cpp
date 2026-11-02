@@ -315,7 +315,7 @@ void LFMarkdownRenderer::renderTable(
     table->matchParentWidth();
     table->wrapContentHeight();
     table->setSpacing(1.0f);
-    table->setPadding(YGEdgeAll, 1.0f);
+    table->setBorder(1.0f, m_theme.tableBorderColor);
     table->setBorderRadius(7.0f);
     table->setMasksToBounds(true);
     table->setBackgroundColor(m_theme.tableBorderColor);
