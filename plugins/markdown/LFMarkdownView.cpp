@@ -38,6 +38,7 @@ void LFMarkdownView::setTheme(const LFMarkdownTheme& theme) {
 
 void LFMarkdownView::setOnLinkTap(LinkCallback callback) {
     m_onLinkTap = std::move(callback);
+    rebuild();
 }
 
 void LFMarkdownView::rebuild() {
