@@ -2,6 +2,7 @@
 
 #include "LFEngine.h"
 #include "LFAppLaunch.h"
+#include "text/LFFont.h"
 
 extern "C" {
 
@@ -30,11 +31,22 @@ void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loade
 
     LFEngine::getInstance().init(vg);
 
-    std::vector<unsigned char> fontData = loader("fonts/Alibaba-PuHuiTi-Regular.ttf");
-    unsigned char* fontDataCopy = (unsigned char*)malloc(fontData.size());
-    memcpy(fontDataCopy, fontData.data(), fontData.size());
-    if (nvgCreateFontMem(vg, "sans", fontDataCopy, fontData.size(), 1) == -1) {
-        return;
+    for (const LFBundledFont& font : kLFBundledFonts) {
+        const std::string path = "fonts/" + std::string(font.fileName);
+        std::vector<unsigned char> fontData = loader(path.c_str());
+        if (!fontData.empty()) {
+            unsigned char* fontDataCopy =
+                    static_cast<unsigned char*>(malloc(fontData.size()));
+            if (fontDataCopy) {
+                memcpy(fontDataCopy, fontData.data(), fontData.size());
+                nvgCreateFontMem(
+                        vg,
+                        font.familyName,
+                        fontDataCopy,
+                        static_cast<int>(fontData.size()),
+                        1);
+            }
+        }
     }
 
     LFResourceProvider::getInstance().setAssetLoader(

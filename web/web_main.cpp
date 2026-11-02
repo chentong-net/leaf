@@ -5,6 +5,7 @@
 #define NANOVG_GLES3_IMPLEMENTATION
 
 #include "LFEngine.h"
+#include "text/LFFont.h"
 #include <emscripten.h>
 #include <emscripten/em_js.h>
 #include <emscripten/fetch.h>
@@ -664,8 +665,11 @@ int main() {
     });
     leaf_web_sync_text_input_focus(0);
 
-    if (nvgCreateFont(vg, "sans", "/assets/fonts/Alibaba-PuHuiTi-Regular.ttf") < 0) {
-        LF_LOGI("Failed to load bundled Web font");
+    for (const LFBundledFont& font : kLFBundledFonts) {
+        const std::string fontPath = "/assets/fonts/" + std::string(font.fileName);
+        if (nvgCreateFont(vg, font.familyName, fontPath.c_str()) < 0) {
+            LF_LOGI("Failed to load bundled Web font: %s", fontPath.c_str());
+        }
     }
 
     LFResourceProvider::getInstance().setAssetLoader(

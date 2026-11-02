@@ -19,6 +19,7 @@
 #include "LFEngine.h"
 #include "LFResourceProvider.h"
 #include "LFAppLaunch.h"
+#include "text/LFFont.h"
 #include <cstring>
 #include <deque>
 #include <mutex>
@@ -316,13 +317,17 @@ struct NativeKeyEvent {
     );
     LFEngine::getInstance().setRoot(createAppRoot());
 
-    NSString* fontPath = leafResolveAssetPath(@"fonts/Alibaba-PuHuiTi-Regular.ttf");
-    if (fontPath.length > 0) {
-        if (nvgCreateFont(_vg, "sans", fontPath.UTF8String) < 0) {
-            LF_LOGI("LeafRenderer: failed to load bundled font");
+    for (const LFBundledFont& font : kLFBundledFonts) {
+        NSString* relativePath =
+                [NSString stringWithFormat:@"fonts/%s", font.fileName];
+        NSString* fontPath = leafResolveAssetPath(relativePath);
+        if (fontPath.length > 0) {
+            if (nvgCreateFont(_vg, font.familyName, fontPath.UTF8String) < 0) {
+                LF_LOGI("LeafRenderer: failed to load bundled font: %s", font.fileName);
+            }
+        } else {
+            LF_LOGI("LeafRenderer: bundled font was not found: %s", font.fileName);
         }
-    } else {
-        LF_LOGI("LeafRenderer: bundled font was not found");
     }
 
     _engineInitialized = YES;

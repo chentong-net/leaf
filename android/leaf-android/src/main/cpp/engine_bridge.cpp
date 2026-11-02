@@ -2,6 +2,7 @@
 
 #include "LFEngine.h"
 #include "LFAppLaunch.h"
+#include "text/LFFont.h"
 
 extern "C" {
 
@@ -30,13 +31,26 @@ void leaf_init(std::function<std::vector<unsigned char>(const char *path)> loade
     // 2. 初始化引擎核心
     LFEngine::getInstance().init(vg);
 
-    // 4. 加载字体
-    std::vector<unsigned char> fontData = loader("fonts/Alibaba-PuHuiTi-Regular.ttf");
-    unsigned char* fontDataCopy = (unsigned char*)malloc(fontData.size());
-    memcpy(fontDataCopy, fontData.data(), fontData.size());
-    if (nvgCreateFontMem(vg, "sans", fontDataCopy, fontData.size(), 1) == -1) {
-        // If failed (e.g. some custom ROMs)
-        nvgCreateFont(vg, "sans", "/system/fonts/NotoSansCJK-Regular.ttc");
+    for (const LFBundledFont& font : kLFBundledFonts) {
+        const std::string path = "fonts/" + std::string(font.fileName);
+        std::vector<unsigned char> fontData = loader(path.c_str());
+        if (!fontData.empty()) {
+            unsigned char* fontDataCopy =
+                    static_cast<unsigned char*>(malloc(fontData.size()));
+            if (fontDataCopy) {
+                memcpy(fontDataCopy, fontData.data(), fontData.size());
+                nvgCreateFontMem(
+                        vg,
+                        font.familyName,
+                        fontDataCopy,
+                        static_cast<int>(fontData.size()),
+                        1);
+            }
+        }
+    }
+    if (nvgFindFont(vg, kLFDefaultFontFamily) < 0) {
+        // Some custom ROMs do not expose the bundled font through the asset loader.
+        nvgCreateFont(vg, kLFDefaultFontFamily, "/system/fonts/NotoSansCJK-Regular.ttc");
     }
 
     // 3. 配置资源加载器

@@ -2,6 +2,7 @@
 
 #include "LFAppLaunch.h"
 #include "LFEngine.h"
+#include "text/LFFont.h"
 
 #include <GLFW/glfw3.h>
 
@@ -259,11 +260,13 @@ int main() {
         glfwSetInputMethodCursorPos(window, static_cast<double>(x), static_cast<double>(y));
     });
 
-    const std::filesystem::path fontPath =
-            resolveAssetPath("fonts/Alibaba-PuHuiTi-Regular.ttf");
-    const std::string fontPathUtf8 = pathToUtf8(fontPath);
-    if (nvgCreateFont(vg, "sans", fontPathUtf8.c_str()) < 0) {
-        LF_LOGI("Failed to load font: %s", fontPathUtf8.c_str());
+    for (const LFBundledFont& font : kLFBundledFonts) {
+        const std::filesystem::path fontPath =
+                resolveAssetPath("fonts/" + std::string(font.fileName));
+        const std::string fontPathUtf8 = pathToUtf8(fontPath);
+        if (nvgCreateFont(vg, font.familyName, fontPathUtf8.c_str()) < 0) {
+            LF_LOGI("Failed to load font: %s", fontPathUtf8.c_str());
+        }
     }
 
     LFResourceProvider::getInstance().setAssetLoader(
