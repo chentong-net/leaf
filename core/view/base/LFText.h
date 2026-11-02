@@ -33,6 +33,9 @@ public:
     void setTextHAlign(LFTextHAlign align);
     void setTextVAlign(LFTextVAlign align);
     void setMaxLines(int maxLines);
+    void setItalic(bool italic);
+    void setUnderline(bool underline);
+    void setHoverUnderline(bool enabled);
 
     /**
      * 设置全局测量上下文
@@ -65,6 +68,9 @@ private:
     LFTextVAlign m_textVAlign = LFTextVAlign::Top;
     int m_maxLines = 0;
     bool m_hasMaxLinesConfigured = false;
+    bool m_italic = false;
+    bool m_underline = false;
+    bool m_hoverUnderline = false;
 
     // 静态测量上下文
     static NVGcontext* s_measureContext;

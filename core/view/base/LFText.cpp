@@ -418,6 +418,24 @@ void LFText::setMaxLines(int maxLines) {
     markDirty();
 }
 
+void LFText::setItalic(bool italic) {
+    if (m_italic == italic) return;
+    m_italic = italic;
+    markDirty();
+}
+
+void LFText::setUnderline(bool underline) {
+    if (m_underline == underline) return;
+    m_underline = underline;
+    markDirty();
+}
+
+void LFText::setHoverUnderline(bool enabled) {
+    if (m_hoverUnderline == enabled) return;
+    m_hoverUnderline = enabled;
+    markDirty();
+}
+
 YGSize LFText::measure(YGNodeRef node, float width, YGMeasureMode widthMode,
                        float height, YGMeasureMode heightMode) {
     (void)height;
@@ -566,13 +584,26 @@ void LFText::onDrawContent(NVGcontext* vg) {
         );
         const float lineY =
             firstBaseline + static_cast<float>(index) * layout->lineAdvance;
-        nvgText(
-            vg,
-            originX,
-            lineY,
-            m_text.data() + line.begin,
-            m_text.data() + line.end
-        );
+        const char* lineBegin = m_text.data() + line.begin;
+        const char* lineEnd = m_text.data() + line.end;
+
+        if (m_italic) {
+            nvgSave(vg);
+            nvgTranslate(vg, originX, lineY);
+            nvgTransform(vg, 1.0f, 0.0f, -0.18f, 1.0f, 0.0f, 0.0f);
+            nvgText(vg, 0.0f, 0.0f, lineBegin, lineEnd);
+            nvgRestore(vg);
+        } else {
+            nvgText(vg, originX, lineY, lineBegin, lineEnd);
+        }
+
+        if (m_underline || (m_hoverUnderline && isHovered())) {
+            const float underlineHeight = std::max(1.0f, 1.0f / pixelRatio);
+            const float underlineY = lineY + std::max(1.0f, m_fontSize * 0.08f);
+            nvgBeginPath(vg);
+            nvgRect(vg, originX, underlineY, line.advance, underlineHeight);
+            nvgFill(vg);
+        }
     }
 
     nvgRestore(vg);
