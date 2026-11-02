@@ -1,5 +1,7 @@
 #include "LFMarkdownView.h"
 
+#include "LFMarkdownParser.h"
+#include "LFMarkdownRenderer.h"
 #include "view/layout/LFLinear.h"
 #include "view/wrapped/LFScrollView.h"
 
@@ -45,6 +47,9 @@ void LFMarkdownView::rebuild() {
     }
     if (!m_scrollView) return;
 
+    const LFMarkdownDocument document = LFMarkdownParser::parse(m_markdown);
+    LFMarkdownRenderer renderer(m_theme, m_onLinkTap);
+    m_content = renderer.render(document);
+    m_scrollView->addChild(m_content);
     m_scrollView->scrollTo(0.0f, false);
-    markDirty();
 }
