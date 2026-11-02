@@ -14,6 +14,15 @@ namespace {
 
 constexpr std::string_view kIdeographicComma = "\xE3\x80\x81";
 
+bool endsWithIdeographicComma(const std::string& text) {
+    return text.size() >= kIdeographicComma.size() &&
+           text.compare(
+               text.size() - kIdeographicComma.size(),
+               kIdeographicComma.size(),
+               kIdeographicComma
+           ) == 0;
+}
+
 size_t visibleCharacters(const std::string& text) {
     size_t count = 0;
     for (unsigned char value : text) {
@@ -486,7 +495,7 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
 
     auto appendText = [&](const std::string& value,
                           const Style& style,
-                          bool splitPunctuation) {
+                          bool compressTrailingPunctuation) {
         size_t begin = 0;
         while (begin <= value.size()) {
             const size_t end = value.find('\n', begin);
@@ -494,25 +503,12 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
                 ? value.size() - begin
                 : end - begin;
             const std::string segment = value.substr(begin, length);
-            if (splitPunctuation) {
-                size_t cursor = 0;
-                while (cursor < segment.size()) {
-                    const size_t comma = segment.find(kIdeographicComma, cursor);
-                    if (comma == std::string::npos) {
-                        appendSegment(segment.substr(cursor), style, false);
-                        break;
-                    }
-                    appendSegment(segment.substr(cursor, comma - cursor), style, false);
-                    appendSegment(
-                        std::string(kIdeographicComma),
-                        style,
-                        true
-                    );
-                    cursor = comma + kIdeographicComma.size();
-                }
-            } else {
-                appendSegment(segment, style, false);
-            }
+            appendSegment(
+                segment,
+                style,
+                compressTrailingPunctuation &&
+                    endsWithIdeographicComma(segment)
+            );
             if (end == std::string::npos) break;
             row.reset();
             begin = end + 1;
