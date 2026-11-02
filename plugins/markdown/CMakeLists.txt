@@ -20,3 +20,8 @@ target_link_libraries(markdown
         PUBLIC
         leaf-core
 )
+
+option(LEAF_BUILD_MARKDOWN_TESTS "Build Markdown parser tests" OFF)
+if (LEAF_BUILD_MARKDOWN_TESTS)
+    add_subdirectory(tests)
+endif()
