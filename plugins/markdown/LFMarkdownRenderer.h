@@ -33,6 +33,14 @@ private:
     void renderCodeBlock(const LFMarkdownBlock& block,
                          const std::shared_ptr<LFLinear>& parent) const;
     void renderThematicBreak(const std::shared_ptr<LFLinear>& parent) const;
+    void renderImageBlock(const LFMarkdownInline& image,
+                          const std::shared_ptr<LFLinear>& parent) const;
+
+    std::shared_ptr<LFNode> renderInlineFlow(
+        const std::vector<LFMarkdownInline>& inlines,
+        float fontSize,
+        uint32_t textColor,
+        LFMarkdownTextAlign align = LFMarkdownTextAlign::Left) const;
 
     std::string flattenInline(const std::vector<LFMarkdownInline>& inlines) const;
 

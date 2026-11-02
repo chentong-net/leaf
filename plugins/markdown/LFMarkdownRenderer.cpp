@@ -1,9 +1,12 @@
 #include "LFMarkdownRenderer.h"
 
+#include "event/LFEvent.h"
+#include "view/base/LFImage.h"
 #include "view/base/LFText.h"
 #include "view/layout/LFBox.h"
 
 #include <algorithm>
+#include <functional>
 #include <string>
 
 namespace {
@@ -71,15 +74,30 @@ void LFMarkdownRenderer::renderParagraph(
         const LFMarkdownBlock& block,
         const std::shared_ptr<LFLinear>& parent,
         float bottomSpacing) const {
-    auto text = std::make_shared<LFText>();
-    text->matchParentWidth();
-    text->wrapContentHeight();
-    text->setFontFamily(m_theme.fontFamily);
-    text->setFontSize(m_theme.bodyFontSize);
-    text->setLineHeight(m_theme.lineHeight);
-    text->setTextColor(m_theme.textColor);
-    text->setText(flattenInline(block.inlines));
-    appendBlock(parent, text, bottomSpacing);
+    const LFMarkdownInline* standaloneImage = nullptr;
+    bool hasOtherContent = false;
+    for (const LFMarkdownInline& value : block.inlines) {
+        if (value.type == LFMarkdownInlineType::Image && !standaloneImage) {
+            standaloneImage = &value;
+            continue;
+        }
+        if (value.type == LFMarkdownInlineType::Text &&
+            value.text.find_first_not_of(" \t\n") == std::string::npos) {
+            continue;
+        }
+        hasOtherContent = true;
+        break;
+    }
+    if (standaloneImage && !hasOtherContent) {
+        renderImageBlock(*standaloneImage, parent);
+        return;
+    }
+
+    appendBlock(
+        parent,
+        renderInlineFlow(block.inlines, m_theme.bodyFontSize, m_theme.textColor),
+        bottomSpacing
+    );
 }
 
 void LFMarkdownRenderer::renderHeading(
@@ -224,6 +242,167 @@ void LFMarkdownRenderer::renderThematicBreak(
     divider->setBackgroundColor(m_theme.dividerColor);
     divider->setMargin(YGEdgeVertical, 6.0f);
     appendBlock(parent, divider, m_theme.blockSpacing);
+}
+
+void LFMarkdownRenderer::renderImageBlock(
+        const LFMarkdownInline& imageValue,
+        const std::shared_ptr<LFLinear>& parent) const {
+    auto image = std::make_shared<LFImage>();
+    image->setAlignSelf(YGAlignFlexStart);
+    image->setMaxWidth(m_theme.imageMaxWidth);
+    image->setMaxHeight(m_theme.imageMaxHeight);
+    image->setFit(LFImageFit::Contain);
+    image->setBorderRadius(6.0f);
+    image->setSrc(imageValue.destination);
+    appendBlock(parent, image, m_theme.blockSpacing);
+}
+
+std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
+        const std::vector<LFMarkdownInline>& inlines,
+        float fontSize,
+        uint32_t textColor,
+        LFMarkdownTextAlign align) const {
+    auto flow = LFLinear::createVertical();
+    flow->matchParentWidth();
+    flow->wrapContentHeight();
+
+    std::shared_ptr<LFLinear> row;
+    const LFMarkdownView::LinkCallback onLinkTap = m_onLinkTap;
+
+    auto ensureRow = [&]() {
+        if (row) return;
+        row = LFLinear::createHorizontal();
+        row->matchParentWidth();
+        row->wrapContentHeight();
+        row->setFlexWrap(YGWrapWrap);
+        row->setGravity(
+            align == LFMarkdownTextAlign::Center
+                ? LFAlignment::Center
+                : (align == LFMarkdownTextAlign::Right
+                    ? LFAlignment::End
+                    : LFAlignment::Start),
+            LFAlignment::Center
+        );
+        flow->addChild(row);
+    };
+
+    struct Style {
+        bool bold = false;
+        bool italic = false;
+        bool code = false;
+        bool link = false;
+        std::string destination;
+    };
+
+    auto appendSegment = [&](const std::string& value, const Style& style) {
+        if (value.empty()) return;
+        ensureRow();
+
+        uint32_t color = textColor;
+        if (style.link) {
+            color = m_theme.linkColor;
+        } else if (style.code) {
+            color = m_theme.inlineCodeTextColor;
+        } else if (style.bold) {
+            color = m_theme.boldTextColor;
+        } else if (style.italic) {
+            color = m_theme.italicTextColor;
+        }
+
+        auto text = std::make_shared<LFText>();
+        text->setFlexShrink(1.0f);
+        text->wrapContentHeight();
+        text->setFontFamily(style.code ? m_theme.codeFontFamily : m_theme.fontFamily);
+        text->setFontWeight(style.bold ? m_theme.boldWeight : LFFontWeight::Regular);
+        text->setItalic(style.italic);
+        text->setFontSize(style.code ? std::max(1.0f, fontSize * 0.92f) : fontSize);
+        text->setLineHeight(m_theme.lineHeight);
+        text->setTextColor(color);
+        text->setText(value);
+
+        if (style.link) {
+            text->setHoverUnderline(true);
+            if (onLinkTap) {
+                const std::string destination = style.destination;
+                text->setOnTap([onLinkTap, destination](const LFPoint&) {
+                    onLinkTap(destination);
+                });
+            }
+        }
+
+        if (style.code) {
+            auto codeBox = LFBox::create();
+            codeBox->setFlexShrink(1.0f);
+            codeBox->wrapContentHeight();
+            codeBox->setPadding(YGEdgeHorizontal, 3.0f);
+            codeBox->setPadding(YGEdgeVertical, 1.0f);
+            codeBox->setMargin(YGEdgeHorizontal, 2.0f);
+            codeBox->setBorderRadius(4.0f);
+            codeBox->setBackgroundColor(m_theme.inlineCodeBackgroundColor);
+            codeBox->addChild(text);
+            row->addChild(codeBox);
+        } else {
+            row->addChild(text);
+        }
+    };
+
+    auto appendText = [&](const std::string& value, const Style& style) {
+        size_t begin = 0;
+        while (begin <= value.size()) {
+            const size_t end = value.find('\n', begin);
+            const size_t length = end == std::string::npos
+                ? value.size() - begin
+                : end - begin;
+            appendSegment(value.substr(begin, length), style);
+            if (end == std::string::npos) break;
+            row.reset();
+            begin = end + 1;
+        }
+    };
+
+    std::function<void(const std::vector<LFMarkdownInline>&, const Style&)> visit;
+    visit = [&](const std::vector<LFMarkdownInline>& values, const Style& style) {
+        for (const LFMarkdownInline& value : values) {
+            Style childStyle = style;
+            switch (value.type) {
+                case LFMarkdownInlineType::Text:
+                    appendText(value.text, childStyle);
+                    break;
+                case LFMarkdownInlineType::Bold:
+                    childStyle.bold = true;
+                    visit(value.children, childStyle);
+                    break;
+                case LFMarkdownInlineType::Italic:
+                    childStyle.italic = true;
+                    visit(value.children, childStyle);
+                    break;
+                case LFMarkdownInlineType::Code:
+                    childStyle.code = true;
+                    appendText(value.text, childStyle);
+                    break;
+                case LFMarkdownInlineType::Link:
+                    childStyle.link = true;
+                    childStyle.destination = value.destination;
+                    visit(value.children, childStyle);
+                    break;
+                case LFMarkdownInlineType::Image: {
+                    ensureRow();
+                    auto image = std::make_shared<LFImage>();
+                    image->setWidth(m_theme.inlineImageWidth);
+                    image->setHeight(m_theme.inlineImageHeight);
+                    image->setFit(LFImageFit::Contain);
+                    image->setBorderRadius(6.0f);
+                    image->setBackgroundColor(m_theme.inlineCodeBackgroundColor);
+                    image->setSrc(value.destination);
+                    row->addChild(image);
+                    break;
+                }
+            }
+        }
+    };
+
+    visit(inlines, Style{});
+    return flow;
 }
 
 std::string LFMarkdownRenderer::flattenInline(
