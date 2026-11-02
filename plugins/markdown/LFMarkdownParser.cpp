@@ -1,4 +1,5 @@
 #include "LFMarkdownParser.h"
+#include "LFMarkdownInlineParser.h"
 
 #include <algorithm>
 #include <cctype>
@@ -246,13 +247,6 @@ bool isFenceClose(std::string_view line, char marker, size_t count) {
     return index - spaces >= count && isBlank(line.substr(index));
 }
 
-std::vector<LFMarkdownInline> parseInline(std::string_view text) {
-    LFMarkdownInline value;
-    value.type = LFMarkdownInlineType::Text;
-    value.text = std::string(text);
-    return {std::move(value)};
-}
-
 std::string joinParagraph(const std::vector<std::string>& lines,
                           size_t begin,
                           size_t end) {
@@ -424,7 +418,7 @@ std::vector<LFMarkdownBlock> parseBlocks(const std::vector<std::string>& lines,
             LFMarkdownBlock heading;
             heading.type = LFMarkdownBlockType::Heading;
             heading.level = headingLevel;
-            heading.inlines = parseInline(headingText);
+            heading.inlines = LFMarkdownInlineParser::parse(headingText);
             blocks.push_back(std::move(heading));
             ++index;
             continue;
@@ -455,7 +449,7 @@ std::vector<LFMarkdownBlock> parseBlocks(const std::vector<std::string>& lines,
                 LFMarkdownBlock heading;
                 heading.type = LFMarkdownBlockType::Heading;
                 heading.level = setextLevel;
-                heading.inlines = parseInline(trim(lines[index]));
+                heading.inlines = LFMarkdownInlineParser::parse(trim(lines[index]));
                 blocks.push_back(std::move(heading));
                 index += 2;
                 continue;
@@ -472,7 +466,9 @@ std::vector<LFMarkdownBlock> parseBlocks(const std::vector<std::string>& lines,
 
         LFMarkdownBlock paragraph;
         paragraph.type = LFMarkdownBlockType::Paragraph;
-        paragraph.inlines = parseInline(joinParagraph(lines, paragraphBegin, index));
+        paragraph.inlines = LFMarkdownInlineParser::parse(
+            joinParagraph(lines, paragraphBegin, index)
+        );
         blocks.push_back(std::move(paragraph));
     }
     return blocks;
