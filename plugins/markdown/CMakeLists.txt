@@ -5,6 +5,7 @@ endif()
 add_library(markdown STATIC
         LFMarkdownInlineParser.cpp
         LFMarkdownParser.cpp
+        LFMarkdownRenderer.cpp
         LFMarkdownView.cpp
 )
 
