@@ -48,7 +48,11 @@ The following notices are provided for attribution and compliance.
    License file: third_party/MetalNanoVG/LICENSE
 
 6) Alibaba PuHuiTi
-   Path: application/assets/fonts/Alibaba-PuHuiTi-Regular.ttf
+   Paths:
+   - application/assets/fonts/Alibaba-PuHuiTi-Regular.ttf
+   - application/assets/fonts/AlibabaPuHuiTi-3-65-Medium.ttf
+   - application/assets/fonts/AlibabaPuHuiTi-3-75-SemiBold.ttf
+   - application/assets/fonts/AlibabaPuHuiTi-3-85-Bold.ttf
    Copyright 2020 Alibaba (China) Co., Ltd.
    Upstream: https://www.alibabafonts.com/
    Legal statement: https://www.yuque.com/yiguang-wkqc2/hgpff0/nus9wiinq4aeiegy
