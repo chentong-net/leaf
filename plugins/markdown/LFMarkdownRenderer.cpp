@@ -404,6 +404,9 @@ std::shared_ptr<LFNode> LFMarkdownRenderer::renderInlineFlow(
     auto flow = LFLinear::createVertical();
     flow->matchParentWidth();
     flow->wrapContentHeight();
+    flow->setSpacing(
+        std::max(0.0f, fontSize * (m_theme.lineHeight - 1.0f))
+    );
 
     std::shared_ptr<LFLinear> row;
     const LFMarkdownView::LinkCallback onLinkTap = m_onLinkTap;
