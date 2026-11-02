@@ -44,4 +44,5 @@ target_link_libraries(leaf-application
         radio-group
         audio-player
         markdown
+        markdown-app
 )
