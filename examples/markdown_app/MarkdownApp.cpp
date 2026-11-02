@@ -6,17 +6,11 @@ namespace {
 
 constexpr const char* kShowcaseMarkdown =
     R"MARKDOWN(
-# Markdown 渲染综合测试
+# Markdown 综合渲染展示
 
-> 当前页面同时用于 macOS 与 iOS 模拟器验证，覆盖块级布局、行内样式和常见边界语法。
+> 用于展示 Markdown 渲染效果。
 
 ## 1. 标题与段落
-
-Setext 一级标题
-===============
-
-Setext 二级标题
----------------
 
 ### 三级标题
 #### 四级标题
@@ -96,8 +90,6 @@ the quick brown fox jumps over the lazy dog.
 ## 6. 图片
 
 ![独立图片](avatar.jpg "Leaf avatar")
-
-图片下方继续保持正文间距。
 
 ## 7. 代码块
 
