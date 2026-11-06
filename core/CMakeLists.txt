@@ -63,6 +63,7 @@ set(LEAF_CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/animation/LFAnimationSet.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/plugin/LFNativeSender.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/text/LFTextLayout.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/render/LFSceneRecorder.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/render/nanovg/LFNanoVGRenderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/LFGlobalAnimationManager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/LFEngine.cpp
