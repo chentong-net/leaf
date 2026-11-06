@@ -3,8 +3,11 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstring>
 #include <limits>
 #include <string>
+#include <string_view>
+#include <type_traits>
 #include <utility>
 
 namespace {
@@ -38,6 +41,38 @@ struct SceneState {
     float opacity = 1.0f;
 };
 
+struct VisualHash {
+    uint64_t first = 0;
+    uint64_t second = 0;
+
+    bool operator==(const VisualHash& other) const {
+        return first == other.first && second == other.second;
+    }
+};
+
+class VisualHasher {
+public:
+    template <typename T>
+    void add(const T& value) {
+        static_assert(std::is_trivially_copyable_v<T>);
+        addBytes(&value, sizeof(value));
+    }
+
+    void addBytes(const void* data, size_t size) {
+        const auto* bytes = static_cast<const uint8_t*>(data);
+        for (size_t index = 0; index < size; ++index) {
+            first_ = (first_ ^ bytes[index]) * 1099511628211ULL;
+            second_ = (second_ ^ bytes[index]) * 14029467366897019727ULL;
+        }
+    }
+
+    VisualHash finish() const { return {first_, second_}; }
+
+private:
+    uint64_t first_ = 14695981039346656037ULL;
+    uint64_t second_ = 1469598103934665603ULL;
+};
+
 struct SceneCommand {
     CommandType type = CommandType::PushState;
     SceneState state;
@@ -61,6 +96,7 @@ struct SceneCommand {
 
     LFImageDraw image;
     LFShadowDraw shadow;
+    VisualHash visualHash;
 };
 
 bool isFinite(float value) {
@@ -208,61 +244,9 @@ bool sameRect(const LFDrawRect& left, const LFDrawRect& right) {
            left.width == right.width && left.height == right.height;
 }
 
-bool sameState(const SceneState& left, const SceneState& right) {
-    return left.transform == right.transform &&
-           sameRect(left.clip, right.clip) &&
-           left.opacity == right.opacity;
-}
-
 bool sameVisual(const SceneCommand& left, const SceneCommand& right) {
-    if (left.type != right.type ||
-        !sameState(left.state, right.state) ||
-        !sameRect(left.bounds, right.bounds)) {
-        return false;
-    }
-
-    switch (left.type) {
-        case CommandType::DrawRect:
-        case CommandType::DrawRoundedRect:
-        case CommandType::StrokeRect:
-        case CommandType::StrokeRoundedRect:
-            return left.x == right.x && left.y == right.y &&
-                   left.z == right.z && left.w == right.w &&
-                   left.radius == right.radius &&
-                   left.strokeWidth == right.strokeWidth &&
-                   left.color == right.color;
-        case CommandType::DrawLine:
-            return left.x == right.x && left.y == right.y &&
-                   left.z == right.z && left.w == right.w &&
-                   left.strokeWidth == right.strokeWidth &&
-                   left.strokeCap == right.strokeCap &&
-                   left.color == right.color;
-        case CommandType::DrawText:
-            return left.font == right.font &&
-                   left.text == right.text &&
-                   left.x == right.x && left.y == right.y &&
-                   left.fontSize == right.fontSize &&
-                   left.lineHeight == right.lineHeight &&
-                   left.color == right.color &&
-                   left.textOrigin == right.textOrigin &&
-                   left.italic == right.italic;
-        case CommandType::DrawImage:
-            return left.image.texture == right.image.texture &&
-                   left.image.contentVersion == right.image.contentVersion &&
-                   sameRect(left.image.imageRect, right.image.imageRect) &&
-                   sameRect(left.image.clipRect, right.image.clipRect) &&
-                   left.image.radius == right.image.radius;
-        case CommandType::DrawShadow:
-            return sameRect(left.shadow.rect, right.shadow.rect) &&
-                   left.shadow.radius == right.shadow.radius &&
-                   left.shadow.offsetX == right.shadow.offsetX &&
-                   left.shadow.offsetY == right.shadow.offsetY &&
-                   left.shadow.blur == right.shadow.blur &&
-                   left.shadow.spread == right.shadow.spread &&
-                   left.shadow.color == right.shadow.color;
-        default:
-            return true;
-    }
+    return left.visualHash == right.visualHash &&
+           sameRect(left.bounds, right.bounds);
 }
 
 LFDrawRect rectForCommand(const SceneCommand& command) {
@@ -434,6 +418,42 @@ bool isDrawCommand(CommandType type) {
     return type >= CommandType::DrawRect;
 }
 
+void hashCommand(SceneCommand& command) {
+    VisualHasher hash;
+    hash.add(command.type);
+    hash.addBytes(command.state.transform.data(), sizeof(float) * command.state.transform.size());
+    hash.add(command.state.clip);
+    hash.add(command.state.opacity);
+    hash.add(command.bounds);
+    hash.add(command.x);
+    hash.add(command.y);
+    hash.add(command.z);
+    hash.add(command.w);
+    hash.add(command.radius);
+    hash.add(command.strokeWidth);
+    hash.add(command.color);
+    hash.add(command.strokeCap);
+    hash.add(command.font);
+    hash.add(command.fontSize);
+    hash.add(command.lineHeight);
+    hash.add(command.textOrigin);
+    hash.add(command.italic);
+    hash.addBytes(command.text.data(), command.text.size());
+    hash.add(command.image.texture);
+    hash.add(command.image.contentVersion);
+    hash.add(command.image.imageRect);
+    hash.add(command.image.clipRect);
+    hash.add(command.image.radius);
+    hash.add(command.shadow.rect);
+    hash.add(command.shadow.radius);
+    hash.add(command.shadow.offsetX);
+    hash.add(command.shadow.offsetY);
+    hash.add(command.shadow.blur);
+    hash.add(command.shadow.spread);
+    hash.add(command.shadow.color);
+    command.visualHash = hash.finish();
+}
+
 } // namespace
 
 struct LFSceneRecorder::Impl {
@@ -463,6 +483,7 @@ struct LFSceneRecorder::Impl {
     void addDrawCommand(SceneCommand command) {
         command.state = state;
         command.bounds = visibleBounds(state, rectForCommand(command));
+        hashCommand(command);
         const size_t index = commands.size();
         commands.push_back(std::move(command));
         if (!isEmpty(commands[index].bounds)) {
