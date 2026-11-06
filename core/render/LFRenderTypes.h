@@ -45,6 +45,8 @@ struct LFTextDraw {
     std::string_view text;
     float x = 0.0f;
     float y = 0.0f;
+    // Conservative visual bounds in the current paint coordinate system.
+    LFDrawRect visualBounds;
     float fontSize = 16.0f;
     float lineHeight = 1.0f;
     uint32_t color = 0xFF000000;
@@ -54,6 +56,7 @@ struct LFTextDraw {
 
 struct LFImageDraw {
     LFTextureHandle texture = 0;
+    uint64_t contentVersion = 0;
     LFDrawRect imageRect;
     LFDrawRect clipRect;
     float radius = 0.0f;

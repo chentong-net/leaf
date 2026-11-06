@@ -155,6 +155,7 @@ void LFImage::onDrawContent(LFPaint& paint) {
             );
             if (m_texture > 0) {
                 m_renderer = renderer;
+                ++m_textureVersion;
             }
         }
 
@@ -226,6 +227,7 @@ void LFImage::onDrawContent(LFPaint& paint) {
 
     LFImageDraw imageDraw;
     imageDraw.texture = m_texture;
+    imageDraw.contentVersion = m_textureVersion;
     imageDraw.imageRect = {finalX, finalY, drawW, drawH};
     imageDraw.clipRect = clipRect;
     imageDraw.radius = effectiveRadius;

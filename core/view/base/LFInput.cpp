@@ -421,6 +421,12 @@ void LFInput::onDrawContent(LFPaint& paint) {
         text.text = drawText;
         text.x = contentX - m_scrollX;
         text.y = drawY;
+        text.visualBounds = {
+            text.x,
+            drawY,
+            std::max(0.0f, contentW + m_scrollX),
+            std::max(m_fontSize * 1.5f, textHeight)
+        };
         text.fontSize = m_fontSize;
         text.lineHeight = 1.0f;
         text.color = drawPlaceholder ? m_placeholderColor : m_textColor;

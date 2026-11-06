@@ -38,6 +38,7 @@ private:
 
     // 渲染状态
     LFTextureHandle m_texture = 0;
+    uint64_t m_textureVersion = 0;
     LFRenderer* m_renderer = nullptr;
     int m_imgWidth = 0;
     int m_imgHeight = 0;

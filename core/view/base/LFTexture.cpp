@@ -42,6 +42,7 @@ void LFTexture::setFit(LFTextureFit fit) {
 }
 
 void LFTexture::notifyFrameAvailable() {
+    ++m_contentVersion;
     markDirty();
 }
 
@@ -96,6 +97,7 @@ void LFTexture::ensureTexture(LFRenderer* renderer) {
     m_allocatedWidth = m_textureWidth;
     m_allocatedHeight = m_textureHeight;
     m_generation++;
+    m_contentVersion = m_generation;
     m_needRecreate = false;
 
     if (m_onTextureReady) {
@@ -193,6 +195,7 @@ void LFTexture::onDrawContent(LFPaint& paint) {
 
     LFImageDraw imageDraw;
     imageDraw.texture = m_texture;
+    imageDraw.contentVersion = m_contentVersion;
     imageDraw.radius = effectiveRadius;
     if (m_fit == LFTextureFit::Cover) {
         imageDraw.clipRect = {contentX, contentY, contentW, contentH};

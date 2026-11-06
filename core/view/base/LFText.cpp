@@ -564,6 +564,14 @@ void LFText::onDrawContent(LFPaint& paint) {
         draw.text = std::string_view(m_text).substr(line.begin, line.end - line.begin);
         draw.x = originX;
         draw.y = lineY;
+        const float horizontalPadding = m_italic ? m_fontSize * 0.25f : 1.0f;
+        const float visualHeight = std::max(m_fontSize * 1.5f, layout->lineAdvance);
+        draw.visualBounds = {
+            originX - horizontalPadding,
+            lineY - m_fontSize * 1.1f,
+            std::max(0.0f, line.advance) + horizontalPadding * 2.0f,
+            visualHeight
+        };
         draw.fontSize = m_fontSize;
         draw.lineHeight = m_lineHeight;
         draw.color = m_textColor;

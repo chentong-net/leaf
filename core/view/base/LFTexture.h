@@ -37,6 +37,7 @@ public:
     uintptr_t getTextureId() const { return m_nativeTextureId; }
     uintptr_t getNativeTextureId() const { return m_nativeTextureId; }
     uint64_t getTextureGeneration() const { return m_generation; }
+    uint64_t getContentVersion() const { return m_contentVersion; }
     bool isTextureReady() const { return m_texture != 0; }
 
     // 第三方写入纹理后调用，通知引擎刷新
@@ -65,6 +66,7 @@ private:
     LFTextureHandle m_texture = 0;
     LFRenderer* m_renderer = nullptr;
     uint64_t m_generation = 0;
+    uint64_t m_contentVersion = 0;
 
     bool m_needRecreate = true;
     TextureCallback m_onTextureReady = nullptr;
