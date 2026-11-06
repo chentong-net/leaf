@@ -1,0 +1,54 @@
+#!/bin/sh
+set -eu
+
+LEAF_ROOT=$(CDPATH= cd "$(dirname "$0")" && pwd)
+LEAF_TOOL_DIR="${LEAF_ROOT}/tools/leaf"
+
+. "${LEAF_TOOL_DIR}/common.sh"
+. "${LEAF_TOOL_DIR}/targets.sh"
+. "${LEAF_TOOL_DIR}/doctor.sh"
+. "${LEAF_TOOL_DIR}/device.sh"
+. "${LEAF_TOOL_DIR}/clean.sh"
+. "${LEAF_TOOL_DIR}/build.sh"
+. "${LEAF_TOOL_DIR}/run.sh"
+
+if [ -f "${LEAF_ROOT}/.env" ]; then
+    set -a
+    # The project-local environment intentionally overrides inherited values.
+    . "${LEAF_ROOT}/.env"
+    set +a
+fi
+
+if [ -n "${LEAF_XCODE_DEVELOPER_DIR:-}" ]; then
+    DEVELOPER_DIR=${LEAF_XCODE_DEVELOPER_DIR}
+    export DEVELOPER_DIR
+fi
+
+parse_leaf_arguments "$@"
+
+case "${LEAF_COMMAND}" in
+    doctor)
+        run_doctor
+        ;;
+    device)
+        run_device
+        ;;
+    clean)
+        run_clean
+        ;;
+    build)
+        run_build
+        ;;
+    run)
+        run_run
+        ;;
+    help)
+        print_leaf_help
+        ;;
+    version)
+        printf 'Leaf CLI 0.1.0\n'
+        ;;
+    *)
+        leaf_die "unknown command '${LEAF_COMMAND}'"
+        ;;
+esac

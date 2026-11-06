@@ -15,8 +15,11 @@
 **/BuildProfile.ets
 **/build-windows
 **/build-macos
+**/build-web
+**/build-ios
 **/cmake-build-debug-llvm
 /tests/
+/.env
 # CocoaPods
 **/Pods/
 **/Podfile.lock
