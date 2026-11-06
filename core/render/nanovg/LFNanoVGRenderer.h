@@ -23,6 +23,8 @@ public:
     void beginFrame(float width, float height, float pixelRatio) override;
     void endFrame() override;
     void clear(uint32_t color) override;
+    bool supportsDeferredPresentation() const override;
+    void presentLastFrame() override;
 
     void pushState() override;
     void popState() override;
@@ -69,12 +71,19 @@ public:
     void releaseTexture(LFTextureHandle texture) override;
 
 private:
+    struct FrameState;
+
     explicit LFNanoVGRenderer(void* context);
+
+    bool prepareSceneTarget(int framebufferWidth, int framebufferHeight);
+    void clearScene(bool full, const LFDrawRect& damage);
+    void compositeScene();
 
     void setTextState(LFFontHandle font, float fontSize, float lineHeight,
                       LFTextOrigin origin);
 
     void* m_context = nullptr;
+    std::unique_ptr<FrameState> m_frameState;
 };
 
 #endif // LEAF_LFNANOVGRENDERER_H

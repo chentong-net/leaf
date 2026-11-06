@@ -18,6 +18,8 @@ public:
     virtual void beginFrame(float width, float height, float pixelRatio) = 0;
     virtual void endFrame() = 0;
     virtual void clear(uint32_t color) = 0;
+    virtual bool supportsDeferredPresentation() const { return false; }
+    virtual void presentLastFrame() {}
 
     virtual LFFontHandle createFontFromFile(const std::string& name,
                                             const std::string& path) = 0;

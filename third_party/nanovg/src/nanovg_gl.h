@@ -1182,6 +1182,11 @@ static void glnvg__renderFlush(void* uptr)
 	int i;
 
 	if (gl->ncalls > 0) {
+		const GLboolean preserveExternalScissor = glIsEnabled(GL_SCISSOR_TEST);
+		GLint externalScissor[4] = {0, 0, 0, 0};
+		if (preserveExternalScissor) {
+			glGetIntegerv(GL_SCISSOR_BOX, externalScissor);
+		}
 
 		// Setup require GL state.
 		glUseProgram(gl->shader.prog);
@@ -1192,6 +1197,15 @@ static void glnvg__renderFlush(void* uptr)
 		glEnable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_SCISSOR_TEST);
+		if (preserveExternalScissor) {
+			glEnable(GL_SCISSOR_TEST);
+			glScissor(
+				externalScissor[0],
+				externalScissor[1],
+				externalScissor[2],
+				externalScissor[3]
+			);
+		}
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilMask(0xffffffff);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
