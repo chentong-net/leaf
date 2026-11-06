@@ -80,6 +80,8 @@ Examples:
 build/android/debug/leaf-app-android-debug.apk
 build/android/release/leaf-app-android-release-unsigned.apk
 build/ios/debug/leaf-app-ios-debug-simulator.app
+build/ios/debug/leaf-app-ios-debug.ipa
+build/ios/debug/leaf-app-ios-debug-dSYMs.zip
 build/macos/debug/leaf-app-macos-debug-arm64
 build/web/debug/leaf-app-web-debug.html
 build/ohos/debug/leaf-app-ohos-debug.hap
@@ -89,6 +91,7 @@ Native build directories remain available for incremental builds:
 
 ```text
 android/*/build
+build/ios-native
 ios/build-ios
 macos/build-macos
 web/build-web
@@ -119,7 +122,8 @@ doctor environment for build
 
 iOS Debug attempts a signed device IPA. If signing is unavailable, it builds a
 Simulator `.app`. iOS Release requires signing and does not fall back. `--strict`
-also disables the Debug fallback.
+also disables the Debug fallback. Device builds export the IPA and a zip of the
+archive dSYMs into the final artifact directory.
 
 Web output is served over HTTP from the final artifact directory. Android
 Release is unsigned in the first CLI version and therefore cannot be launched
@@ -138,6 +142,17 @@ build directories.
 leaf clean --target android --all
 ```
 
-also removes Android native build directories.
+invokes Gradle clean.
 
-`clean` does not require a working build environment.
+```text
+leaf clean --target ios --all
+```
+
+invokes `xcodebuild clean` for Debug and Release while preserving
+`ios/build-ios`.
+
+For macOS and Web, `clean --all` removes their project-local `build-macos` and
+`build-web` directories.
+
+Plain `clean` does not require a working build environment. Native cleaning for
+Android and iOS requires the corresponding toolchain.
