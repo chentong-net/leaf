@@ -5,11 +5,11 @@ plugins {
 apply from: rootProject.file("gradle/leaf-assets.gradle")
 
 android {
-    namespace 'net.chentong.leaf.demo'
+    namespace 'net.chentong.leaf.app'
     compileSdk 34
 
     defaultConfig {
-        applicationId "net.chentong.leaf.demo"
+        applicationId "net.chentong.leaf.app"
         minSdk 29
         targetSdk 34
         versionCode 1

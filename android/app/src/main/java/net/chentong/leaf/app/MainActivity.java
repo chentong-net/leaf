@@ -1,4 +1,4 @@
-package net.chentong.leaf.demo;
+package net.chentong.leaf.app;
 
 import android.app.Activity;
 import android.content.Intent;
