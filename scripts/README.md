@@ -91,7 +91,7 @@ Native build directories remain available for incremental builds:
 
 ```text
 android/*/build
-build/ios-native
+ios/build-ios/ios-native
 ios/build-ios
 macos/build-macos
 web/build-web
