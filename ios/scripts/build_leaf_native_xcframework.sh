@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CMAKE_DIR="${ROOT_DIR}/ios/cmake"
-BUILD_ROOT="${LEAF_IOS_BUILD_DIR:-${ROOT_DIR}/ios/build-ios/native}"
+BUILD_ROOT="${ROOT_DIR}/build/ios-native"
 OUTPUT_DIR="${ROOT_DIR}/ios/Leaf_iOS/Frameworks"
 XCFRAMEWORK_PATH="${OUTPUT_DIR}/LeafNative.xcframework"
 HEADERS_DIR="${BUILD_ROOT}/headers"
