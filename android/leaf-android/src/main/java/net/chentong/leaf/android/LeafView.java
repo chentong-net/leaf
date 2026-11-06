@@ -45,11 +45,11 @@ public class LeafView extends GLSurfaceView implements LeafRenderer.TextInputFoc
         setEGLConfigChooser(8, 8, 8, 8, 24, 8);
 
         // 设置渲染器
-        renderer = new LeafRenderer(context.getAssets(), this);
+        renderer = new LeafRenderer(context.getAssets(), this, this);
         setRenderer(renderer);
 
-        // 设置渲染模式：CONTINUOUSLY 表示持续刷新（类似游戏/Flutter）
-        setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        requestRender();
     }
 
     @Override
@@ -63,6 +63,12 @@ public class LeafView extends GLSurfaceView implements LeafRenderer.TextInputFoc
             renderer.queueTouchEvent(event);
         }
         return true;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        requestRender();
     }
 
     @Override

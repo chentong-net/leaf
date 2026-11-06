@@ -135,6 +135,7 @@ public:
      * 任务会在每帧的 update 阶段被调用执行一次
      */
     void addFrameTask(LFFrameTask task);
+    bool hasPendingFrame() const;
 
     // 输入法锚点回调（桌面端用于同步 IME 候选框位置）
     void setTextInputCursorCallback(LFTextInputCursorCallback callback);

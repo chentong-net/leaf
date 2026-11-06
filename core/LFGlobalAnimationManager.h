@@ -35,6 +35,8 @@ public:
 
     void cancelAll();
 
+    bool hasActiveAnimations() const;
+
     /**
      * 驱动所有动画 (由 Engine 每帧调用)
      * @param dt Delta Time (Seconds)

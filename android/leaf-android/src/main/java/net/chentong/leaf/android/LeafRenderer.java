@@ -3,6 +3,8 @@ package net.chentong.leaf.android;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.opengl.GLSurfaceView;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -22,7 +24,19 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
 
     private AssetManager assetManager;
     private final TextInputFocusListener textInputFocusListener;
+    private final GLSurfaceView hostView;
+    private final Handler idleHandler = new Handler(Looper.getMainLooper());
     private boolean lastTextInputFocused = false;
+    private boolean released = false;
+    private static final long IDLE_POLL_DELAY_MS = 100L;
+    private final Runnable idlePoll = new Runnable() {
+        @Override
+        public void run() {
+            if (!released) {
+                hostView.requestRender();
+            }
+        }
+    };
 
     // Touch event queue (thread-safe)
     private final Queue<MotionEvent> touchEventQueue = new LinkedList<>();
@@ -59,9 +73,11 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
     private static final int LF_MOD_ALT = 1 << 2;
     private static final int LF_MOD_SUPER = 1 << 3;
 
-    public LeafRenderer(AssetManager assetManager, TextInputFocusListener listener) {
+    public LeafRenderer(AssetManager assetManager, TextInputFocusListener listener,
+                        GLSurfaceView hostView) {
         this.assetManager = assetManager;
         this.textInputFocusListener = listener;
+        this.hostView = hostView;
     }
 
     // --- Native 方法声明 ---
@@ -74,6 +90,7 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
     private native void nativeOnSurfaceCreated(AssetManager assetManager);
     private native void nativeOnSurfaceChanged(int width, int height, float density);
     private native void nativeOnDrawFrame();
+    private native boolean nativeNeedsNextFrame();
     private native boolean nativeIsTextInputFocused();
     private native void nativeRelease();
 
@@ -102,6 +119,7 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+        released = false;
         // 传递 AssetManager 供 C++ 读取 main.js
         nativeOnSurfaceCreated(assetManager);
     }
@@ -131,6 +149,14 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
                 textInputFocusListener.onTextInputFocusChanged(focused);
             }
         }
+
+        if (nativeNeedsNextFrame()) {
+            idleHandler.removeCallbacks(idlePoll);
+            hostView.requestRender();
+        } else {
+            idleHandler.removeCallbacks(idlePoll);
+            idleHandler.postDelayed(idlePoll, IDLE_POLL_DELAY_MS);
+        }
     }
 
     /**
@@ -142,6 +168,7 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
         synchronized (queueLock) {
             touchEventQueue.offer(eventCopy);
         }
+        hostView.requestRender();
     }
 
     public void queueKeyEvent(int type, int keyCode, int modifiers, boolean repeat) {
@@ -153,12 +180,14 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
         synchronized (queueLock) {
             keyEventQueue.offer(event);
         }
+        hostView.requestRender();
     }
 
     public void queueCharInput(int codepoint) {
         synchronized (queueLock) {
             charInputQueue.offer(codepoint);
         }
+        hostView.requestRender();
     }
 
     public void onNativeTextInputCursorChanged(float x, float bottom, float lineHeight) {
@@ -173,6 +202,8 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
     }
 
     public void release() {
+        released = true;
+        idleHandler.removeCallbacks(idlePoll);
         synchronized (queueLock) {
             MotionEvent event;
             while ((event = touchEventQueue.poll()) != null) {

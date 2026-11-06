@@ -146,6 +146,14 @@ void LFEngine::update(float dt) {
 void LFEngine::render() {
     if (!m_renderer || !m_rootNode) return;
 
+    const bool textInputActive =
+        LFEventDispatcher::getInstance().getFocusedNode() != nullptr;
+    if (!m_rootNode->isDirty() && !textInputActive &&
+        m_renderer->supportsDeferredPresentation()) {
+        m_renderer->presentLastFrame();
+        return;
+    }
+
     // 先建立本帧渲染上下文，确保文本测量和绘制使用相同的DPR
     m_renderer->beginFrame(m_windowWidth, m_windowHeight, m_pixelRatio);
 
@@ -153,6 +161,7 @@ void LFEngine::render() {
     // 布局后端内部会缓存结果，未发生布局变化时重复计算的开销较低。
     // 所以每帧调用是安全的，确保布局始终正确
     m_rootNode->calculateLayout(m_windowWidth, m_windowHeight);
+    m_rootNode->clearDirtyTree();
 
     m_rootNode->render(*m_renderer);
 
@@ -173,6 +182,7 @@ void LFEngine::render() {
                     static_cast<unsigned long long>(pending.texture));
         }
     }
+
 }
 
 void LFEngine::recycleTexture(LFRenderer* renderer, LFTextureHandle texture) {
@@ -199,6 +209,20 @@ void LFEngine::addFrameTask(LFFrameTask task) {
 
 void LFEngine::setTextInputCursorCallback(LFTextInputCursorCallback callback) {
     m_textInputCursorCallback = callback;
+}
+
+bool LFEngine::hasPendingFrame() const {
+    if (m_rootNode && m_rootNode->isDirty()) {
+        return true;
+    }
+    if (LFEventDispatcher::getInstance().getFocusedNode() != nullptr) {
+        return true;
+    }
+    if (LFGlobalAnimationManager::getInstance().hasActiveAnimations()) {
+        return true;
+    }
+    // 帧任务由平台空闲轮询驱动；只有运行中的动画需要持续申请显示刷新。
+    return false;
 }
 
 void LFEngine::updateTextInputCursor(float x, float y, float lineHeight) {

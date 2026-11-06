@@ -471,6 +471,11 @@ Java_net_chentong_leaf_android_LeafRenderer_nativeOnDrawFrame(JNIEnv* env, jobje
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
+Java_net_chentong_leaf_android_LeafRenderer_nativeNeedsNextFrame(JNIEnv* env, jobject thiz) {
+    return LFEngine::getInstance().hasPendingFrame() ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
 Java_net_chentong_leaf_android_LeafRenderer_nativeIsTextInputFocused(JNIEnv* env, jobject thiz) {
     return LFEventDispatcher::getInstance().getFocusedNode() ? JNI_TRUE : JNI_FALSE;
 }

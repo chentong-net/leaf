@@ -40,6 +40,17 @@ void LFGlobalAnimationManager::cancelAll() {
     }
 }
 
+bool LFGlobalAnimationManager::hasActiveAnimations() const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return std::any_of(
+        m_animators.begin(),
+        m_animators.end(),
+        [](const LFAnimator::Ptr& animator) {
+            return animator && animator->isRunning();
+        }
+    );
+}
+
 void LFGlobalAnimationManager::update(float dt) {
     std::vector<LFAnimator::Ptr> activeList;
     {
