@@ -13,6 +13,36 @@ leaf_clean_path() {
     fi
 }
 
+clean_android_native() {
+    LEAF_CLEAN_JAVA=$(leaf_android_java_path) ||
+            leaf_die "Android clean requires a Java runtime"
+    LEAF_CLEAN_JAVA_HOME=$(dirname "$(dirname "${LEAF_CLEAN_JAVA}")")
+    LEAF_CLEAN_ANDROID_SDK=$(leaf_android_sdk_path)
+    [ -n "${LEAF_CLEAN_ANDROID_SDK}" ] ||
+            leaf_die "Android clean requires an Android SDK"
+
+    JAVA_HOME="${LEAF_CLEAN_JAVA_HOME}" \
+    ANDROID_HOME="${LEAF_CLEAN_ANDROID_SDK}" \
+    ANDROID_SDK_ROOT="${LEAF_CLEAN_ANDROID_SDK}" \
+            "${LEAF_ROOT}/android/gradlew" -p "${LEAF_ROOT}/android" clean
+}
+
+clean_ios_native() {
+    [ "$(uname -s)" = "Darwin" ] ||
+            leaf_die "iOS clean requires macOS"
+    leaf_has_command xcodebuild ||
+            leaf_die "iOS clean requires xcodebuild"
+
+    for LEAF_CLEAN_IOS_CONFIGURATION in Debug Release; do
+        xcodebuild \
+                -workspace "${LEAF_ROOT}/ios/App/App.xcworkspace" \
+                -scheme App \
+                -configuration "${LEAF_CLEAN_IOS_CONFIGURATION}" \
+                -derivedDataPath "${LEAF_ROOT}/ios/build-ios/DerivedData" \
+                clean
+    done
+}
+
 clean_native_target() {
     case "$1" in
         macos)
@@ -22,19 +52,10 @@ clean_native_target() {
             leaf_clean_path "${LEAF_ROOT}/web/build-web"
             ;;
         android)
-            leaf_clean_path "${LEAF_ROOT}/android/app/build"
-            leaf_clean_path "${LEAF_ROOT}/android/leaf-android/build"
-            leaf_clean_path "${LEAF_ROOT}/android/leaf-plugin/build"
-            for LEAF_ANDROID_PLUGIN in \
-                    audio_player file_picker i18n local_time path_provider
-            do
-                leaf_clean_path \
-                        "${LEAF_ROOT}/plugins/${LEAF_ANDROID_PLUGIN}/android/module/build"
-            done
+            clean_android_native
             ;;
         ios)
-            leaf_clean_path "${LEAF_ROOT}/ios/build-ios"
-            leaf_clean_path "${LEAF_ROOT}/ios/App/build"
+            clean_ios_native
             ;;
         ohos)
             leaf_clean_path "${LEAF_ROOT}/ohos/entry/build"
