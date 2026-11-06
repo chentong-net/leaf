@@ -468,6 +468,15 @@ build_ios_target() {
 
 build_ohos_target() {
     sync_ohos_metadata
+    LEAF_OHOS_SDK_CHECK=$(leaf_ohos_sdk_path)
+    [ -n "${LEAF_OHOS_SDK_CHECK}" ] ||
+            leaf_die "OHOS SDK not found"
+    [ -f "${LEAF_OHOS_SDK_CHECK}/default/sdk-pkg.json" ] ||
+            leaf_die "invalid OHOS SDK: ${LEAF_OHOS_SDK_CHECK}"
+    LEAF_OHOS_JAVA_HOME_CHECK=$(leaf_ohos_java_home)
+    [ -n "${LEAF_OHOS_JAVA_HOME_CHECK}" ] ||
+            leaf_die "OHOS Java runtime not found"
+
     if [ -n "${LEAF_HVIGOR:-}" ]; then
         LEAF_HVIGOR_COMMAND=${LEAF_HVIGOR}
     elif leaf_has_command hvigorw; then
@@ -478,7 +487,9 @@ build_ohos_target() {
 
     (
         cd "${LEAF_ROOT}/ohos"
-        "${LEAF_HVIGOR_COMMAND}" \
+        DEVECO_SDK_HOME="${LEAF_OHOS_SDK_CHECK}" \
+        JAVA_HOME="${LEAF_OHOS_JAVA_HOME_CHECK}" \
+                "${LEAF_HVIGOR_COMMAND}" \
                 --mode module \
                 -p product=default \
                 -p module=entry@default \

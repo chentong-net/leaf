@@ -123,6 +123,28 @@ leaf_emscripten_root() {
     fi
 }
 
+leaf_ohos_sdk_path() {
+    if [ -n "${LEAF_OHOS_SDK:-}" ] && [ -d "${LEAF_OHOS_SDK}" ]; then
+        printf '%s\n' "${LEAF_OHOS_SDK}"
+    elif [ "$(uname -s)" = "Darwin" ] &&
+         [ -d "/Applications/DevEco-Studio.app/Contents/sdk" ]; then
+        printf '%s\n' "/Applications/DevEco-Studio.app/Contents/sdk"
+    fi
+}
+
+leaf_ohos_java_home() {
+    if [ -n "${LEAF_OHOS_JAVA_HOME:-}" ] &&
+       [ -x "${LEAF_OHOS_JAVA_HOME}/bin/java" ]; then
+        printf '%s\n' "${LEAF_OHOS_JAVA_HOME}"
+    elif [ "$(uname -s)" = "Darwin" ] &&
+         [ -x "/Applications/DevEco-Studio.app/Contents/jbr/Contents/Home/bin/java" ]; then
+        printf '%s\n' "/Applications/DevEco-Studio.app/Contents/jbr/Contents/Home"
+    elif [ -n "${JAVA_HOME:-}" ] &&
+         [ -x "${JAVA_HOME}/bin/java" ]; then
+        printf '%s\n' "${JAVA_HOME}"
+    fi
+}
+
 leaf_target_doctor() {
     TARGET_STATUS=unsupported
     TARGET_REASON=
@@ -221,11 +243,25 @@ leaf_target_doctor() {
             TARGET_REASON="Android SDK, JDK, NDK, and Gradle available"
             ;;
         ohos)
+            LEAF_OHOS_SDK_CHECK=$(leaf_ohos_sdk_path)
+            if [ -z "${LEAF_OHOS_SDK_CHECK}" ]; then
+                TARGET_REASON="OHOS SDK not found"
+                return 1
+            fi
+            if [ ! -f "${LEAF_OHOS_SDK_CHECK}/default/sdk-pkg.json" ]; then
+                TARGET_REASON="invalid OHOS SDK: ${LEAF_OHOS_SDK_CHECK}"
+                return 1
+            fi
+            LEAF_OHOS_JAVA_HOME_CHECK=$(leaf_ohos_java_home)
+            if [ -z "${LEAF_OHOS_JAVA_HOME_CHECK}" ]; then
+                TARGET_REASON="OHOS Java runtime not found"
+                return 1
+            fi
             if [ -n "${LEAF_HVIGOR:-}" ] &&
                { [ -x "${LEAF_HVIGOR}" ] || leaf_has_command "${LEAF_HVIGOR}"; }; then
-                TARGET_REASON="Hvigor available"
+                TARGET_REASON="Hvigor, SDK, and Java available"
             elif leaf_has_command hvigorw; then
-                TARGET_REASON="Hvigor available"
+                TARGET_REASON="Hvigor, SDK, and Java available"
             else
                 TARGET_REASON="Hvigor not found"
                 return 1
