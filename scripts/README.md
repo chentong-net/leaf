@@ -1,16 +1,17 @@
 # Leaf CLI
 
-`leaf` is the repository-level POSIX Shell command line for environment checks,
-native builds, artifact staging, device discovery, and launching the application.
+`leaf.sh` is the repository-level POSIX Shell command line for environment
+checks, native builds, artifact staging, device discovery, and launching the
+application.
 
 ## Commands
 
 ```text
-leaf doctor [--target <target>...] [--strict]
-leaf device [--target <target>...]
-leaf build [--target <target>...] [--mode debug|release] [--strict]
-leaf run [--target <target>...] [--mode debug|release] [--device <id>] [--strict]
-leaf clean [--target <target>...] [--all]
+./leaf.sh doctor [--target <target>...] [--strict]
+./leaf.sh device [--target <target>...]
+./leaf.sh build [--target <target>...] [--mode debug|release] [--strict]
+./leaf.sh run [--target <target>...] [--mode debug|release] [--device <id>] [--strict]
+./leaf.sh clean [--target <target>...] [--all]
 ```
 
 Targets supported by the Shell CLI:
@@ -26,7 +27,7 @@ When `--target` is omitted, the command uses `--target all`. Target names after
 `--target` are separated by spaces:
 
 ```sh
-leaf build --target macos web
+./leaf.sh build --target macos web
 ```
 
 Build and run default to Debug. `doctor`, `device`, and `clean` do not accept a
@@ -42,7 +43,7 @@ set(LEAF_APPLICATION_DISPLAY_NAME "Leaf App" CACHE STRING ...)
 set(LEAF_APPLICATION_ID "net.chentong.leaf.app" CACHE STRING ...)
 ```
 
-Before building, `leaf` runs CMake in metadata-only mode. CMake validates the
+Before building, `leaf.sh` runs CMake in metadata-only mode. CMake validates the
 values and generates:
 
 ```text
@@ -55,7 +56,7 @@ HarmonyOS resources are updated from the generated metadata.
 
 ## Environment
 
-`leaf` loads only the repository-root `.env` file. Copy `.env.example` and use
+`leaf.sh` loads only the repository-root `.env` file. Copy `.env.example` and use
 `export` for values that must reach CMake, Gradle, Xcode, Emscripten, and device
 tools:
 
@@ -136,20 +137,20 @@ with `run`.
 ## Clean
 
 ```text
-leaf clean
+./leaf.sh clean
 ```
 
 removes all final output directories under `build/` while preserving native
 build directories.
 
 ```text
-leaf clean --target android --all
+./leaf.sh clean --target android --all
 ```
 
 invokes Gradle clean.
 
 ```text
-leaf clean --target ios --all
+./leaf.sh clean --target ios --all
 ```
 
 invokes `xcodebuild clean` for Debug and Release while preserving

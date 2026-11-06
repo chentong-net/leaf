@@ -18,11 +18,11 @@ English | [中文](README-zh.md)
 The repository provides a unified POSIX Shell entry point:
 
 ```bash
-./leaf doctor
-./leaf build --target macos web
-./leaf run --target ios
-./leaf device --target android
-./leaf clean --target android --all
+./leaf.sh doctor
+./leaf.sh build --target macos web
+./leaf.sh run --target ios
+./leaf.sh device --target android
+./leaf.sh clean --target android --all
 ```
 
 See [scripts/README.md](scripts/README.md) for the full command and

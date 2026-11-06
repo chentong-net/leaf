@@ -36,14 +36,14 @@ leaf_append_unique() {
 print_leaf_help() {
     cat <<'EOF'
 Usage:
-  leaf doctor [--target <target>...] [--strict]
-  leaf device [--target <target>...]
-  leaf clean  [--target <target>...] [--all]
-  leaf build  [--target <target>...] [--mode debug|release] [--strict]
-  leaf run    [--target <target>...] [--mode debug|release]
-              [--device <id>] [--strict]
-  leaf help
-  leaf version
+  ./leaf.sh doctor [--target <target>...] [--strict]
+  ./leaf.sh device [--target <target>...]
+  ./leaf.sh clean  [--target <target>...] [--all]
+  ./leaf.sh build  [--target <target>...] [--mode debug|release] [--strict]
+  ./leaf.sh run    [--target <target>...] [--mode debug|release]
+                   [--device <id>] [--strict]
+  ./leaf.sh help
+  ./leaf.sh version
 
 Targets:
   macos ios web android ohos
