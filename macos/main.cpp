@@ -13,6 +13,10 @@
 
 #include <mach-o/dyld.h>
 
+#ifndef LEAF_APPLICATION_DISPLAY_NAME
+#define LEAF_APPLICATION_DISPLAY_NAME "Leaf App"
+#endif
+
 namespace {
 
 std::filesystem::path g_assetsRootDir;
@@ -222,7 +226,13 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(960, 720, "Leaf", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(
+            960,
+            720,
+            LEAF_APPLICATION_DISPLAY_NAME,
+            nullptr,
+            nullptr
+    );
     if (!window) {
         glfwTerminate();
         return -1;

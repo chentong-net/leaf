@@ -11,6 +11,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(LEAF_CORE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../core)
 set(APPLICATION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../application)
 
+if(NOT DEFINED LEAF_APPLICATION_NAME OR LEAF_APPLICATION_NAME STREQUAL "")
+    message(FATAL_ERROR
+            "Configure the Web target through the root CMake project "
+            "or pass -DLEAF_APPLICATION_NAME.")
+endif()
+
 set(LEAF_PLATFORM_DEF "WEB")
 add_subdirectory(${LEAF_CORE_DIR} leaf_core_build)
 add_subdirectory(${APPLICATION_DIR} application_build)
@@ -40,7 +46,18 @@ target_link_options(leaf-web PRIVATE
         $<$<NOT:$<CONFIG:Debug>>:-sASSERTIONS=0>
 )
 
-set_target_properties(leaf-web PROPERTIES SUFFIX ".html")
+string(TOLOWER "${CMAKE_BUILD_TYPE}" LEAF_BUILD_MODE)
+if(NOT LEAF_BUILD_MODE STREQUAL "debug" AND
+   NOT LEAF_BUILD_MODE STREQUAL "release")
+    set(LEAF_BUILD_MODE "debug")
+endif()
+set(LEAF_WEB_OUTPUT_NAME
+        "${LEAF_APPLICATION_NAME}-web-${LEAF_BUILD_MODE}")
+
+set_target_properties(leaf-web PROPERTIES
+        OUTPUT_NAME "${LEAF_WEB_OUTPUT_NAME}"
+        SUFFIX ".html"
+)
 
 set(LEAF_WEB_ASSET_SOURCE_DIR "${APPLICATION_DIR}/assets")
 set(LEAF_WEB_ASSET_OUTPUT_DIR "$<TARGET_FILE_DIR:leaf-web>/assets")

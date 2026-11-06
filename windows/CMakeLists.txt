@@ -40,6 +40,15 @@ target_link_libraries(leaf-windows PRIVATE
         glfw
         leaf-application
 )
+if(DEFINED LEAF_APPLICATION_NAME AND
+   DEFINED LEAF_APPLICATION_DISPLAY_NAME AND
+   DEFINED LEAF_APPLICATION_ID)
+    target_compile_definitions(leaf-windows PRIVATE
+            "LEAF_APPLICATION_NAME=\"${LEAF_APPLICATION_NAME}\""
+            "LEAF_APPLICATION_DISPLAY_NAME=\"${LEAF_APPLICATION_DISPLAY_NAME}\""
+            "LEAF_APPLICATION_ID=\"${LEAF_APPLICATION_ID}\""
+    )
+endif()
 
 set(LEAF_ASSETS_OUTPUT_DIR "$<TARGET_FILE_DIR:leaf-windows>/assets")
 add_custom_target(leaf-windows-prepare-assets
