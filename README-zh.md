@@ -25,7 +25,7 @@
 ./leaf clean --target android --all
 ```
 
-详细说明见 [tools/leaf/README.md](tools/leaf/README.md)。
+详细说明见 [scripts/README.md](scripts/README.md)。
 
 #### macOS
 

@@ -25,7 +25,7 @@ The repository provides a unified POSIX Shell entry point:
 ./leaf clean --target android --all
 ```
 
-See [tools/leaf/README.md](tools/leaf/README.md) for the full command and
+See [scripts/README.md](scripts/README.md) for the full command and
 artifact contract.
 
 #### macOS

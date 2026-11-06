@@ -2,15 +2,15 @@
 set -eu
 
 LEAF_ROOT=$(CDPATH= cd "$(dirname "$0")" && pwd)
-LEAF_TOOL_DIR="${LEAF_ROOT}/tools/leaf"
+LEAF_SCRIPT_DIR="${LEAF_ROOT}/scripts"
 
-. "${LEAF_TOOL_DIR}/common.sh"
-. "${LEAF_TOOL_DIR}/targets.sh"
-. "${LEAF_TOOL_DIR}/doctor.sh"
-. "${LEAF_TOOL_DIR}/device.sh"
-. "${LEAF_TOOL_DIR}/clean.sh"
-. "${LEAF_TOOL_DIR}/build.sh"
-. "${LEAF_TOOL_DIR}/run.sh"
+. "${LEAF_SCRIPT_DIR}/common.sh"
+. "${LEAF_SCRIPT_DIR}/targets.sh"
+. "${LEAF_SCRIPT_DIR}/doctor.sh"
+. "${LEAF_SCRIPT_DIR}/device.sh"
+. "${LEAF_SCRIPT_DIR}/clean.sh"
+. "${LEAF_SCRIPT_DIR}/build.sh"
+. "${LEAF_SCRIPT_DIR}/run.sh"
 
 if [ -f "${LEAF_ROOT}/.env" ]; then
     set -a
