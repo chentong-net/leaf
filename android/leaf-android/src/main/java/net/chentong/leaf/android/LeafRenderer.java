@@ -129,6 +129,7 @@ public class LeafRenderer implements GLSurfaceView.Renderer {
         // 获取设备像素密度 (density)，用于 NanoVG 缩放绘制
         float density = Resources.getSystem().getDisplayMetrics().density;
         nativeOnSurfaceChanged(width, height, density);
+        hostView.requestRender();
     }
 
     @Override

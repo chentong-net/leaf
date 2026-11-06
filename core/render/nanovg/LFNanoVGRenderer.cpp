@@ -166,20 +166,22 @@ void LFNanoVGRenderer::beginFrame(float width, float height, float pixelRatio) {
 
 #ifndef LEAF_USE_METAL
     GLint currentFramebuffer = 0;
-    GLint viewport[4] = {0, 0, 0, 0};
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &currentFramebuffer);
-    glGetIntegerv(GL_VIEWPORT, viewport);
 
-    const int framebufferWidth = viewport[2] > 0
-        ? viewport[2]
-        : std::max(1, static_cast<int>(std::lround(width * pixelRatio)));
-    const int framebufferHeight = viewport[3] > 0
-        ? viewport[3]
-        : std::max(1, static_cast<int>(std::lround(height * pixelRatio)));
+    const float safePixelRatio =
+        std::isfinite(pixelRatio) && pixelRatio > 0.0f ? pixelRatio : 1.0f;
+    const int framebufferWidth = std::max(
+        1,
+        static_cast<int>(std::lround(width * safePixelRatio))
+    );
+    const int framebufferHeight = std::max(
+        1,
+        static_cast<int>(std::lround(height * safePixelRatio))
+    );
 
     m_frameState->frameWidth = width;
     m_frameState->frameHeight = height;
-    m_frameState->pixelRatio = pixelRatio;
+    m_frameState->pixelRatio = safePixelRatio;
     m_frameState->defaultFramebuffer = static_cast<unsigned int>(currentFramebuffer);
     m_frameState->viewportWidth = framebufferWidth;
     m_frameState->viewportHeight = framebufferHeight;
