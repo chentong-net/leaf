@@ -65,6 +65,10 @@ cp .env.example .env
 
 Values in `.env` intentionally override inherited environment variables.
 
+OHOS builds use `LEAF_OHOS_SDK` as the Hvigor `DEVECO_SDK_HOME`.
+`LEAF_OHOS_JAVA_HOME` can select the Java runtime explicitly; otherwise the
+DevEco Studio bundled JBR is used when available.
+
 ## Build Outputs
 
 Every successful native build is copied from its native build directory into:
