@@ -126,6 +126,8 @@ public:
 
     // 核心管线
     void markDirty(); // 脏标记
+    bool isDirty() const { return m_isDirty; }
+    void clearDirtyTree();
     void calculateLayout(float ownerWidth, float ownerHeight); // 布局
     void render(LFPaint& paint); // 渲染
 

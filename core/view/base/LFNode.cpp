@@ -421,9 +421,18 @@ void LFNode::setTranslatePercent(float xPercent, float yPercent) {
 // 引擎管线核心
 // ==========================================
 void LFNode::markDirty() {
+    if (m_isDirty) {
+        return;
+    }
     m_isDirty = true;
-    // 布局或视觉变化需要让祖先节点参与当前帧的重绘。
     if (m_parent) m_parent->markDirty();
+}
+
+void LFNode::clearDirtyTree() {
+    m_isDirty = false;
+    for (auto& child : m_children) {
+        child->clearDirtyTree();
+    }
 }
 
 void LFNode::invalidateLayout() {
@@ -459,7 +468,6 @@ void LFNode::calculateLayout(float ownerWidth, float ownerHeight) {
     updateLayoutFrameTree();
 
     finalizeLayoutTree();
-    m_isDirty = false;
 }
 
 void LFNode::prepareLayoutTree(float ownerWidth, float ownerHeight) {
