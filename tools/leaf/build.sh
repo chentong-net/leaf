@@ -356,7 +356,6 @@ prepare_ios_project() {
 
     CONFIGURATION=$(leaf_cmake_mode "${LEAF_MODE}") \
     LEAF_SKIP_ASSET_SYNC=0 \
-    LEAF_IOS_BUILD_DIR="${LEAF_IOS_NATIVE_DIR}/native" \
             "${LEAF_ROOT}/ios/scripts/build_leaf_native_xcframework.sh"
 
     (
@@ -405,6 +404,7 @@ build_ios_device() {
             -destination "generic/platform=iOS" \
             -archivePath "${LEAF_IOS_ARCHIVE}" \
             DEVELOPMENT_TEAM="${LEAF_IOS_TEAM}" \
+            DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \
             archive
 
     cat > "${LEAF_IOS_EXPORT_OPTIONS}" <<EOF
@@ -432,10 +432,17 @@ EOF
             -print -quit)
     [ -n "${LEAF_IOS_IPA}" ] ||
             leaf_die "iOS IPA not found in ${LEAF_IOS_EXPORT_DIR}"
+    LEAF_IOS_DSYMS="${LEAF_IOS_ARCHIVE}/dSYMs"
+    [ -d "${LEAF_IOS_DSYMS}" ] &&
+        [ -n "$(find "${LEAF_IOS_DSYMS}" -mindepth 1 -print -quit)" ] ||
+            leaf_die "iOS dSYMs not found: ${LEAF_IOS_DSYMS}"
 
     leaf_begin_staging ios "${LEAF_MODE}"
     cp "${LEAF_IOS_IPA}" \
             "${LEAF_STAGING_DIR}/${LEAF_APPLICATION_NAME}-ios-${LEAF_MODE}.ipa"
+    ditto -c -k --norsrc --noextattr --keepParent \
+            "${LEAF_IOS_DSYMS}" \
+            "${LEAF_STAGING_DIR}/${LEAF_APPLICATION_NAME}-ios-${LEAF_MODE}-dSYMs.zip"
     write_leaf_manifest ios "device"
     leaf_promote_staging
 }
