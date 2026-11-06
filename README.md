@@ -15,6 +15,19 @@ English | [中文](README-zh.md)
 
 ### Build
 
+The repository provides a unified POSIX Shell entry point:
+
+```bash
+./leaf doctor
+./leaf build --target macos web
+./leaf run --target ios
+./leaf device --target android
+./leaf clean --target android --all
+```
+
+See [tools/leaf/README.md](tools/leaf/README.md) for the full command and
+artifact contract.
+
 #### macOS
 
 ```bash

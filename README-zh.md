@@ -15,6 +15,18 @@
 
 ### 构建
 
+仓库提供统一的 POSIX Shell 构建入口，可用 `./leaf --help` 查看完整命令：
+
+```bash
+./leaf doctor
+./leaf build --target macos web
+./leaf run --target ios
+./leaf device --target android
+./leaf clean --target android --all
+```
+
+详细说明见 [tools/leaf/README.md](tools/leaf/README.md)。
+
 #### macOS
 
 ```bash
