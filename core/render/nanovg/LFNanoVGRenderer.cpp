@@ -78,17 +78,27 @@ struct LFNanoVGRenderer::FrameState {
     float frameHeight = 0.0f;
     float pixelRatio = 1.0f;
 
+#ifdef LEAF_USE_METAL
+    MNVGframebuffer* sceneFramebuffer = nullptr;
+#else
     unsigned int defaultFramebuffer = 0;
     unsigned int sceneFramebuffer = 0;
     unsigned int sceneTexture = 0;
     unsigned int sceneStencilBuffer = 0;
+#endif
     int viewportWidth = 0;
     int viewportHeight = 0;
     int sceneWidth = 0;
     int sceneHeight = 0;
 
     void releaseGraphicsResources() {
-#ifndef LEAF_USE_METAL
+#ifdef LEAF_USE_METAL
+        if (sceneFramebuffer) {
+            mnvgBindFramebuffer(nullptr);
+            mnvgDeleteFramebuffer(sceneFramebuffer);
+            sceneFramebuffer = nullptr;
+        }
+#else
         if (sceneFramebuffer != 0) {
             glDeleteFramebuffers(1, &sceneFramebuffer);
             sceneFramebuffer = 0;
@@ -101,9 +111,9 @@ struct LFNanoVGRenderer::FrameState {
             glDeleteRenderbuffers(1, &sceneStencilBuffer);
             sceneStencilBuffer = 0;
         }
+#endif
         sceneWidth = 0;
         sceneHeight = 0;
-#endif
     }
 };
 
@@ -116,6 +126,8 @@ LFNanoVGRenderer::~LFNanoVGRenderer() {
     if (!m_context) return;
 
 #ifdef LEAF_USE_METAL
+    mnvgWaitUntilCompleted(toContext(m_context));
+    m_frameState->releaseGraphicsResources();
     nvgDeleteMTL(toContext(m_context));
 #elif defined(LEAF_USE_GL3)
     m_frameState->releaseGraphicsResources();
@@ -164,10 +176,6 @@ void LFNanoVGRenderer::beginFrame(float width, float height, float pixelRatio) {
     NVGcontext* context = toContext(m_context);
     if (!context) return;
 
-#ifndef LEAF_USE_METAL
-    GLint currentFramebuffer = 0;
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &currentFramebuffer);
-
     const float safePixelRatio =
         std::isfinite(pixelRatio) && pixelRatio > 0.0f ? pixelRatio : 1.0f;
     const int framebufferWidth = std::max(
@@ -182,7 +190,11 @@ void LFNanoVGRenderer::beginFrame(float width, float height, float pixelRatio) {
     m_frameState->frameWidth = width;
     m_frameState->frameHeight = height;
     m_frameState->pixelRatio = safePixelRatio;
+#ifndef LEAF_USE_METAL
+    GLint currentFramebuffer = 0;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &currentFramebuffer);
     m_frameState->defaultFramebuffer = static_cast<unsigned int>(currentFramebuffer);
+#endif
     m_frameState->viewportWidth = framebufferWidth;
     m_frameState->viewportHeight = framebufferHeight;
     m_frameState->currentScene.beginFrame(
@@ -194,6 +206,7 @@ void LFNanoVGRenderer::beginFrame(float width, float height, float pixelRatio) {
     m_frameState->recording = true;
     m_frameState->sceneTargetReady =
         prepareSceneTarget(framebufferWidth, framebufferHeight);
+#ifndef LEAF_USE_METAL
     if (!m_frameState->sceneTargetReady) {
         glBindFramebuffer(GL_FRAMEBUFFER, m_frameState->defaultFramebuffer);
         glViewport(0, 0, framebufferWidth, framebufferHeight);
@@ -201,23 +214,22 @@ void LFNanoVGRenderer::beginFrame(float width, float height, float pixelRatio) {
         glBindFramebuffer(GL_FRAMEBUFFER, m_frameState->sceneFramebuffer);
         glViewport(0, 0, m_frameState->sceneWidth, m_frameState->sceneHeight);
     }
+#endif
 
     // 初始化布局阶段的 NanoVG 测量状态，当前帧的绘制命令仍由场景记录器收集。
     nvgBeginFrame(context, width, height, safePixelRatio);
     nvgCancelFrame(context);
-    return;
-#endif
-
-    nvgBeginFrame(context, width, height, pixelRatio);
 }
 
 void LFNanoVGRenderer::endFrame() {
     NVGcontext* context = toContext(m_context);
     if (!context) return;
 
-#ifndef LEAF_USE_METAL
     m_frameState->recording = false;
     if (!m_frameState->sceneTargetReady) {
+#ifdef LEAF_USE_METAL
+        mnvgBindFramebuffer(nullptr);
+#endif
         clearScene(true, {});
         nvgBeginFrame(
             context,
@@ -236,6 +248,85 @@ void LFNanoVGRenderer::endFrame() {
 
     const LFDamageRegion damage =
         m_frameState->currentScene.diff(m_frameState->previousScene);
+    if (damage.rects.empty()) {
+        std::swap(m_frameState->currentScene, m_frameState->previousScene);
+        compositeScene();
+        return;
+    }
+
+#ifdef LEAF_USE_METAL
+    // A Metal pass uses one hardware scissor, so merge damage conservatively.
+    LFDrawRect damageBounds = damage.rects.front();
+    for (size_t index = 1; index < damage.rects.size(); ++index) {
+        const LFDrawRect& rect = damage.rects[index];
+        const float left = std::min(damageBounds.x, rect.x);
+        const float top = std::min(damageBounds.y, rect.y);
+        const float right = std::max(
+            damageBounds.x + damageBounds.width,
+            rect.x + rect.width
+        );
+        const float bottom = std::max(
+            damageBounds.y + damageBounds.height,
+            rect.y + rect.height
+        );
+        damageBounds = {
+            left,
+            top,
+            right - left,
+            bottom - top,
+        };
+    }
+
+    mnvgBindFramebuffer(m_frameState->sceneFramebuffer);
+    if (damage.full) {
+        clearScene(true, {});
+    } else {
+        const float scale = m_frameState->pixelRatio;
+        const int left = std::clamp(
+            static_cast<int>(std::floor(damageBounds.x * scale)),
+            0,
+            m_frameState->sceneWidth
+        );
+        const int top = std::clamp(
+            static_cast<int>(std::floor(damageBounds.y * scale)),
+            0,
+            m_frameState->sceneHeight
+        );
+        const int right = std::clamp(
+            static_cast<int>(std::ceil((damageBounds.x + damageBounds.width) * scale)),
+            left,
+            m_frameState->sceneWidth
+        );
+        const int bottom = std::clamp(
+            static_cast<int>(std::ceil((damageBounds.y + damageBounds.height) * scale)),
+            top,
+            m_frameState->sceneHeight
+        );
+        mnvgSetScissorRect(context, left, top, right - left, bottom - top);
+    }
+
+    nvgBeginFrame(
+        context,
+        m_frameState->frameWidth,
+        m_frameState->frameHeight,
+        m_frameState->pixelRatio
+    );
+    if (!damage.full) {
+        clearScene(false, damageBounds);
+    }
+    m_frameState->currentScene.replay(
+        *this,
+        damage.full
+            ? LFDrawRect{0.0f, 0.0f,
+                         m_frameState->frameWidth, m_frameState->frameHeight}
+            : damageBounds
+    );
+    nvgEndFrame(context);
+    if (!damage.full) {
+        mnvgClearScissorRect(context);
+    }
+    mnvgBindFramebuffer(nullptr);
+#else
     if (damage.full) {
         clearScene(true, {});
         nvgBeginFrame(
@@ -292,32 +383,18 @@ void LFNanoVGRenderer::endFrame() {
             glDisable(GL_SCISSOR_TEST);
         }
     }
+#endif
 
     std::swap(m_frameState->currentScene, m_frameState->previousScene);
     compositeScene();
-    return;
-#else
-    nvgEndFrame(context);
-#endif
 }
 
 void LFNanoVGRenderer::clear(uint32_t color) {
-#ifdef LEAF_USE_METAL
-    NVGcontext* context = toContext(m_context);
-    if (context) {
-        mnvgClearWithColor(context, toColor(color));
-    }
-#else
     m_frameState->pendingClearColor = color;
-#endif
 }
 
 bool LFNanoVGRenderer::supportsDeferredPresentation() const {
-#ifdef LEAF_USE_METAL
-    return false;
-#else
-    return m_frameState->sceneFramebuffer != 0;
-#endif
+    return m_frameState->sceneTargetReady;
 }
 
 void LFNanoVGRenderer::presentLastFrame() {
@@ -326,9 +403,31 @@ void LFNanoVGRenderer::presentLastFrame() {
 
 bool LFNanoVGRenderer::prepareSceneTarget(int framebufferWidth, int framebufferHeight) {
 #ifdef LEAF_USE_METAL
-    (void) framebufferWidth;
-    (void) framebufferHeight;
-    return false;
+    if (framebufferWidth <= 0 || framebufferHeight <= 0) {
+        return false;
+    }
+    if (m_frameState->sceneFramebuffer &&
+        m_frameState->sceneWidth == framebufferWidth &&
+        m_frameState->sceneHeight == framebufferHeight) {
+        return true;
+    }
+
+    NVGcontext* context = toContext(m_context);
+    mnvgWaitUntilCompleted(context);
+    m_frameState->releaseGraphicsResources();
+    m_frameState->sceneFramebuffer = mnvgCreateLayerFramebuffer(
+        context,
+        framebufferWidth,
+        framebufferHeight,
+        NVG_IMAGE_NEAREST
+    );
+    if (!m_frameState->sceneFramebuffer) {
+        return false;
+    }
+
+    m_frameState->sceneWidth = framebufferWidth;
+    m_frameState->sceneHeight = framebufferHeight;
+    return true;
 #else
     if (framebufferWidth <= 0 || framebufferHeight <= 0) {
         return false;
@@ -446,8 +545,32 @@ void LFNanoVGRenderer::clearScene(bool full, const LFDrawRect& damage) {
     glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glDisable(GL_SCISSOR_TEST);
 #else
-    (void) full;
-    (void) damage;
+    NVGcontext* context = toContext(m_context);
+    if (!context) return;
+
+    if (full) {
+        mnvgClearWithColor(context, toColor(m_frameState->pendingClearColor));
+        return;
+    }
+    if (damage.width <= 0.0f || damage.height <= 0.0f) {
+        return;
+    }
+
+    nvgSave(context);
+    nvgResetTransform(context);
+    nvgShapeAntiAlias(context, 0);
+    nvgGlobalCompositeOperation(context, NVG_COPY);
+    nvgBeginPath(context);
+    nvgRect(
+        context,
+        0.0f,
+        0.0f,
+        m_frameState->frameWidth,
+        m_frameState->frameHeight
+    );
+    nvgFillColor(context, toColor(m_frameState->pendingClearColor));
+    nvgFill(context);
+    nvgRestore(context);
 #endif
 }
 
@@ -478,76 +601,99 @@ void LFNanoVGRenderer::compositeScene() {
         m_frameState->viewportWidth,
         m_frameState->viewportHeight
     );
+#else
+    if (!m_frameState->sceneTargetReady || !m_frameState->sceneFramebuffer) {
+        return;
+    }
+
+    NVGcontext* context = toContext(m_context);
+    mnvgBindFramebuffer(nullptr);
+    mnvgClearScissorRect(context);
+    nvgBeginFrame(
+        context,
+        m_frameState->frameWidth,
+        m_frameState->frameHeight,
+        m_frameState->pixelRatio
+    );
+    nvgShapeAntiAlias(context, 0);
+    nvgGlobalCompositeOperation(context, NVG_COPY);
+    const NVGpaint paint = nvgImagePattern(
+        context,
+        0.0f,
+        0.0f,
+        m_frameState->frameWidth,
+        m_frameState->frameHeight,
+        0.0f,
+        m_frameState->sceneFramebuffer->image,
+        1.0f
+    );
+    nvgBeginPath(context);
+    nvgRect(
+        context,
+        0.0f,
+        0.0f,
+        m_frameState->frameWidth,
+        m_frameState->frameHeight
+    );
+    nvgFillPaint(context, paint);
+    nvgFill(context);
+    nvgEndFrame(context);
 #endif
 }
 
 void LFNanoVGRenderer::pushState() {
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.pushState();
         return;
     }
-#endif
     nvgSave(toContext(m_context));
 }
 
 void LFNanoVGRenderer::popState() {
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.popState();
         return;
     }
-#endif
     nvgRestore(toContext(m_context));
 }
 
 void LFNanoVGRenderer::translate(float x, float y) {
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.translate(x, y);
         return;
     }
-#endif
     nvgTranslate(toContext(m_context), x, y);
 }
 
 void LFNanoVGRenderer::rotate(float degrees) {
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.rotate(degrees);
         return;
     }
-#endif
     nvgRotate(toContext(m_context), nvgDegToRad(degrees));
 }
 
 void LFNanoVGRenderer::scale(float x, float y) {
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.scale(x, y);
         return;
     }
-#endif
     nvgScale(toContext(m_context), x, y);
 }
 
 void LFNanoVGRenderer::setOpacity(float opacity) {
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.setOpacity(opacity);
         return;
     }
-#endif
     nvgGlobalAlpha(toContext(m_context), opacity);
 }
 
 void LFNanoVGRenderer::clipRect(const LFDrawRect& rect) {
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.clipRect(rect);
         return;
     }
-#endif
     nvgIntersectScissor(
         toContext(m_context),
         rect.x,
@@ -558,12 +704,10 @@ void LFNanoVGRenderer::clipRect(const LFDrawRect& rect) {
 }
 
 void LFNanoVGRenderer::drawRect(const LFDrawRect& rect, uint32_t color) {
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.drawRect(rect, color);
         return;
     }
-#endif
     NVGcontext* context = toContext(m_context);
     nvgBeginPath(context);
     nvgRect(context, rect.x, rect.y, rect.width, rect.height);
@@ -577,12 +721,10 @@ void LFNanoVGRenderer::drawRoundedRect(const LFDrawRect& rect, float radius, uin
         return;
     }
 
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.drawRoundedRect(rect, radius, color);
         return;
     }
-#endif
     NVGcontext* context = toContext(m_context);
     nvgBeginPath(context);
     nvgRoundedRect(context, rect.x, rect.y, rect.width, rect.height, radius);
@@ -591,12 +733,10 @@ void LFNanoVGRenderer::drawRoundedRect(const LFDrawRect& rect, float radius, uin
 }
 
 void LFNanoVGRenderer::strokeRect(const LFDrawRect& rect, uint32_t color, float width) {
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.strokeRect(rect, color, width);
         return;
     }
-#endif
     NVGcontext* context = toContext(m_context);
     nvgBeginPath(context);
     nvgRect(context, rect.x, rect.y, rect.width, rect.height);
@@ -612,12 +752,10 @@ void LFNanoVGRenderer::strokeRoundedRect(const LFDrawRect& rect, float radius,
         return;
     }
 
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.strokeRoundedRect(rect, radius, color, width);
         return;
     }
-#endif
     NVGcontext* context = toContext(m_context);
     nvgBeginPath(context);
     nvgRoundedRect(context, rect.x, rect.y, rect.width, rect.height, radius);
@@ -628,12 +766,10 @@ void LFNanoVGRenderer::strokeRoundedRect(const LFDrawRect& rect, float radius,
 
 void LFNanoVGRenderer::drawLine(float x1, float y1, float x2, float y2,
                                 uint32_t color, float width, LFStrokeCap cap) {
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.drawLine(x1, y1, x2, y2, color, width, cap);
         return;
     }
-#endif
     NVGcontext* context = toContext(m_context);
     nvgBeginPath(context);
     nvgMoveTo(context, x1, y1);
@@ -660,12 +796,10 @@ void LFNanoVGRenderer::setTextState(LFFontHandle font, float fontSize,
 void LFNanoVGRenderer::drawText(const LFTextDraw& text) {
     if (text.font == 0 || text.text.empty()) return;
 
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.drawText(text);
         return;
     }
-#endif
     NVGcontext* context = toContext(m_context);
     setTextState(text.font, text.fontSize, text.lineHeight, text.origin);
     nvgFillColor(context, toColor(text.color));
@@ -689,12 +823,10 @@ void LFNanoVGRenderer::drawImage(const LFImageDraw& image) {
         return;
     }
 
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.drawImage(image);
         return;
     }
-#endif
     NVGcontext* context = toContext(m_context);
     const NVGpaint paint = nvgImagePattern(
         context,
@@ -733,12 +865,10 @@ void LFNanoVGRenderer::drawImage(const LFImageDraw& image) {
 void LFNanoVGRenderer::drawShadow(const LFShadowDraw& shadow) {
     if (((shadow.color >> 24) & 0xFF) == 0) return;
 
-#ifndef LEAF_USE_METAL
     if (m_frameState->recording) {
         m_frameState->currentScene.drawShadow(shadow);
         return;
     }
-#endif
     const float blur = shadow.blur;
     const float spread = shadow.spread;
     const float x = shadow.rect.x - spread;
