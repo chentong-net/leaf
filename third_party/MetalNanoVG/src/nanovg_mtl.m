@@ -314,11 +314,12 @@ static BOOL mtlnvg_convertBlendFuncFactor(int factor, MTLBlendFactor* result) {
 
 static NSNumber* mtlnvg__pipelineKey(MTLPixelFormat pixelFormat,
                                      const MNVGblend* blend) {
-  unsigned long long key = (unsigned long long)pixelFormat;
-  key = key * 131 + (unsigned long long)blend->srcRGB;
-  key = key * 131 + (unsigned long long)blend->dstRGB;
-  key = key * 131 + (unsigned long long)blend->srcAlpha;
-  key = key * 131 + (unsigned long long)blend->dstAlpha;
+  const unsigned long long key =
+      ((unsigned long long)pixelFormat << 48)
+      | ((unsigned long long)blend->srcRGB << 36)
+      | ((unsigned long long)blend->dstRGB << 24)
+      | ((unsigned long long)blend->srcAlpha << 12)
+      | (unsigned long long)blend->dstAlpha;
   return @(key);
 }
 
