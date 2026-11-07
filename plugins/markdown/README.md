@@ -35,13 +35,3 @@ page->addChild(view);
 - 分隔线与反斜杠转义
 
 当前不解析 HTML，HTML 标签会作为普通文本显示。
-
-## 测试
-
-使用 CMake 配置时启用 `LEAF_BUILD_MARKDOWN_TESTS=ON`，然后构建 `markdown-tests`：
-
-```bash
-cmake -S macos -B build-macos -DLEAF_BUILD_MARKDOWN_TESTS=ON
-cmake --build build-macos --target markdown-tests
-./build-macos/application_build/markdown_build/tests/markdown-tests
-```

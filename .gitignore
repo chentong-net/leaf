@@ -18,7 +18,6 @@
 **/build-web
 **/build-ios
 **/cmake-build-debug-llvm
-/tests/
 /.env
 # CocoaPods
 **/Pods/

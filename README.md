@@ -33,7 +33,6 @@ artifact contract.
 ```bash
 cmake -S macos -B build-macos -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-macos --parallel
-ctest --test-dir build-macos --output-on-failure
 ```
 
 #### Windows

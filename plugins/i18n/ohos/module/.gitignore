@@ -3,6 +3,5 @@
 /.preview
 /build
 /.cxx
-/.test
 *-lock.json5
 BuildProfile.ets

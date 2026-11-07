@@ -59,9 +59,3 @@ add_custom_target(leaf-macos-prepare-assets
         COMMENT "Preparing Leaf macOS assets"
 )
 add_dependencies(leaf-macos leaf-macos-prepare-assets)
-
-enable_testing()
-set(LEAF_LOCAL_TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../tests)
-if(EXISTS "${LEAF_LOCAL_TESTS_DIR}/CMakeLists.txt")
-    add_subdirectory(${LEAF_LOCAL_TESTS_DIR} tests_build)
-endif()
