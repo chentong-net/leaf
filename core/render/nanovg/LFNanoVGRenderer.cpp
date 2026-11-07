@@ -188,7 +188,7 @@ void LFNanoVGRenderer::beginFrame(float width, float height, float pixelRatio) {
     m_frameState->currentScene.beginFrame(
         width,
         height,
-        pixelRatio,
+        safePixelRatio,
         m_frameState->pendingClearColor
     );
     m_frameState->recording = true;
@@ -201,6 +201,10 @@ void LFNanoVGRenderer::beginFrame(float width, float height, float pixelRatio) {
         glBindFramebuffer(GL_FRAMEBUFFER, m_frameState->sceneFramebuffer);
         glViewport(0, 0, m_frameState->sceneWidth, m_frameState->sceneHeight);
     }
+
+    // 初始化布局阶段的 NanoVG 测量状态，当前帧的绘制命令仍由场景记录器收集。
+    nvgBeginFrame(context, width, height, safePixelRatio);
+    nvgCancelFrame(context);
     return;
 #endif
 
