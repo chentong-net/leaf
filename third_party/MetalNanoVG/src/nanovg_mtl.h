@@ -86,6 +86,11 @@ void mnvgBindFramebuffer(MNVGframebuffer* framebuffer);
 MNVGframebuffer* mnvgCreateFramebuffer(NVGcontext* ctx, int width,
                                        int height, int imageFlags);
 
+// Creates a framebuffer using the CAMetalLayer pixel format so the result can
+// be rendered back to the layer without changing render-pipeline formats.
+MNVGframebuffer* mnvgCreateLayerFramebuffer(NVGcontext* ctx, int width,
+                                            int height, int imageFlags);
+
 // Single-channel coverage, sampled as premultiplied white. Draw white coverage
 // and use blends independent of destination alpha (R8 has no alpha channel).
 MNVGframebuffer* mnvgCreateCoverageFramebuffer(NVGcontext* ctx, int width,
@@ -93,6 +98,11 @@ MNVGframebuffer* mnvgCreateCoverageFramebuffer(NVGcontext* ctx, int width,
 
 // Deletes the specified framebuffer.
 void mnvgDeleteFramebuffer(MNVGframebuffer* framebuffer);
+
+// Applies a hardware scissor to the next Metal render pass. Coordinates are in
+// drawable pixels with the origin at the top-left.
+void mnvgSetScissorRect(NVGcontext* ctx, int x, int y, int width, int height);
+void mnvgClearScissorRect(NVGcontext* ctx);
 
 //
 // Metal bridging functions

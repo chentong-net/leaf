@@ -156,6 +156,8 @@ typedef struct MNVGfragUniforms MNVGfragUniforms;
 @property (nonatomic, assign) vector_uint2 viewPortSize;
 @property (nonatomic, assign) MTLClearColor clearColor;
 @property (nonatomic, assign) BOOL clearBufferOnFlush;
+@property (nonatomic, assign) BOOL hasScissorRect;
+@property (nonatomic, assign) MTLScissorRect scissorRect;
 
 // Textures
 @property (nonatomic, strong) NSMutableArray<MNVGtexture*>* textures;
@@ -184,6 +186,11 @@ typedef struct MNVGfragUniforms MNVGfragUniforms;
 @property (nonatomic, strong) id<MTLRenderPipelineState> pipelineState;
 @property (nonatomic, strong) id<MTLRenderPipelineState>
     stencilOnlyPipelineState;
+@property (nonatomic, strong)
+    NSMutableDictionary<NSNumber*, id<MTLRenderPipelineState>>* pipelineStates;
+@property (nonatomic, strong)
+    NSMutableDictionary<NSNumber*, id<MTLRenderPipelineState>>*
+        stencilOnlyPipelineStates;
 @property (nonatomic, strong) id<MTLSamplerState> pseudoSampler;
 @property (nonatomic, strong) id<MTLTexture> pseudoTexture;
 @property (nonatomic, strong) MTLVertexDescriptor* vertexDescriptor;
@@ -208,6 +215,12 @@ typedef struct MNVGfragUniforms MNVGfragUniforms;
                              width:(int)width
                             height:(int)height
                         imageFlags:(int)imageFlags
+                              data:(const unsigned char*)data;
+- (int)renderCreateTextureWithType:(int)type
+                             width:(int)width
+                            height:(int)height
+                        imageFlags:(int)imageFlags
+                       pixelFormat:(MTLPixelFormat)pixelFormat
                               data:(const unsigned char*)data;
 
 - (void)renderFillWithPaint:(NVGpaint*)paint
@@ -297,6 +310,16 @@ static BOOL mtlnvg_convertBlendFuncFactor(int factor, MTLBlendFactor* result) {
   else
     return NO;
   return YES;
+}
+
+static NSNumber* mtlnvg__pipelineKey(MTLPixelFormat pixelFormat,
+                                     const MNVGblend* blend) {
+  unsigned long long key = (unsigned long long)pixelFormat;
+  key = key * 131 + (unsigned long long)blend->srcRGB;
+  key = key * 131 + (unsigned long long)blend->dstRGB;
+  key = key * 131 + (unsigned long long)blend->srcAlpha;
+  key = key * 131 + (unsigned long long)blend->dstAlpha;
+  return @(key);
 }
 
 static int mtlnvg__maxi(int a, int b) { return a > b ? a : b; }
@@ -517,6 +540,28 @@ MNVGframebuffer* mnvgCreateFramebuffer(NVGcontext* ctx, int width,
   return framebuffer;
 }
 
+MNVGframebuffer* mnvgCreateLayerFramebuffer(NVGcontext* ctx, int width,
+                                            int height, int imageFlags) {
+  MNVGcontext* mtl = (__bridge MNVGcontext*)nvgInternalParams(ctx)->userPtr;
+  MNVGframebuffer* framebuffer = calloc(1, sizeof(MNVGframebuffer));
+  if (framebuffer == NULL) return NULL;
+
+  framebuffer->image = [mtl
+      renderCreateTextureWithType:NVG_TEXTURE_RGBA
+                           width:width
+                          height:height
+                      imageFlags:imageFlags | NVG_IMAGE_PREMULTIPLIED
+                     pixelFormat:mtl.metalLayer.pixelFormat
+                            data:NULL];
+  if (framebuffer->image <= 0) {
+    free(framebuffer);
+    return NULL;
+  }
+
+  framebuffer->ctx = ctx;
+  return framebuffer;
+}
+
 void mnvgDeleteFramebuffer(MNVGframebuffer* framebuffer) {
   if (framebuffer == NULL) return;
   if (framebuffer->image > 0) {
@@ -549,6 +594,22 @@ void mnvgClearWithColor(NVGcontext* ctx, NVGcolor color) {
                                      (float)color.b * alpha,
                                      (float)color.a);
   mtl.clearBufferOnFlush = YES;
+}
+
+void mnvgSetScissorRect(NVGcontext* ctx, int x, int y, int width, int height) {
+  MNVGcontext* mtl = (__bridge MNVGcontext*)nvgInternalParams(ctx)->userPtr;
+  mtl.hasScissorRect = YES;
+  mtl.scissorRect = (MTLScissorRect){
+      .x = (NSUInteger)MAX(0, x),
+      .y = (NSUInteger)MAX(0, y),
+      .width = (NSUInteger)MAX(0, width),
+      .height = (NSUInteger)MAX(0, height),
+  };
+}
+
+void mnvgClearScissorRect(NVGcontext* ctx) {
+  MNVGcontext* mtl = (__bridge MNVGcontext*)nvgInternalParams(ctx)->userPtr;
+  mtl.hasScissorRect = NO;
 }
 
 void* mnvgCommandQueue(NVGcontext* ctx) {
@@ -970,6 +1031,9 @@ enum MNVGTarget mnvgTarget() {
   [encoder setStencilReferenceValue:0];
   [encoder setViewport:(MTLViewport)
       {0.0, 0.0, _viewPortSize.x, _viewPortSize.y, 0.0, 1.0}];
+  if (_hasScissorRect) {
+    [encoder setScissorRect:_scissorRect];
+  }
 
   [encoder setVertexBuffer:_buffers.vertBuffer
                     offset:0
@@ -1060,6 +1124,7 @@ enum MNVGTarget mnvgTarget() {
     [_cbuffers addObject:[MNVGbuffers new]];
   }
   _clearBufferOnFlush = NO;
+  _hasScissorRect = NO;
   _semaphore = dispatch_semaphore_create(_maxBuffers);
 
   // Initializes vertex descriptor.
@@ -1078,6 +1143,8 @@ enum MNVGTarget mnvgTarget() {
   // Initialzes textures.
   _textureId = 0;
   _textures = [NSMutableArray array];
+  _pipelineStates = [NSMutableDictionary dictionary];
+  _stencilOnlyPipelineStates = [NSMutableDictionary dictionary];
 
   // Initializes default sampler descriptor.
   MTLSamplerDescriptor* samplerDescriptor = [MTLSamplerDescriptor new];
@@ -1194,14 +1261,28 @@ enum MNVGTarget mnvgTarget() {
                             height:(int)height
                         imageFlags:(int)imageFlags
                               data:(const unsigned char*)data {
-  MNVGtexture* tex = [self allocTexture];
-
-  if (tex == nil) return 0;
-
   MTLPixelFormat pixelFormat = MTLPixelFormatRGBA8Unorm;
   if (type == NVG_TEXTURE_ALPHA) {
     pixelFormat = MTLPixelFormatR8Unorm;
   }
+
+  return [self renderCreateTextureWithType:type
+                                    width:width
+                                   height:height
+                               imageFlags:imageFlags
+                              pixelFormat:pixelFormat
+                                     data:data];
+}
+
+- (int)renderCreateTextureWithType:(int)type
+                             width:(int)width
+                            height:(int)height
+                        imageFlags:(int)imageFlags
+                       pixelFormat:(MTLPixelFormat)pixelFormat
+                              data:(const unsigned char*)data {
+  MNVGtexture* tex = [self allocTexture];
+
+  if (tex == nil) return 0;
 
   tex->type = type;
   tex->flags = imageFlags;
@@ -1334,6 +1415,8 @@ enum MNVGTarget mnvgTarget() {
   _vertexFunction = nil;
   _pipelineState = nil;
   _stencilOnlyPipelineState = nil;
+  _pipelineStates = nil;
+  _stencilOnlyPipelineStates = nil;
   _pseudoSampler = nil;
   _pseudoTexture = nil;
   _vertexDescriptor = nil;
@@ -1828,13 +1911,15 @@ error:
 
 - (void)updateRenderPipelineStatesForBlend:(MNVGblend*)blend
                                pixelFormat:(MTLPixelFormat)pixelFormat {
-  if (_pipelineState != nil &&
-      _stencilOnlyPipelineState != nil &&
-      _piplelinePixelFormat == pixelFormat &&
-      _blendFunc->srcRGB == blend->srcRGB &&
-      _blendFunc->dstRGB == blend->dstRGB &&
-      _blendFunc->srcAlpha == blend->srcAlpha &&
-      _blendFunc->dstAlpha == blend->dstAlpha) {
+  NSNumber* key = mtlnvg__pipelineKey(pixelFormat, blend);
+  id<MTLRenderPipelineState> cachedPipeline = _pipelineStates[key];
+  id<MTLRenderPipelineState> cachedStencilPipeline =
+      _stencilOnlyPipelineStates[key];
+  if (cachedPipeline != nil && cachedStencilPipeline != nil) {
+    _pipelineState = cachedPipeline;
+    _stencilOnlyPipelineState = cachedStencilPipeline;
+    _piplelinePixelFormat = pixelFormat;
+    *_blendFunc = *blend;
     return;
   }
 
@@ -1861,19 +1946,28 @@ error:
   _blendFunc->dstAlpha = blend->dstAlpha;
 
   NSError* error;
-  _pipelineState = [_metalLayer.device
+  id<MTLRenderPipelineState> pipelineState = [_metalLayer.device
       newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
                                      error:&error];
   [self checkError:error withMessage:"init pipeline state"];
 
   pipelineStateDescriptor.fragmentFunction = nil;
   colorAttachmentDescriptor.writeMask = MTLColorWriteMaskNone;
-  _stencilOnlyPipelineState = [_metalLayer.device
+  id<MTLRenderPipelineState> stencilOnlyPipelineState = [_metalLayer.device
       newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
                                      error:&error];
   [self checkError:error withMessage:"init pipeline stencil only state"];
 
+  _pipelineState = pipelineState;
+  _stencilOnlyPipelineState = stencilOnlyPipelineState;
   _piplelinePixelFormat = pixelFormat;
+  *_blendFunc = *blend;
+  if (pipelineState != nil) {
+    _pipelineStates[key] = pipelineState;
+  }
+  if (stencilOnlyPipelineState != nil) {
+    _stencilOnlyPipelineStates[key] = stencilOnlyPipelineState;
+  }
 }
 
 // Re-creates stencil texture whenever the specified size is bigger.
