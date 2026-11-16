@@ -701,12 +701,11 @@ void LFNanoVGRenderer::compositeScene() {
             "uSceneTexture"
         );
 
+        // VBO 按 (position.xy, textureCoordinate.xy) 交错存储矩形四个顶点的顶点坐标和纹理坐标。
         constexpr float vertices[] = {
             -1.0f, -1.0f, 0.0f, 0.0f,
              1.0f, -1.0f, 1.0f, 0.0f,
             -1.0f,  1.0f, 0.0f, 1.0f,
-            -1.0f,  1.0f, 0.0f, 1.0f,
-             1.0f, -1.0f, 1.0f, 0.0f,
              1.0f,  1.0f, 1.0f, 1.0f,
         };
 
@@ -759,7 +758,7 @@ void LFNanoVGRenderer::compositeScene() {
     glBindTexture(GL_TEXTURE_2D, m_frameState->sceneTexture);
     glUniform1i(m_frameState->compositeTextureLocation, 0);
     glBindVertexArray(m_frameState->compositeVertexArray);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
     glUseProgram(0);
