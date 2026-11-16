@@ -33,8 +33,7 @@
 #### macOS
 
 ```bash
-cmake -S macos -B build-macos -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-macos --parallel
+./leaf.sh build --target macos
 ```
 
 #### Windows
@@ -53,31 +52,30 @@ cmake --build build-windows --parallel
 Web端需要Emscripten：
 
 ```bash
-emcmake cmake -S web -B build_web -DCMAKE_BUILD_TYPE=Release
-cmake --build build_web --parallel
+./leaf.sh build --target web
 ```
 
+构建产物位于 `build/web/<mode>/`。使用 `./leaf.sh run --target web` 可以构建并启动
+本地 HTTP 服务。
+
 `application/assets/fonts` 下的字体会预加载到虚拟 `/assets/fonts` 目录。其他应用资源
-会复制到 `build_web/assets`，并通过 `emscripten_fetch` 在运行时按需加载。Web 产物需要
-通过 HTTP 服务从 `build_web` 启动，直接使用 `file://` 打开生成的 HTML 将无法按需请求资源。
+会复制到 `build/web/<mode>/assets`，并通过 `emscripten_fetch` 在运行时按需加载。
+直接使用 `file://` 打开生成的 HTML 将无法按需请求资源。
 
 #### Android
 
 ```bash
-cd android
-./gradlew :app:assembleDebug
+./leaf.sh build --target android
 ```
 
 #### iOS
 
-安装Pod并打开工程前，先生成原生框架：
-
 ```bash
-./ios/scripts/build_leaf_native_xcframework.sh
-cd ios/App
-pod install
-open App.xcworkspace
+./leaf.sh build --target ios
 ```
+
+该命令会生成原生框架并执行 CocoaPods 安装。Debug 构建在签名不可用时生成模拟器应用，
+Release 构建需要签名。
 
 iOS最低支持版本为15.0。
 

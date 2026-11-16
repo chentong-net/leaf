@@ -34,8 +34,7 @@ artifact contract.
 #### macOS
 
 ```bash
-cmake -S macos -B build-macos -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-macos --parallel
+./leaf.sh build --target macos
 ```
 
 #### Windows
@@ -54,32 +53,32 @@ cmake --build build-windows --parallel
 The Web target requires Emscripten:
 
 ```bash
-emcmake cmake -S web -B build_web -DCMAKE_BUILD_TYPE=Release
-cmake --build build_web --parallel
+./leaf.sh build --target web
 ```
 
+Build artifacts are written to `build/web/<mode>/`. Use
+`./leaf.sh run --target web` to build and start a local HTTP server.
+
 Fonts under `application/assets/fonts` are preloaded into the virtual `/assets/fonts`
-directory. Other application assets are copied to `build_web/assets` and loaded on
-demand with `emscripten_fetch`. Serve `build_web` over HTTP; opening the generated
-HTML file directly with `file://` will prevent on-demand requests.
+directory. Other application assets are copied to `build/web/<mode>/assets` and
+loaded on demand with `emscripten_fetch`. Opening the generated HTML file directly
+with `file://` will prevent on-demand requests.
 
 #### Android
 
 ```bash
-cd android
-./gradlew :app:assembleDebug
+./leaf.sh build --target android
 ```
 
 #### iOS
 
-Generate the native framework and install pods before opening the workspace:
-
 ```bash
-./ios/scripts/build_leaf_native_xcframework.sh
-cd ios/App
-pod install
-open App.xcworkspace
+./leaf.sh build --target ios
 ```
+
+The command generates the native framework and installs CocoaPods dependencies.
+Debug builds fall back to a simulator app when signing is unavailable; Release
+builds require signing.
 
 The iOS deployment target is iOS 15.0 or newer.
 
