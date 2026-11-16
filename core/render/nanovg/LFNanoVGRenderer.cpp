@@ -66,6 +66,99 @@ int toNVGLineCap(LFStrokeCap cap) {
     }
 }
 
+#if defined(__WEB__)
+constexpr const char* kWebCompositeVertexShader = R"(#version 300 es
+in vec2 aPosition;
+in vec2 aTextureCoordinate;
+out vec2 vTextureCoordinate;
+void main() {
+    vTextureCoordinate = aTextureCoordinate;
+    gl_Position = vec4(aPosition, 0.0, 1.0);
+}
+)";
+
+constexpr const char* kWebCompositeFragmentShader = R"(#version 300 es
+precision mediump float;
+uniform sampler2D uSceneTexture;
+in vec2 vTextureCoordinate;
+out vec4 outColor;
+void main() {
+    outColor = texture(uSceneTexture, vTextureCoordinate);
+}
+)";
+
+GLuint compileWebCompositeShader(GLenum type, const char* source) {
+    const GLuint shader = glCreateShader(type);
+    if (shader == 0) {
+        return 0;
+    }
+
+    glShaderSource(shader, 1, &source, nullptr);
+    glCompileShader(shader);
+
+    GLint compiled = GL_FALSE;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+    if (compiled == GL_TRUE) {
+        return shader;
+    }
+
+    GLchar log[512] = {};
+    GLsizei logLength = 0;
+    glGetShaderInfoLog(shader, sizeof(log), &logLength, log);
+    LF_LOGI("Failed to compile Web composite shader: %.*s", logLength, log);
+    glDeleteShader(shader);
+    return 0;
+}
+
+GLuint createWebCompositeProgram() {
+    const GLuint vertexShader = compileWebCompositeShader(
+        GL_VERTEX_SHADER,
+        kWebCompositeVertexShader
+    );
+    const GLuint fragmentShader = compileWebCompositeShader(
+        GL_FRAGMENT_SHADER,
+        kWebCompositeFragmentShader
+    );
+    if (vertexShader == 0 || fragmentShader == 0) {
+        if (vertexShader != 0) {
+            glDeleteShader(vertexShader);
+        }
+        if (fragmentShader != 0) {
+            glDeleteShader(fragmentShader);
+        }
+        return 0;
+    }
+
+    const GLuint program = glCreateProgram();
+    if (program == 0) {
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        return 0;
+    }
+
+    glAttachShader(program, vertexShader);
+    glAttachShader(program, fragmentShader);
+    glBindAttribLocation(program, 0, "aPosition");
+    glBindAttribLocation(program, 1, "aTextureCoordinate");
+    glLinkProgram(program);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    GLint linked = GL_FALSE;
+    glGetProgramiv(program, GL_LINK_STATUS, &linked);
+    if (linked == GL_TRUE) {
+        return program;
+    }
+
+    GLchar log[512] = {};
+    GLsizei logLength = 0;
+    glGetProgramInfoLog(program, sizeof(log), &logLength, log);
+    LF_LOGI("Failed to link Web composite program: %.*s", logLength, log);
+    glDeleteProgram(program);
+    return 0;
+}
+#endif
+
 } // namespace
 
 struct LFNanoVGRenderer::FrameState {
@@ -85,6 +178,12 @@ struct LFNanoVGRenderer::FrameState {
     unsigned int sceneFramebuffer = 0;
     unsigned int sceneTexture = 0;
     unsigned int sceneStencilBuffer = 0;
+#if defined(__WEB__)
+    unsigned int compositeProgram = 0;
+    unsigned int compositeVertexArray = 0;
+    unsigned int compositeVertexBuffer = 0;
+    int compositeTextureLocation = -1;
+#endif
 #endif
     int viewportWidth = 0;
     int viewportHeight = 0;
@@ -134,6 +233,17 @@ LFNanoVGRenderer::~LFNanoVGRenderer() {
     nvgDeleteGL3(toContext(m_context));
 #else
     m_frameState->releaseGraphicsResources();
+#if defined(__WEB__)
+    if (m_frameState->compositeVertexBuffer != 0) {
+        glDeleteBuffers(1, &m_frameState->compositeVertexBuffer);
+    }
+    if (m_frameState->compositeVertexArray != 0) {
+        glDeleteVertexArrays(1, &m_frameState->compositeVertexArray);
+    }
+    if (m_frameState->compositeProgram != 0) {
+        glDeleteProgram(m_frameState->compositeProgram);
+    }
+#endif
     nvgDeleteGLES3(toContext(m_context));
 #endif
 }
@@ -579,6 +689,81 @@ void LFNanoVGRenderer::compositeScene() {
     if (!m_frameState->sceneTargetReady) {
         return;
     }
+#if defined(__WEB__)
+    if (m_frameState->compositeProgram == 0) {
+        m_frameState->compositeProgram = createWebCompositeProgram();
+        if (m_frameState->compositeProgram == 0) {
+            return;
+        }
+
+        m_frameState->compositeTextureLocation = glGetUniformLocation(
+            m_frameState->compositeProgram,
+            "uSceneTexture"
+        );
+
+        constexpr float vertices[] = {
+            -1.0f, -1.0f, 0.0f, 0.0f,
+             1.0f, -1.0f, 1.0f, 0.0f,
+            -1.0f,  1.0f, 0.0f, 1.0f,
+            -1.0f,  1.0f, 0.0f, 1.0f,
+             1.0f, -1.0f, 1.0f, 0.0f,
+             1.0f,  1.0f, 1.0f, 1.0f,
+        };
+
+        glGenVertexArrays(1, &m_frameState->compositeVertexArray);
+        glGenBuffers(1, &m_frameState->compositeVertexBuffer);
+        glBindVertexArray(m_frameState->compositeVertexArray);
+        glBindBuffer(GL_ARRAY_BUFFER, m_frameState->compositeVertexBuffer);
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            sizeof(vertices),
+            vertices,
+            GL_STATIC_DRAW
+        );
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(
+            0,
+            2,
+            GL_FLOAT,
+            GL_FALSE,
+            4 * sizeof(float),
+            reinterpret_cast<const void*>(0)
+        );
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(
+            1,
+            2,
+            GL_FLOAT,
+            GL_FALSE,
+            4 * sizeof(float),
+            reinterpret_cast<const void*>(2 * sizeof(float))
+        );
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+    glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
+    glDisable(GL_BLEND);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_frameState->defaultFramebuffer);
+    glViewport(
+        0,
+        0,
+        m_frameState->viewportWidth,
+        m_frameState->viewportHeight
+    );
+    glUseProgram(m_frameState->compositeProgram);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_frameState->sceneTexture);
+    glUniform1i(m_frameState->compositeTextureLocation, 0);
+    glBindVertexArray(m_frameState->compositeVertexArray);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glUseProgram(0);
+#else
     glDisable(GL_SCISSOR_TEST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, m_frameState->sceneFramebuffer);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_frameState->defaultFramebuffer);
@@ -601,6 +786,7 @@ void LFNanoVGRenderer::compositeScene() {
         m_frameState->viewportWidth,
         m_frameState->viewportHeight
     );
+#endif
 #else
     if (!m_frameState->sceneTargetReady || !m_frameState->sceneFramebuffer) {
         return;
