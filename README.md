@@ -8,10 +8,13 @@ English | [中文](README-zh.md)
 
 ### Design Goals
 
-- Build a cross-platform app engine with unified UI rendering across all platforms.
-- Avoid native controls and use fully custom-drawn UI to ensure consistent visual output.
-- Components render through the backend-neutral `LFPaint` and `LFRenderer` interfaces. The default backend is NanoVG, using OpenGL/OpenGL ES on most platforms and MetalNanoVG on iOS.
-- Calculate layout through the backend-neutral `LFLayout` interface. The default `LFYogaLayout` backend uses Yoga and keeps layout separate from rendering.
+- Design and implement a cross-platform application development engine that supports building multi-platform applications from a single codebase.
+- Abandon native controls and use a custom-drawn UI approach (OpenGL, Metal, etc.) to ensure consistent visual output across all platforms.
+- Separate rendering and layout behind independent interfaces to reduce overall coupling and improve extensibility.
+- Use a persistent offscreen canvas and drawing-command diffing to enable partial redraws.
+- Record drawing commands independently of actual rendering so that switching render backends does not affect partial redraws.
+- Provide an extensible plugin mechanism that supports adding platform-specific plugins as needed.
+- Adapt the Web platform using WebAssembly.
 
 ### Build
 
